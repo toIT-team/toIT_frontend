@@ -32,15 +32,17 @@ class EventChip extends StatelessWidget {
           right: isEnd ? const Radius.circular(4) : Radius.zero,
         ),
       ),
+      alignment: Alignment.centerLeft,
       child: showTitle
           ? Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 3),
               child: Text(
                 event.title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.w500,
+                  height: 1.1,
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,

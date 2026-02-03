@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../controllers/calendar_controller.dart';
 import 'calendar_grid.dart';
 import 'calendar_header.dart';
+import 'day_events_bottom_sheet.dart';
 
 /// 메인 캘린더 위젯
 class CalendarWidget extends ConsumerStatefulWidget {
@@ -45,6 +46,23 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
     final monthDiff =
         (month.year - baseMonth.year) * 12 + (month.month - baseMonth.month);
     return _initialPage + monthDiff;
+  }
+
+  /// 일정 바텀시트 표시
+  void _showDayEventsSheet(BuildContext context, DateTime date) {
+    final events = ref.read(eventsProvider);
+    final dayEvents = events.where((e) => e.occursOnDay(date)).toList()
+      ..sort((a, b) {
+        // 하루 종일 일정 먼저, 그 다음 시간순
+        if (!a.timeSetting && b.timeSetting) return -1;
+        if (a.timeSetting && !b.timeSetting) return 1;
+        if (a.startTime != null && b.startTime != null) {
+          return a.startTime!.compareTo(b.startTime!);
+        }
+        return 0;
+      });
+
+    showDayEventsBottomSheet(context, date, dayEvents);
   }
 
   /// 년/월 선택 Picker 표시
@@ -219,6 +237,7 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
                 focusedMonth: month,
                 onDayTap: (date) {
                   calendarController.selectDate(date);
+                  _showDayEventsSheet(context, date);
                 },
               );
             },
