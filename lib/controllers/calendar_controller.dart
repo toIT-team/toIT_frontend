@@ -248,7 +248,7 @@ class CalendarController extends Notifier<CalendarState> {
       CalendarEvent(
         id: '3',
         usersId: 1,
-        title: '체력관...',
+        title: '체력관리 수업',
         startAt: formatDate(year, month, 1),
         endAt: formatDate(year, month, 1),
         timeSetting: false,
@@ -259,18 +259,18 @@ class CalendarController extends Notifier<CalendarState> {
       CalendarEvent(
         id: '4',
         usersId: 1,
-        title: '시각디자인...',
+        title: '시각디자인 설명회',
         startAt: formatDate(year, month, 9),
         endAt: formatDate(year, month, 13),
         timeSetting: false,
         createdAt: DateTime(year, month, 8),
         color: AppTheme.eventColors[1],
       ),
-      // 임상실습
+      // 임상실험학
       CalendarEvent(
         id: '5',
         usersId: 1,
-        title: '임상실...',
+        title: '임상실험학',
         startAt: formatDate(year, month, 9),
         endAt: formatDate(year, month, 9),
         startTime: '09:00',
@@ -279,11 +279,11 @@ class CalendarController extends Notifier<CalendarState> {
         createdAt: DateTime(year, month, 8),
         color: AppTheme.eventColors[2],
       ),
-      // 임상실습 2
+      // 임상실험학 2
       CalendarEvent(
         id: '6',
         usersId: 1,
-        title: '임상실...',
+        title: '임상실험학',
         startAt: formatDate(year, month, 10),
         endAt: formatDate(year, month, 10),
         startTime: '09:00',
@@ -296,7 +296,7 @@ class CalendarController extends Notifier<CalendarState> {
       CalendarEvent(
         id: '7',
         usersId: 1,
-        title: 'ux 방...',
+        title: 'UX 방법론 특강',
         startAt: formatDate(year, month, 11),
         endAt: formatDate(year, month, 11),
         timeSetting: false,
@@ -342,7 +342,7 @@ class CalendarController extends Notifier<CalendarState> {
       CalendarEvent(
         id: '11',
         usersId: 1,
-        title: '크리스...',
+        title: '크리스마스 파티',
         startAt: formatDate(year, month, 25),
         endAt: formatDate(year, month, 25),
         startTime: '18:00',
