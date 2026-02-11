@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/setting_layout_tokens.dart';
+
 /// 보관함(폴더) 섹션
 ///
 /// [isEditable] true (수정 모드):
@@ -35,7 +37,7 @@ class EventFolderSection extends StatelessWidget {
             child: Text(
               _hasFolder ? folderName! : '보관함 추가',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: SettingLayout1Tokens.fontSize,
                 color: _hasFolder
                     ? Colors.black
                     : Colors.grey,
@@ -45,7 +47,7 @@ class EventFolderSection extends StatelessWidget {
           Icon(
             isEditable ? Icons.add : Icons.chevron_right,
             color: Colors.grey[400],
-            size: 22,
+            size: SettingLayout1Tokens.trailingIconSize,
           ),
         ],
       ),

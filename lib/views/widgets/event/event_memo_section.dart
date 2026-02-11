@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/setting_layout_tokens.dart';
+
 /// 메모 섹션
 class EventMemoSection extends StatelessWidget {
   const EventMemoSection({
     super.key,
     this.memo,
     this.memoDate,
+    this.memoController,
     this.isEditable = false,
     this.onTap,
     this.onChanged,
@@ -13,6 +16,10 @@ class EventMemoSection extends StatelessWidget {
 
   final String? memo;
   final String? memoDate;
+
+  /// 편집 모드 시 사용할 TextEditingController (제공 시 TextField 표시)
+  final TextEditingController? memoController;
+
   final bool isEditable;
   final VoidCallback? onTap;
   final ValueChanged<String>? onChanged;
@@ -20,13 +27,39 @@ class EventMemoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasMemo = memo != null && memo!.isNotEmpty;
+    final useTextField =
+        isEditable && memoController != null && onChanged != null;
 
-    // 편집 모드일 때 TextField 사용
-    if (isEditable) {
-      return _buildEditableContent(hasMemo);
+    if (useTextField) {
+      return TextField(
+        controller: memoController,
+        onChanged: onChanged,
+        style: const TextStyle(
+          fontSize: SettingLayout1Tokens.fontSize,
+        ),
+        maxLines: 3,
+        minLines: 1,
+        decoration: const InputDecoration(
+          hintText: '메모 추가',
+          hintStyle: TextStyle(
+            color: Colors.grey,
+            fontSize: SettingLayout1Tokens.fontSize,
+          ),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      );
     }
 
-    // 읽기 모드
+    if (isEditable) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: _buildReadOnlyContent(hasMemo),
+      );
+    }
+
     return _buildReadOnlyContent(hasMemo);
   }
 
@@ -37,7 +70,7 @@ class EventMemoSection extends StatelessWidget {
           child: Text(
             hasMemo ? memo! : '메모 추가',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: SettingLayout1Tokens.fontSize,
               color: hasMemo ? Colors.black : Colors.grey,
             ),
           ),
@@ -51,30 +84,6 @@ class EventMemoSection extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildEditableContent(bool hasMemo) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              hasMemo ? memo! : '메모 추가',
-              style: TextStyle(
-                fontSize: 16,
-                color: hasMemo ? Colors.black : Colors.grey,
-              ),
-            ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            color: Colors.grey[400],
-          ),
-        ],
-      ),
     );
   }
 }

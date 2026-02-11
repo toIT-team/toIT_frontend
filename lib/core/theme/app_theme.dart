@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../constants/event_color_tokens.dart';
+
 /// 앱 테마 설정
 class AppTheme {
   AppTheme._();
@@ -10,17 +12,10 @@ class AppTheme {
   static const Color todayColor = Color(0xFF4285F4);
   static const Color selectedDayColor = Color(0xFF4285F4);
 
-  // 일정 기본 색상
-  static const List<Color> eventColors = [
-    Color(0xFF4285F4), // 파랑
-    Color(0xFFFBBC04), // 노랑
-    Color(0xFFB9EF9B), // 초록
-    Color(0xFFEA4335), // 빨강
-    Color(0xFF9C27B0), // 보라
-    Color(0xFFFF9800), // 주황
-    Color(0xFF00BCD4), // 청록
-    Color(0xFF795548), // 갈색
-  ];
+  /// 일정 색상 토큰 목록 (색상 선택 UI용)
+  /// EventColorTokens.pickerEntries 사용 권장
+  static List<({EventColorToken token, Color color})> get eventColors =>
+      EventColorTokens.pickerEntries;
 
   static ThemeData get lightTheme {
     return ThemeData(

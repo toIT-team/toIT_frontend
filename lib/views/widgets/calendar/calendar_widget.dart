@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../controllers/calendar_controller.dart';
+import '../../../services/schedule_api_client.dart';
 import 'calendar_grid.dart';
 import 'calendar_header.dart';
 import 'day_events_bottom_sheet.dart';
@@ -24,6 +25,11 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _initialPage);
+    // 초기 로드: API에서 현재 월 일정 가져오기
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final month = ref.read(calendarProvider).focusedMonth;
+      ref.read(calendarProvider.notifier).loadEvents(month);
+    });
   }
 
   @override
@@ -48,19 +54,26 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
     return _initialPage + monthDiff;
   }
 
-  /// 일정 바텀시트 표시
-  void _showDayEventsSheet(BuildContext context, DateTime date) {
-    final events = ref.read(eventsProvider);
-    final dayEvents = events.where((e) => e.occursOnDay(date)).toList()
-      ..sort((a, b) {
-        // 하루 종일 일정 먼저, 그 다음 시간순
-        if (!a.timeSetting && b.timeSetting) return -1;
-        if (a.timeSetting && !b.timeSetting) return 1;
-        if (a.startTime != null && b.startTime != null) {
-          return a.startTime!.compareTo(b.startTime!);
-        }
-        return 0;
-      });
+  /// 일정 바텀시트 표시 (GET /page/schedules/selected API 호출)
+  Future<void> _showDayEventsSheet(BuildContext context, DateTime date) async {
+    ref.read(calendarProvider.notifier).selectDate(date);
+
+    final apiClient = ScheduleApiClient();
+    final dayEvents = await apiClient.getSelectedDaySchedules(
+      selectedDay: date,
+    );
+
+    if (!context.mounted) return;
+
+    dayEvents.sort((a, b) {
+      // 하루 종일 일정 먼저, 그 다음 시간순
+      if (!a.timeSetting && b.timeSetting) return -1;
+      if (a.timeSetting && !b.timeSetting) return 1;
+      if (a.startTime != null && b.startTime != null) {
+        return a.startTime!.compareTo(b.startTime!);
+      }
+      return 0;
+    });
 
     showDayEventsBottomSheet(context, date, dayEvents);
   }
@@ -183,10 +196,15 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // 헤더용 focusedMonth만 watch (선택적 구독)
+    // 헤더용 focusedMonth, 로딩 상태 watch
     final focusedMonth = ref.watch(
       calendarProvider.select((s) => s.focusedMonth),
     );
+    final isLoading = ref.watch(
+      calendarProvider.select((s) => s.isLoading),
+    );
+    // 일정 추가/수정 시 즉시 반영을 위해 events watch
+    ref.watch(eventsProvider);
     final calendarController = ref.read(calendarProvider.notifier);
 
     // 외부에서 월이 변경되면 페이지도 이동 (Picker에서 선택 시)
@@ -207,18 +225,20 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
       },
     );
 
-    return Column(
+    return Stack(
       children: [
-        // 헤더
-        CalendarHeader(
-          focusedMonth: focusedMonth,
-          onMonthTap: () {
-            _showYearMonthPicker(context, focusedMonth);
-          },
-        ),
-        // 캘린더 본체 (스와이프 가능)
-        Expanded(
-          child: PageView.builder(
+        Column(
+          children: [
+            // 헤더
+            CalendarHeader(
+              focusedMonth: focusedMonth,
+              onMonthTap: () {
+                _showYearMonthPicker(context, focusedMonth);
+              },
+            ),
+            // 캘린더 본체 (스와이프 가능)
+            Expanded(
+              child: PageView.builder(
             controller: _pageController,
             // 슬라이드 완료 후 헤더만 업데이트
             onPageChanged: (page) {
@@ -235,14 +255,20 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
               final month = _getMonthFromPage(index);
               return CalendarGrid(
                 focusedMonth: month,
-                onDayTap: (date) {
-                  calendarController.selectDate(date);
-                  _showDayEventsSheet(context, date);
-                },
+                onDayTap: (date) => _showDayEventsSheet(context, date),
               );
             },
           ),
         ),
+          ],
+        ),
+        if (isLoading)
+          Container(
+            color: Colors.black26,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
       ],
     );
   }
