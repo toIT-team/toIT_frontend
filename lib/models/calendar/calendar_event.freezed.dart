@@ -47,6 +47,9 @@ mixin _$CalendarEvent {
   /// 시간 설정 여부
   bool get timeSetting => throw _privateConstructorUsedError;
 
+  /// 보관함(폴더) 이름
+  String? get folderName => throw _privateConstructorUsedError;
+
   /// 생성 일시
   @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
   DateTime? get createdAt => throw _privateConstructorUsedError;
@@ -81,6 +84,7 @@ abstract class $CalendarEventCopyWith<$Res> {
     String? startTime,
     String? endTime,
     bool timeSetting,
+    String? folderName,
     @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
     DateTime? createdAt,
     @JsonKey(includeFromJson: false, includeToJson: false) Color color,
@@ -110,6 +114,7 @@ class _$CalendarEventCopyWithImpl<$Res, $Val extends CalendarEvent>
     Object? startTime = freezed,
     Object? endTime = freezed,
     Object? timeSetting = null,
+    Object? folderName = freezed,
     Object? createdAt = freezed,
     Object? color = null,
   }) {
@@ -147,6 +152,10 @@ class _$CalendarEventCopyWithImpl<$Res, $Val extends CalendarEvent>
                 ? _value.timeSetting
                 : timeSetting // ignore: cast_nullable_to_non_nullable
                       as bool,
+            folderName: freezed == folderName
+                ? _value.folderName
+                : folderName // ignore: cast_nullable_to_non_nullable
+                      as String?,
             createdAt: freezed == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -179,6 +188,7 @@ abstract class _$$CalendarEventImplCopyWith<$Res>
     String? startTime,
     String? endTime,
     bool timeSetting,
+    String? folderName,
     @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
     DateTime? createdAt,
     @JsonKey(includeFromJson: false, includeToJson: false) Color color,
@@ -207,6 +217,7 @@ class __$$CalendarEventImplCopyWithImpl<$Res>
     Object? startTime = freezed,
     Object? endTime = freezed,
     Object? timeSetting = null,
+    Object? folderName = freezed,
     Object? createdAt = freezed,
     Object? color = null,
   }) {
@@ -244,6 +255,10 @@ class __$$CalendarEventImplCopyWithImpl<$Res>
             ? _value.timeSetting
             : timeSetting // ignore: cast_nullable_to_non_nullable
                   as bool,
+        folderName: freezed == folderName
+            ? _value.folderName
+            : folderName // ignore: cast_nullable_to_non_nullable
+                  as String?,
         createdAt: freezed == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -269,6 +284,7 @@ class _$CalendarEventImpl extends _CalendarEvent {
     this.startTime,
     this.endTime,
     this.timeSetting = false,
+    this.folderName,
     @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
     this.createdAt,
     @JsonKey(includeFromJson: false, includeToJson: false)
@@ -313,6 +329,10 @@ class _$CalendarEventImpl extends _CalendarEvent {
   @JsonKey()
   final bool timeSetting;
 
+  /// 보관함(폴더) 이름
+  @override
+  final String? folderName;
+
   /// 생성 일시
   @override
   @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
@@ -325,7 +345,7 @@ class _$CalendarEventImpl extends _CalendarEvent {
 
   @override
   String toString() {
-    return 'CalendarEvent(id: $id, usersId: $usersId, title: $title, startAt: $startAt, endAt: $endAt, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, createdAt: $createdAt, color: $color)';
+    return 'CalendarEvent(id: $id, usersId: $usersId, title: $title, startAt: $startAt, endAt: $endAt, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, folderName: $folderName, createdAt: $createdAt, color: $color)';
   }
 
   @override
@@ -343,6 +363,8 @@ class _$CalendarEventImpl extends _CalendarEvent {
             (identical(other.endTime, endTime) || other.endTime == endTime) &&
             (identical(other.timeSetting, timeSetting) ||
                 other.timeSetting == timeSetting) &&
+            (identical(other.folderName, folderName) ||
+                other.folderName == folderName) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.color, color) || other.color == color));
@@ -360,6 +382,7 @@ class _$CalendarEventImpl extends _CalendarEvent {
     startTime,
     endTime,
     timeSetting,
+    folderName,
     createdAt,
     color,
   );
@@ -388,6 +411,7 @@ abstract class _CalendarEvent extends CalendarEvent {
     final String? startTime,
     final String? endTime,
     final bool timeSetting,
+    final String? folderName,
     @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
     final DateTime? createdAt,
     @JsonKey(includeFromJson: false, includeToJson: false) final Color color,
@@ -430,6 +454,10 @@ abstract class _CalendarEvent extends CalendarEvent {
   /// 시간 설정 여부
   @override
   bool get timeSetting;
+
+  /// 보관함(폴더) 이름
+  @override
+  String? get folderName;
 
   /// 생성 일시
   @override

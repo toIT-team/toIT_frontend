@@ -7,6 +7,7 @@ class EventTimeRow extends StatelessWidget {
     required this.label,
     required this.date,
     this.time,
+    this.showTimeChip = true,
     this.isEditable = false,
     this.onDateTap,
     this.onTimeTap,
@@ -15,6 +16,9 @@ class EventTimeRow extends StatelessWidget {
   final String label;
   final DateTime date;
   final String? time;
+
+  /// 시간 칩 표시 여부 (시간 설정 off 시 false)
+  final bool showTimeChip;
   final bool isEditable;
   final VoidCallback? onDateTap;
   final VoidCallback? onTimeTap;
@@ -22,9 +26,11 @@ class EventTimeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weekday = _getWeekdayText(date.weekday);
-    final dateText = '${date.year}.${date.month.toString().padLeft(2, '0')}.'
+    final dateText =
+        '${date.year}.${date.month.toString().padLeft(2, '0')}.'
         '${date.day.toString().padLeft(2, '0')} ($weekday)';
-    final timeText = time != null ? _formatTime(time!) : '하루 종일';
+    final timeText =
+        time != null ? _formatTime(time!) : '시간 없음';
 
     return Row(
       children: [
@@ -44,11 +50,16 @@ class EventTimeRow extends StatelessWidget {
             onTap: isEditable ? onDateTap : null,
           ),
         ),
-        const SizedBox(width: 8),
-        _buildChip(
-          text: timeText,
-          onTap: isEditable ? onTimeTap : null,
-        ),
+        if (showTimeChip) ...[
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 110),
+            child: _buildChip(
+              text: timeText,
+              onTap: isEditable ? onTimeTap : null,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -58,7 +69,10 @@ class EventTimeRow extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     final chip = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8),
@@ -93,7 +107,8 @@ class EventTimeRow extends StatelessWidget {
     final minute = parts[1];
 
     final period = hour < 12 ? '오전' : '오후';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final displayHour =
+        hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
 
     return '$period $displayHour:$minute';
   }

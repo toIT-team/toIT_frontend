@@ -95,6 +95,7 @@ class EventFormController extends Notifier<EventFormState> {
       startTime: event.startTime,
       endTime: event.endTime,
       timeSetting: event.timeSetting,
+      folderName: event.folderName,
       color: event.color,
       // TODO: 추가 필드 (location, memo, alarm 등)
     );
@@ -202,6 +203,7 @@ class EventFormController extends Notifier<EventFormState> {
       startTime: state.startTime,
       endTime: state.endTime,
       timeSetting: state.timeSetting,
+      folderName: state.folderName,
       createdAt: now,
       color: state.color ?? const Color(0xFF4285F4),
     );

@@ -328,7 +328,7 @@ class _EventFormLayout extends StatelessWidget {
                     icon: Icons.folder_outlined,
                     iconColor: Colors.blue,
                     child: EventFolderSection(
-                      folderName: formState.folderName ?? '보관함 선택',
+                      folderName: formState.folderName,
                       isEditable: true,
                       onTap: onFolderTap,
                     ),

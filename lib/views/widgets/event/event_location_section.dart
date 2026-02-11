@@ -20,10 +20,10 @@ class EventLocationSection extends StatelessWidget {
     final hasLocation = location != null && location!.isNotEmpty;
 
     return TappableRow(
-      title: hasLocation ? location! : '위치 추가',
+      title: hasLocation ? location! : '위치',
       titleColor: hasLocation ? Colors.black : Colors.grey,
       onTap: onTap,
-      showArrow: true,
+      showArrow: false,
     );
   }
 }

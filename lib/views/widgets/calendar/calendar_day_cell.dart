@@ -78,24 +78,29 @@ class CalendarDayCell extends StatelessWidget {
                 ),
               ),
             ),
-            // 일정 표시 영역
+            // 일정 표시 영역 (오버플로우 클리핑)
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ...eventWidgets,
-                  if (overflowCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, top: 1),
-                      child: Text(
-                        '+$overflowCount',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[600],
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...eventWidgets,
+                    if (overflowCount > 0)
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(left: 4, top: 1),
+                        child: Text(
+                          '+$overflowCount',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

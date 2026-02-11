@@ -1,26 +1,54 @@
 import 'package:flutter/material.dart';
 
-import '../common/tappable_row.dart';
-
 /// 보관함(폴더) 섹션
+///
+/// [isEditable] true (수정 모드):
+///   - 보관함 미선택: "보관함 추가" (회색) + (+) 아이콘
+///   - 보관함 선택됨: 보관함 이름 (검정) + (+) 아이콘
+/// [isEditable] false (일정 상세 모드):
+///   - 보관함 이름 (검정) + (>) 화살표 아이콘
 class EventFolderSection extends StatelessWidget {
   const EventFolderSection({
     super.key,
-    required this.folderName,
+    this.folderName,
     this.isEditable = false,
     this.onTap,
   });
 
-  final String folderName;
+  /// 보관함 이름 (null이면 미선택 상태)
+  final String? folderName;
   final bool isEditable;
   final VoidCallback? onTap;
 
+  /// 보관함이 선택되었는지 여부
+  bool get _hasFolder =>
+      folderName != null && folderName!.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    return TappableRow(
-      title: folderName,
+    return GestureDetector(
       onTap: onTap,
-      showArrow: true,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _hasFolder ? folderName! : '보관함 추가',
+              style: TextStyle(
+                fontSize: 16,
+                color: _hasFolder
+                    ? Colors.black
+                    : Colors.grey,
+              ),
+            ),
+          ),
+          Icon(
+            isEditable ? Icons.add : Icons.chevron_right,
+            color: Colors.grey[400],
+            size: 22,
+          ),
+        ],
+      ),
     );
   }
 }

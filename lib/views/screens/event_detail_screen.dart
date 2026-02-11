@@ -98,31 +98,38 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget build(BuildContext context) {
     final formState = ref.watch(eventFormProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
-      body: _isEditMode
-          ? _EventEditLayout(
-              titleController: _titleController,
-              titleFocusNode: _titleFocusNode,
-              formState: formState,
-              onTitleChanged: _handleTitleChanged,
-              onStartDateTap: () => _showDatePicker(isStart: true),
-              onEndDateTap: () => _showDatePicker(isStart: false),
-              onStartTimeTap: () => _showTimePicker(isStart: true),
-              onEndTimeTap: () => _showTimePicker(isStart: false),
-              onFolderTap: _handleFolderTap,
-              onLocationTap: _handleLocationTap,
-              onAlarmTap: _handleAlarmTap,
-              onMemoTap: _handleMemoTap,
-            )
-          : _EventDetailLayout(
-              title: widget.event.title,
-              sections: _buildSections(),
-            ),
-      bottomNavigationBar: _isEditMode
-          ? _buildEditModeBottomBar()
-          : _buildViewModeBottomBar(),
+    return GestureDetector(
+      onTap: () {
+        // 빈 공간 클릭 시 키보드 내려가기
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: _buildAppBar(),
+        body: _isEditMode
+            ? _EventEditLayout(
+                titleController: _titleController,
+                titleFocusNode: _titleFocusNode,
+                formState: formState,
+                onTitleChanged: _handleTitleChanged,
+                onStartDateTap: () => _showDatePicker(isStart: true),
+                onEndDateTap: () => _showDatePicker(isStart: false),
+                onStartTimeTap: () => _showTimePicker(isStart: true),
+                onEndTimeTap: () => _showTimePicker(isStart: false),
+                onTimeSettingChanged: _handleTimeSettingChanged,
+                onFolderTap: _handleFolderTap,
+                onLocationTap: _handleLocationTap,
+                onAlarmTap: _handleAlarmTap,
+                onMemoTap: _handleMemoTap,
+              )
+            : _EventDetailLayout(
+                title: widget.event.title,
+                sections: _buildSections(),
+              ),
+        bottomNavigationBar: _isEditMode
+            ? null
+            : _buildViewModeBottomBar(),
+      ),
     );
   }
 
@@ -182,7 +189,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         icon: Icons.folder_outlined,
         iconColor: Colors.blue,
         child: EventFolderSection(
-          folderName: widget.event.title,
+          folderName: widget.event.folderName,
           isEditable: false,
           onTap: () {
             // TODO: 보관함으로 이동
@@ -272,72 +279,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  Widget _buildEditModeBottomBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[200]!,
-            width: 1,
-          ),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _exitEditMode,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(color: Colors.grey[300]!),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    '취소',
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _saveChanges,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    '저장',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _handleTitleChanged(String value) {
     ref.read(eventFormProvider.notifier).updateTitle(value);
+  }
+
+  void _handleTimeSettingChanged(bool value) {
+    final controller = ref.read(eventFormProvider.notifier);
+    if (value && ref.read(eventFormProvider).startTime == null) {
+      // 시간 설정을 켤 때 기본 시간 설정
+      controller.updateStartTime('09:00');
+      controller.updateEndTime('10:00');
+    }
+    controller.toggleTimeSetting(value);
   }
 
   Future<void> _showDatePicker({required bool isStart}) async {
@@ -569,6 +522,7 @@ class _EventEditLayout extends StatelessWidget {
     required this.onEndDateTap,
     required this.onStartTimeTap,
     required this.onEndTimeTap,
+    required this.onTimeSettingChanged,
     required this.onFolderTap,
     required this.onLocationTap,
     required this.onAlarmTap,
@@ -583,6 +537,7 @@ class _EventEditLayout extends StatelessWidget {
   final VoidCallback onEndDateTap;
   final VoidCallback onStartTimeTap;
   final VoidCallback onEndTimeTap;
+  final ValueChanged<bool> onTimeSettingChanged;
   final VoidCallback onFolderTap;
   final VoidCallback onLocationTap;
   final VoidCallback onAlarmTap;
@@ -592,111 +547,114 @@ class _EventEditLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 제목 입력 (편집 가능)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: TextField(
-              controller: titleController,
-              focusNode: titleFocusNode,
-              onChanged: onTitleChanged,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: const InputDecoration(
-                hintText: '제목을 입력하세요',
-                hintStyle: TextStyle(
-                  color: Colors.grey,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 제목 입력 (편집 가능)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: TextField(
+                controller: titleController,
+                focusNode: titleFocusNode,
+                onChanged: onTitleChanged,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
-                border: InputBorder.none,
+                decoration: const InputDecoration(
+                  hintText: '제목을 입력하세요',
+                  hintStyle: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  border: InputBorder.none,
+                ),
               ),
             ),
-          ),
-          const AppDivider(),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // 보관함 섹션
-                  EventSection(
-                    icon: Icons.folder_outlined,
-                    iconColor: Colors.blue,
-                    child: EventFolderSection(
-                      folderName: formState.folderName ?? '보관함 선택',
-                      isEditable: true,
-                      onTap: onFolderTap,
-                    ),
-                  ),
-                  const AppDivider(),
-                  // 시간 설정 섹션
-                  EventSection(
-                    icon: Icons.access_time_outlined,
-                    iconColor: Colors.blue,
-                    child: EventTimeSection(
-                      startDate: formState.startDate ?? DateTime.now(),
-                      endDate: formState.endDate ?? DateTime.now(),
-                      startTime:
-                          formState.timeSetting ? formState.startTime : null,
-                      endTime: formState.timeSetting ? formState.endTime : null,
-                      isEditable: true,
-                      onStartDateTap: onStartDateTap,
-                      onStartTimeTap: onStartTimeTap,
-                      onEndDateTap: onEndDateTap,
-                      onEndTimeTap: onEndTimeTap,
-                    ),
-                  ),
-                  const AppDivider(),
-                  // 위치 섹션
-                  EventSection(
-                    icon: Icons.location_on_outlined,
-                    iconColor: Colors.blue,
-                    child: EventLocationSection(
-                      location: formState.location,
-                      isEditable: true,
-                      onTap: onLocationTap,
-                    ),
-                  ),
-                  const AppDivider(),
-                  // 알림 섹션
-                  EventSection(
-                    icon: Icons.notifications_outlined,
-                    iconColor: Colors.amber[700]!,
-                    child: EventAlarmSection(
-                      alarmText: formState.alarmText,
-                      isEditable: true,
-                      onTap: onAlarmTap,
-                    ),
-                  ),
-                  const AppDivider(),
-                  // 메모 섹션
-                  EventSection(
-                    icon: Icons.description_outlined,
-                    iconColor: Colors.blue,
-                    child: EventMemoSection(
-                      memo: formState.memo,
-                      isEditable: true,
-                      onTap: onMemoTap,
-                    ),
-                  ),
-                ],
+            const AppDivider(),
+            // 보관함 섹션
+            EventSection(
+              icon: Icons.folder_outlined,
+              iconColor: Colors.blue,
+              child: EventFolderSection(
+                folderName: formState.folderName,
+                isEditable: true,
+                onTap: onFolderTap,
               ),
             ),
-          ),
-          // 오류 메시지
-          if (formState.errorMessage != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                formState.errorMessage!,
-                style: const TextStyle(color: Colors.red),
+            const AppDivider(),
+            // 시간 설정 섹션
+            EventSection(
+              icon: Icons.access_time_outlined,
+              iconColor: Colors.blue,
+              child: EventTimeSection(
+                startDate:
+                    formState.startDate ?? DateTime.now(),
+                endDate:
+                    formState.endDate ?? DateTime.now(),
+                startTime:
+                    formState.timeSetting
+                        ? formState.startTime
+                        : null,
+                endTime:
+                    formState.timeSetting
+                        ? formState.endTime
+                        : null,
+                isEditable: true,
+                timeSetting: formState.timeSetting,
+                onTimeSettingChanged: onTimeSettingChanged,
+                onStartDateTap: onStartDateTap,
+                onStartTimeTap: onStartTimeTap,
+                onEndDateTap: onEndDateTap,
+                onEndTimeTap: onEndTimeTap,
               ),
             ),
-        ],
+            const AppDivider(),
+            // 위치 섹션
+            EventSection(
+              icon: Icons.location_on_outlined,
+              iconColor: Colors.blue,
+              child: EventLocationSection(
+                location: formState.location,
+                isEditable: true,
+                onTap: onLocationTap,
+              ),
+            ),
+            const AppDivider(),
+            // 알림 섹션
+            EventSection(
+              icon: Icons.notifications_outlined,
+              iconColor: Colors.amber[700]!,
+              child: EventAlarmSection(
+                alarmText: formState.alarmText,
+                isEditable: true,
+                onTap: onAlarmTap,
+              ),
+            ),
+            const AppDivider(),
+            // 메모 섹션
+            EventSection(
+              icon: Icons.description_outlined,
+              iconColor: Colors.blue,
+              child: EventMemoSection(
+                memo: formState.memo,
+                isEditable: true,
+                onTap: onMemoTap,
+              ),
+            ),
+            // 오류 메시지
+            if (formState.errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  formState.errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
