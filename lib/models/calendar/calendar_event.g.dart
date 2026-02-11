@@ -16,6 +16,7 @@ _$CalendarEventImpl _$$CalendarEventImplFromJson(Map<String, dynamic> json) =>
       startTime: json['startTime'] as String?,
       endTime: json['endTime'] as String?,
       timeSetting: json['timeSetting'] as bool? ?? false,
+      folderName: json['folderName'] as String?,
       createdAt: _dateTimeFromJson(json['createdAt'] as String?),
     );
 
@@ -29,5 +30,6 @@ Map<String, dynamic> _$$CalendarEventImplToJson(_$CalendarEventImpl instance) =>
       'startTime': instance.startTime,
       'endTime': instance.endTime,
       'timeSetting': instance.timeSetting,
+      'folderName': instance.folderName,
       'createdAt': _dateTimeToJson(instance.createdAt),
     };
