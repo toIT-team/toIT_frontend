@@ -54,6 +54,9 @@ class _DayEventsBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.5,
       minChildSize: 0.3,
