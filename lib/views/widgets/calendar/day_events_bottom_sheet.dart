@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/calendar/calendar_event.dart';
+import '../../screens/event_form_screen.dart';
+import '../common/add_action_button.dart';
+import '../common/add_context_menu.dart';
 import 'day_event_card.dart';
 
 /// 일정 바텀시트 표시
@@ -21,7 +24,7 @@ void showDayEventsBottomSheet(
 }
 
 /// 일정 바텀시트 위젯
-class DayEventsBottomSheet extends StatelessWidget {
+class DayEventsBottomSheet extends StatefulWidget {
   const DayEventsBottomSheet({
     super.key,
     required this.date,
@@ -32,41 +35,98 @@ class DayEventsBottomSheet extends StatelessWidget {
   final List<CalendarEvent> events;
 
   @override
+  State<DayEventsBottomSheet> createState() =>
+      _DayEventsBottomSheetState();
+}
+
+class _DayEventsBottomSheetState
+    extends State<DayEventsBottomSheet> {
+  /// + 버튼 위치 계산용 GlobalKey
+  final _fabKey = GlobalKey();
+
+  /// FAB 버튼 + SafeArea 하단 여백
+  static const _fabBottomPadding = 16.0;
+  static const _fabSize = 56.0;
+
+  @override
   Widget build(BuildContext context) {
+    final bottomPadding =
+        MediaQuery.of(context).padding.bottom;
+
     return DraggableScrollableSheet(
-      initialChildSize: 0.5,
+      initialChildSize: 0.85,
       minChildSize: 0.3,
       maxChildSize: 0.9,
       builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            children: [
-              // 드래그 핸들 + 날짜 헤더
-              _buildHeader(),
-              // 일정 목록
-              Expanded(
-                child: events.isEmpty
-                    ? _buildEmptyState()
-                    : _buildEventsList(scrollController),
+        return Stack(
+          children: [
+            // 바텀시트 본체
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
               ),
-            ],
-          ),
+              child: Column(
+                children: [
+                  // 드래그 핸들 + 날짜 헤더
+                  _buildHeader(),
+                  // 일정 목록
+                  Expanded(
+                    child: widget.events.isEmpty
+                        ? _buildEmptyState()
+                        : _buildEventsList(
+                            scrollController,
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            // + FAB 버튼 (우측 하단)
+            Positioned(
+              right: 16,
+              bottom: bottomPadding + _fabBottomPadding,
+              child: AddActionButton(
+                key: _fabKey,
+                onTap: _handleFabTap,
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
+  void _handleFabTap() {
+    showAddContextMenu(
+      context: context,
+      anchorKey: _fabKey,
+      items: [
+        ContextMenuItem(
+          icon: Icons.calendar_today_outlined,
+          label: '일정 추가',
+          onTap: _navigateToEventForm,
+        ),
+      ],
+    );
+  }
+
+  void _navigateToEventForm() {
+    // 바텀시트 닫고 일정 추가 화면으로 이동
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const EventFormScreen(),
+      ),
+    );
+  }
+
   /// 드래그 핸들 + 날짜 헤더 (통합)
   Widget _buildHeader() {
-    final weekday = _getWeekdayText(date.weekday);
-    final lunarDate = _getLunarDateText(date);
+    final weekday = _getWeekdayText(widget.date.weekday);
+    final lunarDate = _getLunarDateText(widget.date);
 
     return Column(
       children: [
@@ -88,7 +148,7 @@ class DayEventsBottomSheet extends StatelessWidget {
           child: Row(
             children: [
               Text(
-                '${date.day}($weekday)',
+                '${widget.date.day}($weekday)',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -113,10 +173,10 @@ class DayEventsBottomSheet extends StatelessWidget {
   Widget _buildEventsList(ScrollController scrollController) {
     return ListView.builder(
       controller: scrollController,
-      padding: const EdgeInsets.only(top: 8, bottom: 20),
-      itemCount: events.length,
+      padding: const EdgeInsets.only(top: 8, bottom: 88),
+      itemCount: widget.events.length,
       itemBuilder: (context, index) {
-        return DayEventCard(event: events[index]);
+        return DayEventCard(event: widget.events[index]);
       },
     );
   }
