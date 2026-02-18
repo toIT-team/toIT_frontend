@@ -24,7 +24,7 @@ mixin _$FolderItem {
   /// 폴더 제목
   String get title => throw _privateConstructorUsedError;
 
-  /// 항목 개수 텍스트 (예: "12개")
+  /// 항목 개수 텍스트 (예: "2개")
   String get countText => throw _privateConstructorUsedError;
 
   /// 강조 색상 (JSON 제외)
@@ -164,7 +164,7 @@ class _$FolderItemImpl implements _FolderItem {
   @override
   final String title;
 
-  /// 항목 개수 텍스트 (예: "12개")
+  /// 항목 개수 텍스트 (예: "2개")
   @override
   final String countText;
 
@@ -223,7 +223,7 @@ abstract class _FolderItem implements FolderItem {
   @override
   String get title;
 
-  /// 항목 개수 텍스트 (예: "12개")
+  /// 항목 개수 텍스트 (예: "2개")
   @override
   String get countText;
 

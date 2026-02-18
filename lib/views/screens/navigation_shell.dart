@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../controllers/home_controller.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
@@ -24,6 +25,10 @@ class NavigationShell extends ConsumerWidget {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: currentIndex,
         onTap: (index) {
+          // 홈 탭 진입 시 데이터 새로고침
+          if (index == 0) {
+            ref.read(homeProvider.notifier).refresh();
+          }
           ref.read(currentTabIndexProvider.notifier).state = index;
         },
       ),

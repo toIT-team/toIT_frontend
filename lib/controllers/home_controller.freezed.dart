@@ -38,6 +38,9 @@ mixin _$HomeState {
   /// 로딩 상태
   bool get isLoading => throw _privateConstructorUsedError;
 
+  /// 에러 메시지
+  String? get errorMessage => throw _privateConstructorUsedError;
+
   /// Create a copy of HomeState
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -58,6 +61,7 @@ abstract class $HomeStateCopyWith<$Res> {
     List<String> filters,
     int selectedFilterIndex,
     bool isLoading,
+    String? errorMessage,
   });
 }
 
@@ -83,6 +87,7 @@ class _$HomeStateCopyWithImpl<$Res, $Val extends HomeState>
     Object? filters = null,
     Object? selectedFilterIndex = null,
     Object? isLoading = null,
+    Object? errorMessage = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -114,6 +119,10 @@ class _$HomeStateCopyWithImpl<$Res, $Val extends HomeState>
                 ? _value.isLoading
                 : isLoading // ignore: cast_nullable_to_non_nullable
                       as bool,
+            errorMessage: freezed == errorMessage
+                ? _value.errorMessage
+                : errorMessage // ignore: cast_nullable_to_non_nullable
+                      as String?,
           )
           as $Val,
     );
@@ -137,6 +146,7 @@ abstract class _$$HomeStateImplCopyWith<$Res>
     List<String> filters,
     int selectedFilterIndex,
     bool isLoading,
+    String? errorMessage,
   });
 }
 
@@ -161,6 +171,7 @@ class __$$HomeStateImplCopyWithImpl<$Res>
     Object? filters = null,
     Object? selectedFilterIndex = null,
     Object? isLoading = null,
+    Object? errorMessage = freezed,
   }) {
     return _then(
       _$HomeStateImpl(
@@ -192,6 +203,10 @@ class __$$HomeStateImplCopyWithImpl<$Res>
             ? _value.isLoading
             : isLoading // ignore: cast_nullable_to_non_nullable
                   as bool,
+        errorMessage: freezed == errorMessage
+            ? _value.errorMessage
+            : errorMessage // ignore: cast_nullable_to_non_nullable
+                  as String?,
       ),
     );
   }
@@ -207,7 +222,8 @@ class _$HomeStateImpl implements _HomeState {
     final List<FolderItem> folders = const [],
     final List<String> filters = const [],
     this.selectedFilterIndex = 0,
-    this.isLoading = false,
+    this.isLoading = true,
+    this.errorMessage,
   }) : _schedules = schedules,
        _folders = folders,
        _filters = filters;
@@ -268,9 +284,13 @@ class _$HomeStateImpl implements _HomeState {
   @JsonKey()
   final bool isLoading;
 
+  /// 에러 메시지
+  @override
+  final String? errorMessage;
+
   @override
   String toString() {
-    return 'HomeState(userName: $userName, todayScheduleCount: $todayScheduleCount, schedules: $schedules, folders: $folders, filters: $filters, selectedFilterIndex: $selectedFilterIndex, isLoading: $isLoading)';
+    return 'HomeState(userName: $userName, todayScheduleCount: $todayScheduleCount, schedules: $schedules, folders: $folders, filters: $filters, selectedFilterIndex: $selectedFilterIndex, isLoading: $isLoading, errorMessage: $errorMessage)';
   }
 
   @override
@@ -291,7 +311,9 @@ class _$HomeStateImpl implements _HomeState {
             (identical(other.selectedFilterIndex, selectedFilterIndex) ||
                 other.selectedFilterIndex == selectedFilterIndex) &&
             (identical(other.isLoading, isLoading) ||
-                other.isLoading == isLoading));
+                other.isLoading == isLoading) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage));
   }
 
   @override
@@ -304,6 +326,7 @@ class _$HomeStateImpl implements _HomeState {
     const DeepCollectionEquality().hash(_filters),
     selectedFilterIndex,
     isLoading,
+    errorMessage,
   );
 
   /// Create a copy of HomeState
@@ -324,6 +347,7 @@ abstract class _HomeState implements HomeState {
     final List<String> filters,
     final int selectedFilterIndex,
     final bool isLoading,
+    final String? errorMessage,
   }) = _$HomeStateImpl;
 
   /// 사용자 이름
@@ -353,6 +377,10 @@ abstract class _HomeState implements HomeState {
   /// 로딩 상태
   @override
   bool get isLoading;
+
+  /// 에러 메시지
+  @override
+  String? get errorMessage;
 
   /// Create a copy of HomeState
   /// with the given fields replaced by the non-null parameter values.

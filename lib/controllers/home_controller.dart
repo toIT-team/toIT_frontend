@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-
 import '../core/constants/app_colors.dart';
+import '../models/dto/home_response_dto.dart';
 import '../models/home/folder_item.dart';
 import '../models/home/schedule.dart';
+import '../repositories/home_repository.dart';
 
 part 'home_controller.freezed.dart';
 
@@ -31,114 +32,140 @@ class HomeState with _$HomeState {
     @Default(0) int selectedFilterIndex,
 
     /// 로딩 상태
-    @Default(false) bool isLoading,
+    @Default(true) bool isLoading,
+
+    /// 에러 메시지
+    String? errorMessage,
   }) = _HomeState;
+}
+
+/// 시간 문자열 포맷 변환 ("21:00:00" → "오후 9:00")
+String _formatTime(String? timeStr) {
+  if (timeStr == null || timeStr.isEmpty) return '';
+  final parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+
+  var hour = int.tryParse(parts[0]) ?? 0;
+  final minute = parts[1];
+  final period = hour < 12 ? '오전' : '오후';
+
+  if (hour > 12) hour -= 12;
+  if (hour == 0) hour = 12;
+
+  return '$period $hour:$minute';
+}
+
+/// 폴더 색상 매핑
+Color _mapFolderColor(String colorStr, int index) {
+  // TODO: 서버 색상 값 매핑 규칙 정의 후 수정
+  const colors = [
+    AppColors.folderBlue,
+    AppColors.folderYellow,
+    AppColors.folderGreen,
+    AppColors.folderGray,
+    AppColors.folderPink,
+    AppColors.folderPurple,
+    AppColors.folderOrange,
+    AppColors.folderRed,
+    AppColors.folderCyan,
+    AppColors.folderBrown,
+  ];
+  return colors[index % colors.length];
+}
+
+/// 일정 색상 매핑
+Color _mapScheduleColor(String colorStr, int index) {
+  const colors = [
+    AppColors.folderYellow,
+    AppColors.secondary,
+    AppColors.folderGreen,
+    AppColors.folderPink,
+  ];
+  return colors[index % colors.length];
+}
+
+/// DTO → Domain 변환: ScheduleDto → Schedule
+Schedule _mapSchedule(ScheduleDto dto, int index) {
+  final startFormatted = _formatTime(dto.startTime);
+  final endFormatted = _formatTime(dto.endTime);
+  final timeRange = startFormatted.isNotEmpty && endFormatted.isNotEmpty
+      ? '$startFormatted - $endFormatted'
+      : '하루종일';
+
+  return Schedule(
+    title: dto.title,
+    timeRangeText: timeRange,
+    scheduleTime: '', // TODO: 서버에서 남은시간 계산 또는 클라에서 계산
+    accentColor: _mapScheduleColor(dto.appColor, index),
+  );
+}
+
+/// DTO → Domain 변환: FolderDto → FolderItem
+FolderItem _mapFolder(FolderDto dto, int index) {
+  return FolderItem(
+    title: dto.name,
+    countText: '', // TODO: 폴더 내 항목 수 API 추가 시 반영
+    accentColor: _mapFolderColor(dto.color, index),
+  );
 }
 
 /// 홈 화면 컨트롤러 (Notifier)
 class HomeController extends Notifier<HomeState> {
   @override
   HomeState build() {
-    // 초기 데이터를 동기적으로 설정 (캘린더와 동일한 패턴)
-    return HomeState(
-      userName: '리나',
-      todayScheduleCount: 2,
-      schedules: [
-        Schedule(
-          title: '시각디자인 설명회',
-          timeRangeText: '오후10:00 - 오후11:00',
-          scheduleTime: '30분 전',
-          accentColor: AppColors.folderYellow,
-        ),
-        Schedule(
-          title: '임상실험학',
-          timeRangeText: '하루종일',
-          scheduleTime: '오늘 마감',
-          accentColor: AppColors.secondary,
-        ),
-      ],
-      folders: [
-        FolderItem(
-          title: '공부',
-          countText: '12개',
-          accentColor: AppColors.folderBlue,
-        ),
-        FolderItem(
-          title: '디자인',
-          countText: '8개',
-          accentColor: AppColors.folderYellow,
-        ),
-        FolderItem(
-          title: '콘서트',
-          countText: '1개',
-          accentColor: AppColors.folderGreen,
-        ),
-        FolderItem(
-          title: '공부',
-          countText: '1개',
-          accentColor: AppColors.folderGray,
-        ),
-      ],
-      filters: const ['전체', '즐겨찾기', '공부', '디자인', '개발'],
-    );
+    // 초기 데이터 로드 시작
+    _loadHomeData();
+    return const HomeState(isLoading: true);
   }
 
-  /// 데이터 새로고침 (API 연동 시 사용)
+  /// 홈 화면 데이터 로드 (API)
+  Future<void> _loadHomeData() async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final now = DateTime.now();
+      final today =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final dto = await repository.fetchHomeData(todayDate: today);
+
+      // DTO → Domain 변환
+      final schedules = dto.schedules
+          .asMap()
+          .entries
+          .map((e) => _mapSchedule(e.value, e.key))
+          .toList();
+
+      final folders = dto.folders
+          .asMap()
+          .entries
+          .map((e) => _mapFolder(e.value, e.key))
+          .toList();
+
+      state = state.copyWith(
+        userName: '사용자',
+        todayScheduleCount: schedules.length,
+        schedules: schedules,
+        folders: folders,
+        filters: const ['전체', '즐겨찾기'],
+        isLoading: false,
+        errorMessage: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '데이터를 불러오지 못했습니다: $e',
+      );
+    }
+  }
+
+  /// 데이터 새로고침
   Future<void> refresh() async {
-    state = state.copyWith(isLoading: true);
-
-    // TODO: 실제 API 연동 시 datasource/repository 사용
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    // 데이터 다시 로드
-    state = state.copyWith(
-      userName: '리나',
-      todayScheduleCount: 2,
-      schedules: [
-        Schedule(
-          title: '시각디자인 설명회',
-          timeRangeText: '오후10:00 - 오후11:00',
-          scheduleTime: '30분 전',
-          accentColor: AppColors.folderYellow,
-        ),
-        Schedule(
-          title: '임상실험학',
-          timeRangeText: '하루종일',
-          scheduleTime: '오늘 마감',
-          accentColor: AppColors.secondary,
-        ),
-      ],
-      folders: [
-        FolderItem(
-          title: '공부',
-          countText: '12개',
-          accentColor: AppColors.folderBlue,
-        ),
-        FolderItem(
-          title: '디자인',
-          countText: '8개',
-          accentColor: AppColors.folderYellow,
-        ),
-        FolderItem(
-          title: '콘서트',
-          countText: '1개',
-          accentColor: AppColors.folderGreen,
-        ),
-        FolderItem(
-          title: '공부',
-          countText: '1개',
-          accentColor: AppColors.folderGray,
-        ),
-      ],
-      filters: const ['전체', '즐겨찾기', '공부', '디자인', '개발'],
-      isLoading: false,
-    );
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    await _loadHomeData();
   }
 
   /// 필터 선택
   void selectFilter(int index) {
     state = state.copyWith(selectedFilterIndex: index);
-    // TODO: 필터에 따른 폴더 목록 필터링 로직 추가
   }
 }
 
