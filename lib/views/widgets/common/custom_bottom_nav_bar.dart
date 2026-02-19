@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import 'add_popup_menu.dart';
 
 /// 커스텀 하단 네비게이션 바
-class CustomBottomNavBar extends StatelessWidget {
+class CustomBottomNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final ValueChanged<int>? onAddMenuTap;
 
   const CustomBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.onAddMenuTap,
   });
+
+  @override
+  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+}
+
+class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+  final _addButtonKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +29,6 @@ class CustomBottomNavBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          // 네비게이션 바 컨테이너
           Expanded(
             child: Container(
               height: 52,
@@ -50,29 +59,35 @@ class CustomBottomNavBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _NavItem(
-                    icon: _HomeIcon(isSelected: currentIndex == 0),
-                    isSelected: currentIndex == 0,
-                    onTap: () => onTap(0),
+                    icon: _HomeIcon(isSelected: widget.currentIndex == 0),
+                    isSelected: widget.currentIndex == 0,
+                    onTap: () => widget.onTap(0),
                   ),
                   _NavItem(
-                    icon: _CalendarIcon(isSelected: currentIndex == 1),
-                    isSelected: currentIndex == 1,
-                    onTap: () => onTap(1),
+                    icon: _CalendarIcon(isSelected: widget.currentIndex == 1),
+                    isSelected: widget.currentIndex == 1,
+                    onTap: () => widget.onTap(1),
                   ),
                   _NavItem(
-                    icon: _ChatIcon(isSelected: currentIndex == 2),
-                    isSelected: currentIndex == 2,
-                    onTap: () => onTap(2),
+                    icon: _ChatIcon(isSelected: widget.currentIndex == 2),
+                    isSelected: widget.currentIndex == 2,
+                    onTap: () => widget.onTap(2),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(width: 24),
-          // 플로팅 추가 버튼
           _AddButton(
-            onTap: () {
-              // TODO: 일정 추가 기능
+            key: _addButtonKey,
+            onTap: () async {
+              final selected = await showAddPopupMenu(
+                context,
+                anchorKey: _addButtonKey,
+              );
+              if (selected != null) {
+                widget.onAddMenuTap?.call(selected);
+              }
             },
           ),
         ],
@@ -107,7 +122,7 @@ class _NavItem extends StatelessWidget {
 class _AddButton extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _AddButton({required this.onTap});
+  const _AddButton({super.key, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +132,7 @@ class _AddButton extends StatelessWidget {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: const Color(0xFF379BFB),
+          color: AppColors.blue500,
           borderRadius: BorderRadius.circular(99),
           boxShadow: [
             BoxShadow(
@@ -143,7 +158,7 @@ class _HomeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? const Color(0xFF379BFB) : AppColors.gray1;
+    final color = isSelected ? AppColors.blue500 : AppColors.gray600;
     return SizedBox(
       width: 28,
       height: 28,
@@ -202,7 +217,7 @@ class _CalendarIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? const Color(0xFF379BFB) : AppColors.gray1;
+    final color = isSelected ? AppColors.blue500 : AppColors.gray600;
     return SizedBox(
       width: 28,
       height: 28,
@@ -271,7 +286,7 @@ class _ChatIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? const Color(0xFF379BFB) : AppColors.gray1;
+    final color = isSelected ? AppColors.blue500 : AppColors.gray600;
     return SizedBox(
       width: 28,
       height: 28,

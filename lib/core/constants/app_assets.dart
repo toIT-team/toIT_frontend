@@ -11,4 +11,12 @@ class AppAssets {
   static const String folderIcon = 'assets/icons/FolderIcon.png';
   static const String downArrowIcon = 'assets/icons/DownArrowIcon.png';
   static const String deleteIcon = 'assets/icons/DeleteIcon.png';
+  static const String addFolderIcon = 'assets/icons/AddFolderIcon.png';
+
+  // SVG Icons (팝업 메뉴용)
+  static const String linkIcon = 'assets/icons/LinkIcon.svg';
+  static const String noteIcon = 'assets/icons/NoteIcon.svg';
+  static const String fileIcon = 'assets/icons/FileIcon.svg';
+  static const String imageIcon = 'assets/icons/ImageIcon.svg';
+  static const String scheduleIcon = 'assets/icons/ScheduleIcon.svg';
 }

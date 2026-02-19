@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../models/home/folder_item.dart';
+import 'add_folder_bottom_sheet.dart';
 import 'folder_tile.dart';
 
 /// 폴더 목록 영역
@@ -30,7 +31,7 @@ class FolderSection extends StatelessWidget {
                 Text(
                   '폴더',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColors.gray900,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -42,7 +43,7 @@ class FolderSection extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '${folders.length}개의 폴더',
+                  '${folders.length}개의 보관함',
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 16,
@@ -55,7 +56,7 @@ class FolderSection extends StatelessWidget {
                     const Text(
                       '최신순',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColors.gray900,
                         fontSize: 16,
                         fontWeight: FontWeight.w400,
                       ),
@@ -66,6 +67,21 @@ class FolderSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Image.asset(AppAssets.sortingIcon, width: 24, height: 24),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final result = await showAddFolderBottomSheet(context);
+                    if (result != null) {
+                      debugPrint('보관함 생성 결과: $result');
+                      // TODO: API 연결 시 여기서 폴더 생성 요청
+                    }
+                  },
+                  child: Image.asset(
+                    AppAssets.addFolderIcon,
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
               ],
             ),
           ],
@@ -123,8 +139,8 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = const Color(0xFF2E9EFA);
-    final unselectedText = const Color(0xFF80839C);
+    final selectedColor = AppColors.neutral200;
+    final unselectedText = AppColors.gray600;
     final unselectedBorder = unselectedText.withOpacity(0.35);
     return Container(
       padding: const EdgeInsets.symmetric(

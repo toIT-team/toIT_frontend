@@ -58,7 +58,7 @@ class ScheduleCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: AppColors.textPrimary,
+                          color: AppColors.gray900,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                         ),

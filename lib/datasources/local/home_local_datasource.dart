@@ -17,7 +17,7 @@ class HomeLocalDatasource {
           title: '시각디자인 설명회',
           timeRangeText: '오후10:00 - 오후11:00',
           scheduleTime: '30분 전',
-          accentColor: AppColors.folderYellow,
+          accentColor: AppColors.yellow200,
         ),
         Schedule(
           title: '임상실험학',
@@ -30,22 +30,22 @@ class HomeLocalDatasource {
         FolderItem(
           title: '공부',
           countText: '12개',
-          accentColor: AppColors.folderBlue,
+          accentColor: AppColors.blue300,
         ),
         FolderItem(
           title: '디자인',
           countText: '8개',
-          accentColor: AppColors.folderYellow,
+          accentColor: AppColors.yellow200,
         ),
         FolderItem(
           title: '콘서트',
           countText: '1개',
-          accentColor: AppColors.folderGreen,
+          accentColor: AppColors.green200,
         ),
         FolderItem(
           title: '공부',
           countText: '1개',
-          accentColor: AppColors.folderGray,
+          accentColor: AppColors.gray100,
         ),
       ],
       filters: const ['전체', '즐겨찾기', '공부', '디자인', '개발'],

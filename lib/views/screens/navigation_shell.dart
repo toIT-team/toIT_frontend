@@ -5,6 +5,7 @@ import '../../controllers/home_controller.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
+import 'save_link_screen.dart';
 
 /// 현재 선택된 탭 인덱스 Provider
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -25,11 +26,17 @@ class NavigationShell extends ConsumerWidget {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: currentIndex,
         onTap: (index) {
-          // 홈 탭 진입 시 데이터 새로고침
           if (index == 0) {
             ref.read(homeProvider.notifier).refresh();
           }
           ref.read(currentTabIndexProvider.notifier).state = index;
+        },
+        onAddMenuTap: (menuIndex) {
+          if (menuIndex == 0) {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SaveLinkScreen()));
+          }
         },
       ),
       extendBody: true,

@@ -91,7 +91,7 @@ class FolderTile extends StatelessWidget {
                       Text(
                         title,
                         style: const TextStyle(
-                          color: AppColors.textPrimary,
+                          color: AppColors.gray900,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.25,

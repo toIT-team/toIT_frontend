@@ -31,7 +31,7 @@ class GreetingSection extends StatelessWidget {
               child: Text(
                 '$userName님 오늘 일정이\n$todayScheduleCount개 있습니다 ›',
                 style: const TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColors.gray900,
                   fontSize: 24,
                   height: 1.5,
                   fontWeight: FontWeight.bold,

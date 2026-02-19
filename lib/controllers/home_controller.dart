@@ -58,28 +58,17 @@ String _formatTime(String? timeStr) {
 /// 폴더 색상 매핑
 Color _mapFolderColor(String colorStr, int index) {
   // TODO: 서버 색상 값 매핑 규칙 정의 후 수정
-  const colors = [
-    AppColors.folderBlue,
-    AppColors.folderYellow,
-    AppColors.folderGreen,
-    AppColors.folderGray,
-    AppColors.folderPink,
-    AppColors.folderPurple,
-    AppColors.folderOrange,
-    AppColors.folderRed,
-    AppColors.folderCyan,
-    AppColors.folderBrown,
-  ];
+  const colors = AppColors.folderColors;
   return colors[index % colors.length];
 }
 
 /// 일정 색상 매핑
 Color _mapScheduleColor(String colorStr, int index) {
   const colors = [
-    AppColors.folderYellow,
+    AppColors.yellow200,
     AppColors.secondary,
-    AppColors.folderGreen,
-    AppColors.folderPink,
+    AppColors.green200,
+    AppColors.pink100,
   ];
   return colors[index % colors.length];
 }

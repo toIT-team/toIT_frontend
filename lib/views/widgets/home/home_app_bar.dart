@@ -17,12 +17,12 @@ class HomeAppBar extends StatelessWidget {
       titleSpacing: AppSpacing.md,
       title: Row(
         children: [
-          const Icon(Icons.menu, color: AppColors.textPrimary),
+          const Icon(Icons.menu, color: AppColors.gray900),
           const SizedBox(width: AppSpacing.sm),
           const Text(
             '마이',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColors.gray900,
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
