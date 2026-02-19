@@ -7,6 +7,7 @@ import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'save_link_screen.dart';
 import 'save_note_screen.dart';
+import 'save_file_screen.dart';
 
 /// 현재 선택된 탭 인덱스 Provider
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -42,6 +43,10 @@ class NavigationShell extends ConsumerWidget {
               Navigator.of(
                 context,
               ).push(MaterialPageRoute(builder: (_) => const SaveNoteScreen()));
+            case 2:
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SaveFileScreen()));
           }
         },
       ),
