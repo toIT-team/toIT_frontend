@@ -6,6 +6,7 @@ import '../widgets/common/custom_bottom_nav_bar.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'save_link_screen.dart';
+import 'save_note_screen.dart';
 
 /// 현재 선택된 탭 인덱스 Provider
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -32,10 +33,15 @@ class NavigationShell extends ConsumerWidget {
           ref.read(currentTabIndexProvider.notifier).state = index;
         },
         onAddMenuTap: (menuIndex) {
-          if (menuIndex == 0) {
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const SaveLinkScreen()));
+          switch (menuIndex) {
+            case 0:
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SaveLinkScreen()));
+            case 1:
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SaveNoteScreen()));
           }
         },
       ),
