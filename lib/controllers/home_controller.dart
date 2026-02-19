@@ -55,15 +55,6 @@ String _formatTime(String? timeStr) {
   return '$period $hour:$minute';
 }
 
-/// 폴더 색상 매핑 (토큰명/hex 우선, 실패 시 인덱스 기반)
-Color _mapFolderColor(String colorStr, int index) {
-  if (colorStr.isNotEmpty) {
-    return AppColors.fromColorString(colorStr);
-  }
-  const colors = AppColors.folderColors;
-  return colors[index % colors.length];
-}
-
 /// 일정 색상 매핑
 Color _mapScheduleColor(String colorStr, int index) {
   const colors = [
@@ -91,12 +82,29 @@ Schedule _mapSchedule(ScheduleDto dto, int index) {
   );
 }
 
+/// 색상 문자열 → colorIndex 변환
+int _resolveColorIndex(String colorStr, int fallback) {
+  if (colorStr.isEmpty) return fallback;
+  final tokenIdx = AppColors.folderColorTokens.indexOf(colorStr);
+  if (tokenIdx != -1) return tokenIdx;
+  final color = AppColors.fromColorString(colorStr);
+  final colorIdx = AppColors.folderColors.indexOf(color);
+  return colorIdx != -1 ? colorIdx : fallback;
+}
+
 /// DTO → Domain 변환: FolderDto → FolderItem
 FolderItem _mapFolder(FolderDto dto, int index) {
+  final ci = _resolveColorIndex(
+    dto.color,
+    index % AppColors.folderColors.length,
+  );
   return FolderItem(
+    foldersId: dto.foldersId,
     title: dto.name,
-    countText: '', // TODO: 폴더 내 항목 수 API 추가 시 반영
-    accentColor: _mapFolderColor(dto.color, index),
+    memo: dto.memo,
+    countText: '',
+    colorIndex: ci,
+    accentColor: AppColors.folderColors[ci],
   );
 }
 
@@ -152,6 +160,45 @@ class HomeController extends Notifier<HomeState> {
   Future<void> refresh() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     await _loadHomeData();
+  }
+
+  /// 보관함 삭제 (API 호출 → 목록 새로고침)
+  Future<bool> deleteFolder({required int foldersId}) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteFolder(foldersId: foldersId);
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: '보관함 삭제에 실패했습니다: $e');
+      return false;
+    }
+  }
+
+  /// 보관함 수정 (API 호출 → 목록 새로고침)
+  Future<bool> updateFolder({
+    required int foldersId,
+    required String name,
+    required String memo,
+    required int colorIndex,
+  }) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final colorToken = AppColors.folderColorTokens[colorIndex];
+
+      await repository.updateFolder(
+        foldersId: foldersId,
+        name: name,
+        memo: memo,
+        color: colorToken,
+      );
+
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: '보관함 수정에 실패했습니다: $e');
+      return false;
+    }
   }
 
   /// 보관함 생성 (API 호출 → 목록 새로고침)

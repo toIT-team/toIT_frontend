@@ -40,7 +40,7 @@ _$FolderDtoImpl _$$FolderDtoImplFromJson(Map<String, dynamic> json) =>
     _$FolderDtoImpl(
       foldersId: (json['foldersId'] as num).toInt(),
       usersId: (json['usersId'] as num).toInt(),
-      name: json['name'] as String,
+      name: json['name'] as String? ?? '',
       memo: json['memo'] as String? ?? '',
       isDefault: json['isDefault'] as bool? ?? false,
       color: json['color'] as String? ?? '',
@@ -65,7 +65,7 @@ Map<String, dynamic> _$$FolderDtoImplToJson(_$FolderDtoImpl instance) =>
 _$FolderViewDtoImpl _$$FolderViewDtoImplFromJson(Map<String, dynamic> json) =>
     _$FolderViewDtoImpl(
       folderId: (json['folderId'] as num).toInt(),
-      name: json['name'] as String,
+      name: json['name'] as String? ?? '',
       lastViewedAt: json['lastViewedAt'] as String?,
     );
 
@@ -79,7 +79,7 @@ Map<String, dynamic> _$$FolderViewDtoImplToJson(_$FolderViewDtoImpl instance) =>
 _$ScheduleDtoImpl _$$ScheduleDtoImplFromJson(Map<String, dynamic> json) =>
     _$ScheduleDtoImpl(
       schedulesId: (json['schedulesId'] as num).toInt(),
-      title: json['title'] as String,
+      title: json['title'] as String? ?? '',
       startTime: json['startTime'] as String?,
       endTime: json['endTime'] as String?,
       appColor: json['appColor'] as String? ?? '',

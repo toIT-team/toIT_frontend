@@ -37,4 +37,37 @@ class HomeRemoteDatasource {
 
     return FolderDto.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// 보관함(폴더) 삭제 (Soft Delete)
+  Future<void> deleteFolder({
+    required int usersId,
+    required int foldersId,
+  }) async {
+    await _apiClient.delete(
+      ApiConstants.foldersEndpoint,
+      data: {'usersId': usersId, 'foldersId': foldersId},
+    );
+  }
+
+  /// 보관함(폴더) 수정
+  Future<void> updateFolder({
+    required int usersId,
+    required int foldersId,
+    required String name,
+    required String memo,
+    required String color,
+    int iconIdx = 0,
+  }) async {
+    await _apiClient.patch(
+      ApiConstants.foldersEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersId': foldersId,
+        'name': name,
+        'memo': memo,
+        'color': color,
+        'iconIdx': iconIdx,
+      },
+    );
+  }
 }

@@ -111,9 +111,12 @@ class FolderSection extends ConsumerWidget {
           children: [
             for (final f in folders)
               FolderTile(
+                foldersId: f.foldersId,
                 title: f.title,
+                memo: f.memo,
                 countText: f.countText,
                 accentColor: f.accentColor,
+                colorIndex: f.colorIndex,
               ),
           ],
         ),

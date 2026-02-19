@@ -23,10 +23,7 @@ class ApiClient {
 
     // 로깅 인터셉터 (디버그용)
     _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-      ),
+      LogInterceptor(requestBody: true, responseBody: true),
     );
   }
 
@@ -44,11 +41,7 @@ class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
   }) async {
-    return _dio.post<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-    );
+    return _dio.post<T>(path, data: data, queryParameters: queryParameters);
   }
 
   /// PUT 요청
@@ -57,19 +50,25 @@ class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
   }) async {
-    return _dio.put<T>(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-    );
+    return _dio.put<T>(path, data: data, queryParameters: queryParameters);
+  }
+
+  /// PATCH 요청
+  Future<Response<T>> patch<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return _dio.patch<T>(path, data: data, queryParameters: queryParameters);
   }
 
   /// DELETE 요청
   Future<Response<T>> delete<T>(
     String path, {
+    dynamic data,
     Map<String, dynamic>? queryParameters,
   }) async {
-    return _dio.delete<T>(path, queryParameters: queryParameters);
+    return _dio.delete<T>(path, data: data, queryParameters: queryParameters);
   }
 }
 

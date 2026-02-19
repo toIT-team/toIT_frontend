@@ -21,11 +21,20 @@ FolderItem _$FolderItemFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$FolderItem {
+  /// 폴더 ID
+  int get foldersId => throw _privateConstructorUsedError;
+
   /// 폴더 제목
   String get title => throw _privateConstructorUsedError;
 
+  /// 메모
+  String get memo => throw _privateConstructorUsedError;
+
   /// 항목 개수 텍스트 (예: "2개")
   String get countText => throw _privateConstructorUsedError;
+
+  /// 색상 인덱스 (folderColors 기준)
+  int get colorIndex => throw _privateConstructorUsedError;
 
   /// 강조 색상 (JSON 제외)
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -49,8 +58,11 @@ abstract class $FolderItemCopyWith<$Res> {
   ) = _$FolderItemCopyWithImpl<$Res, FolderItem>;
   @useResult
   $Res call({
+    int foldersId,
     String title,
+    String memo,
     String countText,
+    int colorIndex,
     @JsonKey(includeFromJson: false, includeToJson: false) Color accentColor,
   });
 }
@@ -70,20 +82,35 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? foldersId = null,
     Object? title = null,
+    Object? memo = null,
     Object? countText = null,
+    Object? colorIndex = null,
     Object? accentColor = null,
   }) {
     return _then(
       _value.copyWith(
+            foldersId: null == foldersId
+                ? _value.foldersId
+                : foldersId // ignore: cast_nullable_to_non_nullable
+                      as int,
             title: null == title
                 ? _value.title
                 : title // ignore: cast_nullable_to_non_nullable
+                      as String,
+            memo: null == memo
+                ? _value.memo
+                : memo // ignore: cast_nullable_to_non_nullable
                       as String,
             countText: null == countText
                 ? _value.countText
                 : countText // ignore: cast_nullable_to_non_nullable
                       as String,
+            colorIndex: null == colorIndex
+                ? _value.colorIndex
+                : colorIndex // ignore: cast_nullable_to_non_nullable
+                      as int,
             accentColor: null == accentColor
                 ? _value.accentColor
                 : accentColor // ignore: cast_nullable_to_non_nullable
@@ -104,8 +131,11 @@ abstract class _$$FolderItemImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
+    int foldersId,
     String title,
+    String memo,
     String countText,
+    int colorIndex,
     @JsonKey(includeFromJson: false, includeToJson: false) Color accentColor,
   });
 }
@@ -124,20 +154,35 @@ class __$$FolderItemImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? foldersId = null,
     Object? title = null,
+    Object? memo = null,
     Object? countText = null,
+    Object? colorIndex = null,
     Object? accentColor = null,
   }) {
     return _then(
       _$FolderItemImpl(
+        foldersId: null == foldersId
+            ? _value.foldersId
+            : foldersId // ignore: cast_nullable_to_non_nullable
+                  as int,
         title: null == title
             ? _value.title
             : title // ignore: cast_nullable_to_non_nullable
+                  as String,
+        memo: null == memo
+            ? _value.memo
+            : memo // ignore: cast_nullable_to_non_nullable
                   as String,
         countText: null == countText
             ? _value.countText
             : countText // ignore: cast_nullable_to_non_nullable
                   as String,
+        colorIndex: null == colorIndex
+            ? _value.colorIndex
+            : colorIndex // ignore: cast_nullable_to_non_nullable
+                  as int,
         accentColor: null == accentColor
             ? _value.accentColor
             : accentColor // ignore: cast_nullable_to_non_nullable
@@ -151,8 +196,11 @@ class __$$FolderItemImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$FolderItemImpl implements _FolderItem {
   const _$FolderItemImpl({
+    this.foldersId = 0,
     required this.title,
+    this.memo = '',
     required this.countText,
+    this.colorIndex = 5,
     @JsonKey(includeFromJson: false, includeToJson: false)
     this.accentColor = const Color(0xFFA2CAFF),
   });
@@ -160,13 +208,28 @@ class _$FolderItemImpl implements _FolderItem {
   factory _$FolderItemImpl.fromJson(Map<String, dynamic> json) =>
       _$$FolderItemImplFromJson(json);
 
+  /// 폴더 ID
+  @override
+  @JsonKey()
+  final int foldersId;
+
   /// 폴더 제목
   @override
   final String title;
 
+  /// 메모
+  @override
+  @JsonKey()
+  final String memo;
+
   /// 항목 개수 텍스트 (예: "2개")
   @override
   final String countText;
+
+  /// 색상 인덱스 (folderColors 기준)
+  @override
+  @JsonKey()
+  final int colorIndex;
 
   /// 강조 색상 (JSON 제외)
   @override
@@ -175,7 +238,7 @@ class _$FolderItemImpl implements _FolderItem {
 
   @override
   String toString() {
-    return 'FolderItem(title: $title, countText: $countText, accentColor: $accentColor)';
+    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, accentColor: $accentColor)';
   }
 
   @override
@@ -183,16 +246,29 @@ class _$FolderItemImpl implements _FolderItem {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$FolderItemImpl &&
+            (identical(other.foldersId, foldersId) ||
+                other.foldersId == foldersId) &&
             (identical(other.title, title) || other.title == title) &&
+            (identical(other.memo, memo) || other.memo == memo) &&
             (identical(other.countText, countText) ||
                 other.countText == countText) &&
+            (identical(other.colorIndex, colorIndex) ||
+                other.colorIndex == colorIndex) &&
             (identical(other.accentColor, accentColor) ||
                 other.accentColor == accentColor));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, title, countText, accentColor);
+  int get hashCode => Object.hash(
+    runtimeType,
+    foldersId,
+    title,
+    memo,
+    countText,
+    colorIndex,
+    accentColor,
+  );
 
   /// Create a copy of FolderItem
   /// with the given fields replaced by the non-null parameter values.
@@ -210,8 +286,11 @@ class _$FolderItemImpl implements _FolderItem {
 
 abstract class _FolderItem implements FolderItem {
   const factory _FolderItem({
+    final int foldersId,
     required final String title,
+    final String memo,
     required final String countText,
+    final int colorIndex,
     @JsonKey(includeFromJson: false, includeToJson: false)
     final Color accentColor,
   }) = _$FolderItemImpl;
@@ -219,13 +298,25 @@ abstract class _FolderItem implements FolderItem {
   factory _FolderItem.fromJson(Map<String, dynamic> json) =
       _$FolderItemImpl.fromJson;
 
+  /// 폴더 ID
+  @override
+  int get foldersId;
+
   /// 폴더 제목
   @override
   String get title;
 
+  /// 메모
+  @override
+  String get memo;
+
   /// 항목 개수 텍스트 (예: "2개")
   @override
   String get countText;
+
+  /// 색상 인덱스 (folderColors 기준)
+  @override
+  int get colorIndex;
 
   /// 강조 색상 (JSON 제외)
   @override

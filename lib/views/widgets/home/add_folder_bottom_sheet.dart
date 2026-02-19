@@ -2,33 +2,58 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 
-/// 보관함 추가 바텀시트 표시
-Future<Map<String, dynamic>?> showAddFolderBottomSheet(BuildContext context) {
+/// 보관함 추가/수정 바텀시트 표시
+Future<Map<String, dynamic>?> showAddFolderBottomSheet(
+  BuildContext context, {
+  String? initialName,
+  String? initialMemo,
+  int? initialColorIndex,
+  bool isEditMode = false,
+}) {
   return showModalBottomSheet<Map<String, dynamic>>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: AppColors.gray900.withOpacity(0.2),
-    builder: (context) => const _AddFolderSheet(),
+    builder: (context) => _AddFolderSheet(
+      initialName: initialName,
+      initialMemo: initialMemo,
+      initialColorIndex: initialColorIndex,
+      isEditMode: isEditMode,
+    ),
   );
 }
 
 class _AddFolderSheet extends StatefulWidget {
-  const _AddFolderSheet();
+  final String? initialName;
+  final String? initialMemo;
+  final int? initialColorIndex;
+  final bool isEditMode;
+
+  const _AddFolderSheet({
+    this.initialName,
+    this.initialMemo,
+    this.initialColorIndex,
+    this.isEditMode = false,
+  });
 
   @override
   State<_AddFolderSheet> createState() => _AddFolderSheetState();
 }
 
 class _AddFolderSheetState extends State<_AddFolderSheet> {
-  final _nameController = TextEditingController();
-  final _memoController = TextEditingController();
-  int _selectedColorIndex = 5; // 기본: sub blue
+  late final TextEditingController _nameController;
+  late final TextEditingController _memoController;
+  late int _selectedColorIndex;
   int _memoLength = 0;
 
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
+    _memoController = TextEditingController(text: widget.initialMemo ?? '');
+    _selectedColorIndex = widget.initialColorIndex ?? 5;
+    _memoLength = _memoController.text.length;
     _memoController.addListener(() {
       setState(() => _memoLength = _memoController.text.length);
     });
@@ -110,14 +135,14 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
     );
   }
 
-  /// 헤더: "새로운 보관함" + "저장" 버튼
+  /// 헤더: 제목 + "저장" 버튼
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
-          '새로운 보관함',
-          style: TextStyle(
+        Text(
+          widget.isEditMode ? '보관함 수정' : '새로운 보관함',
+          style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
             color: AppColors.gray900,
@@ -287,11 +312,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
       children: [
         Row(
           children: [
-            Icon(
-              Icons.palette_outlined,
-              size: 20,
-              color: AppColors.blue500,
-            ),
+            Icon(Icons.palette_outlined, size: 20, color: AppColors.blue500),
             const SizedBox(width: 8),
             const Text(
               '색상',

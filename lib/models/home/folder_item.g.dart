@@ -8,9 +8,18 @@ part of 'folder_item.dart';
 
 _$FolderItemImpl _$$FolderItemImplFromJson(Map<String, dynamic> json) =>
     _$FolderItemImpl(
+      foldersId: (json['foldersId'] as num?)?.toInt() ?? 0,
       title: json['title'] as String,
+      memo: json['memo'] as String? ?? '',
       countText: json['countText'] as String,
+      colorIndex: (json['colorIndex'] as num?)?.toInt() ?? 5,
     );
 
 Map<String, dynamic> _$$FolderItemImplToJson(_$FolderItemImpl instance) =>
-    <String, dynamic>{'title': instance.title, 'countText': instance.countText};
+    <String, dynamic>{
+      'foldersId': instance.foldersId,
+      'title': instance.title,
+      'memo': instance.memo,
+      'countText': instance.countText,
+      'colorIndex': instance.colorIndex,
+    };

@@ -483,7 +483,7 @@ class _$FolderDtoImpl implements _FolderDto {
   const _$FolderDtoImpl({
     required this.foldersId,
     required this.usersId,
-    required this.name,
+    this.name = '',
     this.memo = '',
     this.isDefault = false,
     this.color = '',
@@ -500,6 +500,7 @@ class _$FolderDtoImpl implements _FolderDto {
   @override
   final int usersId;
   @override
+  @JsonKey()
   final String name;
   @override
   @JsonKey()
@@ -577,7 +578,7 @@ abstract class _FolderDto implements FolderDto {
   const factory _FolderDto({
     required final int foldersId,
     required final int usersId,
-    required final String name,
+    final String name,
     final String memo,
     final bool isDefault,
     final String color,
@@ -739,7 +740,7 @@ class __$$FolderViewDtoImplCopyWithImpl<$Res>
 class _$FolderViewDtoImpl implements _FolderViewDto {
   const _$FolderViewDtoImpl({
     required this.folderId,
-    required this.name,
+    this.name = '',
     this.lastViewedAt,
   });
 
@@ -749,6 +750,7 @@ class _$FolderViewDtoImpl implements _FolderViewDto {
   @override
   final int folderId;
   @override
+  @JsonKey()
   final String name;
   @override
   final String? lastViewedAt;
@@ -791,7 +793,7 @@ class _$FolderViewDtoImpl implements _FolderViewDto {
 abstract class _FolderViewDto implements FolderViewDto {
   const factory _FolderViewDto({
     required final int folderId,
-    required final String name,
+    final String name,
     final String? lastViewedAt,
   }) = _$FolderViewDtoImpl;
 
@@ -970,7 +972,7 @@ class __$$ScheduleDtoImplCopyWithImpl<$Res>
 class _$ScheduleDtoImpl implements _ScheduleDto {
   const _$ScheduleDtoImpl({
     required this.schedulesId,
-    required this.title,
+    this.title = '',
     this.startTime,
     this.endTime,
     this.appColor = '',
@@ -982,6 +984,7 @@ class _$ScheduleDtoImpl implements _ScheduleDto {
   @override
   final int schedulesId;
   @override
+  @JsonKey()
   final String title;
   @override
   final String? startTime;
@@ -1039,7 +1042,7 @@ class _$ScheduleDtoImpl implements _ScheduleDto {
 abstract class _ScheduleDto implements ScheduleDto {
   const factory _ScheduleDto({
     required final int schedulesId,
-    required final String title,
+    final String title,
     final String? startTime,
     final String? endTime,
     final String appColor,

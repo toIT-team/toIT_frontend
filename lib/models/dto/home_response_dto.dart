@@ -23,7 +23,7 @@ class FolderDto with _$FolderDto {
   const factory FolderDto({
     required int foldersId,
     required int usersId,
-    required String name,
+    @Default('') String name,
     @Default('') String memo,
     @Default(false) bool isDefault,
     @Default('') String color,
@@ -41,7 +41,7 @@ class FolderDto with _$FolderDto {
 class FolderViewDto with _$FolderViewDto {
   const factory FolderViewDto({
     required int folderId,
-    required String name,
+    @Default('') String name,
     String? lastViewedAt,
   }) = _FolderViewDto;
 
@@ -54,7 +54,7 @@ class FolderViewDto with _$FolderViewDto {
 class ScheduleDto with _$ScheduleDto {
   const factory ScheduleDto({
     required int schedulesId,
-    required String title,
+    @Default('') String title,
     String? startTime,
     String? endTime,
     @Default('') String appColor,

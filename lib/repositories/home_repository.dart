@@ -25,6 +25,30 @@ class HomeRepository {
     return response;
   }
 
+  /// 보관함(폴더) 삭제
+  Future<void> deleteFolder({required int foldersId}) async {
+    await _remoteDatasource.deleteFolder(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+    );
+  }
+
+  /// 보관함(폴더) 수정
+  Future<void> updateFolder({
+    required int foldersId,
+    required String name,
+    required String memo,
+    required String color,
+  }) async {
+    await _remoteDatasource.updateFolder(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+      name: name,
+      memo: memo,
+      color: color,
+    );
+  }
+
   /// 보관함(폴더) 생성
   Future<FolderDto> createFolder({
     required String name,

@@ -1,26 +1,38 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
+import 'add_folder_bottom_sheet.dart';
+import 'folder_memo_bottom_sheet.dart';
+import 'folder_delete_dialog.dart';
+import 'folder_options_bottom_sheet.dart';
 
 /// 폴더 타일 위젯
-class FolderTile extends StatelessWidget {
+class FolderTile extends ConsumerWidget {
+  final int foldersId;
   final String title;
+  final String memo;
   final String countText;
   final Color accentColor;
+  final int colorIndex;
 
   const FolderTile({
     super.key,
+    this.foldersId = 0,
     required this.title,
+    this.memo = '',
     required this.countText,
     required this.accentColor,
+    this.colorIndex = 5,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       child: Container(
@@ -77,7 +89,11 @@ class FolderTile extends StatelessWidget {
                 Positioned(
                   left: 14,
                   top: 12,
-                  child: Image.asset(AppAssets.folderIcon, width: 22, height: 22),
+                  child: Image.asset(
+                    AppAssets.folderIcon,
+                    width: 22,
+                    height: 22,
+                  ),
                 ),
                 // 내용
                 Positioned(
@@ -112,7 +128,79 @@ class FolderTile extends StatelessWidget {
                               height: 1.2,
                             ),
                           ),
-                          Image.asset(AppAssets.moreIcon, width: 24, height: 14),
+                          GestureDetector(
+                            onTap: () async {
+                              final option = await showFolderOptionsBottomSheet(
+                                context,
+                              );
+                              if (option == null || !context.mounted) {
+                                return;
+                              }
+                              switch (option) {
+                                case FolderOption.viewMemo:
+                                  showFolderMemoBottomSheet(
+                                    context,
+                                    memo: memo,
+                                  );
+                                  break;
+                                case FolderOption.edit:
+                                  final editResult =
+                                      await showAddFolderBottomSheet(
+                                        context,
+                                        initialName: title,
+                                        initialMemo: memo,
+                                        initialColorIndex: colorIndex,
+                                        isEditMode: true,
+                                      );
+                                  if (editResult != null) {
+                                    final success = await ref
+                                        .read(homeProvider.notifier)
+                                        .updateFolder(
+                                          foldersId: foldersId,
+                                          name: editResult['name'] as String,
+                                          memo: editResult['memo'] as String,
+                                          colorIndex:
+                                              editResult['colorIndex'] as int,
+                                        );
+                                    if (!success && context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('보관함 수정에 실패했습니다.'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                  break;
+                                case FolderOption.delete:
+                                  final confirmed =
+                                      await showFolderDeleteDialog(
+                                        context,
+                                        folderName: title,
+                                      );
+                                  if (!confirmed || !context.mounted) {
+                                    break;
+                                  }
+                                  final deleted = await ref
+                                      .read(homeProvider.notifier)
+                                      .deleteFolder(foldersId: foldersId);
+                                  if (!deleted && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('보관함 삭제에 실패했습니다.'),
+                                      ),
+                                    );
+                                  }
+                                  break;
+                              }
+                            },
+                            child: Image.asset(
+                              AppAssets.moreIcon,
+                              width: 24,
+                              height: 14,
+                            ),
+                          ),
                         ],
                       ),
                     ],

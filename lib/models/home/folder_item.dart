@@ -8,11 +8,20 @@ part 'folder_item.g.dart';
 @freezed
 class FolderItem with _$FolderItem {
   const factory FolderItem({
+    /// 폴더 ID
+    @Default(0) int foldersId,
+
     /// 폴더 제목
     required String title,
 
+    /// 메모
+    @Default('') String memo,
+
     /// 항목 개수 텍스트 (예: "2개")
     required String countText,
+
+    /// 색상 인덱스 (folderColors 기준)
+    @Default(5) int colorIndex,
 
     /// 강조 색상 (JSON 제외)
     @JsonKey(includeFromJson: false, includeToJson: false)
