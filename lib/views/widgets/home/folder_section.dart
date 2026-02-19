@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
@@ -8,7 +10,7 @@ import 'add_folder_bottom_sheet.dart';
 import 'folder_tile.dart';
 
 /// 폴더 목록 영역
-class FolderSection extends StatelessWidget {
+class FolderSection extends ConsumerWidget {
   final List<FolderItem> folders;
   final List<String> filters;
 
@@ -19,7 +21,7 @@ class FolderSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -72,8 +74,18 @@ class FolderSection extends StatelessWidget {
                   onTap: () async {
                     final result = await showAddFolderBottomSheet(context);
                     if (result != null) {
-                      debugPrint('보관함 생성 결과: $result');
-                      // TODO: API 연결 시 여기서 폴더 생성 요청
+                      final success = await ref
+                          .read(homeProvider.notifier)
+                          .createFolder(
+                            name: result['name'] as String,
+                            memo: result['memo'] as String,
+                            colorIndex: result['colorIndex'] as int,
+                          );
+                      if (!success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('보관함 생성에 실패했습니다.')),
+                        );
+                      }
                     }
                   },
                   child: Image.asset(

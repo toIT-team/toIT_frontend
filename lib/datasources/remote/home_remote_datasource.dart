@@ -22,4 +22,19 @@ class HomeRemoteDatasource {
 
     return HomeResponseDto.fromJson(response.data as Map<String, dynamic>);
   }
+
+  /// 보관함(폴더) 생성
+  Future<FolderDto> createFolder({
+    required int usersId,
+    required String name,
+    required String memo,
+    required String color,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.foldersEndpoint,
+      data: {'usersId': usersId, 'name': name, 'memo': memo, 'color': color},
+    );
+
+    return FolderDto.fromJson(response.data as Map<String, dynamic>);
+  }
 }

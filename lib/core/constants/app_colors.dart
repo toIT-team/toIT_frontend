@@ -67,4 +67,28 @@ class AppColors {
     gray200, // #C2B7AD
     gray100, // #DADADA
   ];
+
+  /// 서버 전송용 토큰명 (folderColors와 동일 순서)
+  static const List<String> folderColorTokens = [
+    'pink200',
+    'orange200',
+    'yellow200',
+    'green200',
+    'pink100',
+    'blue300',
+    'blue400',
+    'purple500',
+    'gray200',
+    'gray100',
+  ];
+
+  /// 서버 color 문자열 → Color 변환
+  static Color fromColorString(String value) {
+    // hex 직접 파싱 (#FFA2A4 → Color)
+    final hex = value.replaceFirst('#', '');
+    final parsed = int.tryParse('FF$hex', radix: 16);
+    if (parsed != null) return Color(parsed);
+
+    return folderColors[5];
+  }
 }

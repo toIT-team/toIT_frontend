@@ -55,9 +55,11 @@ String _formatTime(String? timeStr) {
   return '$period $hour:$minute';
 }
 
-/// 폴더 색상 매핑
+/// 폴더 색상 매핑 (토큰명/hex 우선, 실패 시 인덱스 기반)
 Color _mapFolderColor(String colorStr, int index) {
-  // TODO: 서버 색상 값 매핑 규칙 정의 후 수정
+  if (colorStr.isNotEmpty) {
+    return AppColors.fromColorString(colorStr);
+  }
   const colors = AppColors.folderColors;
   return colors[index % colors.length];
 }
@@ -150,6 +152,26 @@ class HomeController extends Notifier<HomeState> {
   Future<void> refresh() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     await _loadHomeData();
+  }
+
+  /// 보관함 생성 (API 호출 → 목록 새로고침)
+  Future<bool> createFolder({
+    required String name,
+    required String memo,
+    required int colorIndex,
+  }) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final colorToken = AppColors.folderColorTokens[colorIndex];
+
+      await repository.createFolder(name: name, memo: memo, color: colorToken);
+
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: '보관함 생성에 실패했습니다: $e');
+      return false;
+    }
   }
 
   /// 필터 선택

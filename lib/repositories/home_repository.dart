@@ -15,9 +15,7 @@ class HomeRepository {
 
   /// 홈 화면 데이터 조회
   /// [todayDate] 오늘 날짜 (yyyy-MM-dd)
-  Future<HomeResponseDto> fetchHomeData({
-    required String todayDate,
-  }) async {
+  Future<HomeResponseDto> fetchHomeData({required String todayDate}) async {
     // TODO: 로그인 구현 후 실제 userId 사용
     final response = await _remoteDatasource.fetchHomeData(
       usersId: ApiConstants.defaultUsersId,
@@ -25,6 +23,20 @@ class HomeRepository {
     );
 
     return response;
+  }
+
+  /// 보관함(폴더) 생성
+  Future<FolderDto> createFolder({
+    required String name,
+    required String memo,
+    required String color,
+  }) async {
+    return _remoteDatasource.createFolder(
+      usersId: ApiConstants.defaultUsersId,
+      name: name,
+      memo: memo,
+      color: color,
+    );
   }
 }
 
