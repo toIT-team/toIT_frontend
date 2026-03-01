@@ -74,6 +74,22 @@ class HomeRepository {
     );
   }
 
+  /// 자료 파일 추가 (POST /attachments/files)
+  Future<void> createFile({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    await _remoteDatasource.createFile(
+      usersId: ApiConstants.defaultUsersId,
+      foldersIdList: foldersIdList,
+      textContent: textContent,
+      fileBytes: fileBytes,
+      fileName: fileName,
+    );
+  }
+
   /// 보관함 내부 항목 조회 (GET /page/items)
   Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
     return _remoteDatasource.fetchPageItems(

@@ -1,10 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 
-/// 이미지 저장 화면 (퍼블리싱)
+/// 이미지 저장 화면 (이미지 선택 연동, API 업로드는 추후)
 class SaveImageScreen extends StatefulWidget {
   const SaveImageScreen({super.key});
 
@@ -15,7 +18,9 @@ class SaveImageScreen extends StatefulWidget {
 class _SaveImageScreenState extends State<SaveImageScreen> {
   final _memoController = TextEditingController();
   int _memoLength = 0;
-  bool _imageAttached = false;
+  XFile? _pickedImage;
+
+  bool get _imageAttached => _pickedImage != null;
 
   @override
   void initState() {
@@ -36,9 +41,51 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
     Navigator.of(context).pop({'memo': _memoController.text.trim()});
   }
 
-  void _onAttachImage() {
-    // TODO: 이미지 선택 기능 연결
-    debugPrint('사진 첨부 탭');
+  Future<void> _onAttachImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('갤러리에서 선택'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('카메라로 촬영'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final picker = ImagePicker();
+      final xFile = await picker.pickImage(source: source, imageQuality: 85);
+      if (xFile != null && mounted) {
+        setState(() => _pickedImage = xFile);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final isPluginError =
+          e.toString().contains('MissingPluginException') ||
+          e.toString().contains('LateInitializationError');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isPluginError
+                ? '이미지 선택을 사용하려면 앱을 완전히 종료한 뒤 다시 실행해 주세요.'
+                : '이미지를 불러오지 못했습니다.',
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   @override
@@ -164,25 +211,59 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
               color: AppColors.neutral300,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            clipBehavior: Clip.antiAlias,
+            child: _pickedImage == null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.photo_outlined,
+                        size: 24,
+                        color: AppColors.gray600,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '사진 첨부',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.gray600,
+                          letterSpacing: -0.025 * 16,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  )
+                : _buildPickedImagePreview(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (_pickedImage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
               children: [
-                Icon(Icons.photo_outlined, size: 24, color: AppColors.gray600),
-                const SizedBox(height: 8),
-                const Text(
-                  '사진 첨부',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                Text(
+                  _pickedImage!.name,
+                  style: const TextStyle(
+                    fontSize: 14,
                     color: AppColors.gray600,
-                    letterSpacing: -0.025 * 16,
-                    height: 1.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => setState(() => _pickedImage = null),
+                  child: const Icon(
+                    Icons.close,
+                    size: 20,
+                    color: AppColors.gray600,
                   ),
                 ),
               ],
             ),
           ),
-        ),
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,
@@ -201,12 +282,35 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
     );
   }
 
-  /// 보관함 추가 섹션
+  Widget _buildPickedImagePreview() {
+    final path = _pickedImage?.path;
+    if (path == null) return const SizedBox.shrink();
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.file(File(path), fit: BoxFit.cover),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: () => setState(() => _pickedImage = null),
+            child: const CircleAvatar(
+              radius: 14,
+              backgroundColor: Colors.black54,
+              child: Icon(Icons.close, size: 18, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 보관함 선택 섹션
   Widget _buildFolderSection() {
     return GestureDetector(
       onTap: () {
-        // TODO: 보관함 선택 화면 연결
-        debugPrint('보관함 추가 탭');
+        // TODO: 보관함 선택 + API 연동
+        debugPrint('보관함 선택 탭');
       },
       behavior: HitTestBehavior.opaque,
       child: Row(

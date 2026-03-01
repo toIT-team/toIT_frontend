@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/home_response_dto.dart';
@@ -81,6 +85,32 @@ class HomeRemoteDatasource {
         'foldersIdList': foldersIdList,
         'textContent': textContent,
       },
+    );
+  }
+
+  /// 자료 파일 추가 (POST /attachments/files)
+  /// Query: usersId, foldersIdList, textContent. Body: multipart/form-data (file 파트)
+  Future<void> createFile({
+    required int usersId,
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        fileBytes is Uint8List ? fileBytes : Uint8List.fromList(fileBytes),
+        filename: fileName,
+      ),
+    });
+    await _apiClient.post(
+      ApiConstants.attachmentsFilesEndpoint,
+      queryParameters: {
+        'usersId': usersId,
+        'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
+        'textContent': textContent,
+      },
+      data: formData,
     );
   }
 

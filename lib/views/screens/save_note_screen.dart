@@ -92,6 +92,20 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 홈 데이터 로드 후 보관함이 생겼는데 아직 선택 안 했으면 기본 보관함 설정
+    ref.listen<HomeState>(homeProvider, (prev, next) {
+      if (_selectedFolder != null) return;
+      if (next.folders.isEmpty) return;
+      final defaultFolder =
+          next.folders.where((f) => f.isDefault).firstOrNull ??
+          next.folders.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedFolder == null) {
+          setState(() => _selectedFolder = defaultFolder);
+        }
+      });
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -260,27 +274,41 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
 
   /// 보관함 선택 섹션
   Widget _buildFolderSection() {
-    return GestureDetector(
-      onTap: _openFolderPicker,
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          const Icon(Icons.folder_outlined, size: 20, color: AppColors.blue500),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _selectedFolder?.title ?? '보관함 선택',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.gray900,
-                letterSpacing: -0.025 * 18,
-                height: 1.4,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openFolderPicker,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.folder_outlined,
+                size: 20,
+                color: AppColors.blue500,
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _selectedFolder?.title ?? '보관함 선택',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gray900,
+                    letterSpacing: -0.025 * 18,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.gray600,
+              ),
+            ],
           ),
-          const Icon(Icons.chevron_right, size: 20, color: AppColors.gray600),
-        ],
+        ),
       ),
     );
   }
