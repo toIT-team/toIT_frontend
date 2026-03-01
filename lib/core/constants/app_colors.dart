@@ -10,9 +10,9 @@ class AppColors {
   static const Color gray400 = Color(0xFF999999);
 
   //Blue scale
-  static const Color blue300 = Color(0xFFA2CAFF); // 재윤
-  static const Color blue400 = Color(0xFF99EDF7); // 재윤
-  static const Color blue500 = Color(0xFF379BFB); // 원철
+  static const Color blue300 = Color(0xFFA2CAFF);
+  static const Color blue400 = Color(0xFF99EDF7);
+  static const Color blue500 = Color(0xFF379BFB);
 
   //Pink scale
   static const Color pink100 = Color(0xFFFFB9DD);
@@ -54,6 +54,10 @@ class AppColors {
   static const Color borderLight = Color(0xFFD9D9D9);
   static const Color overlayWhite90 = Color(0xE6FFFFFF);
 
+  /// 그림자용 (카드 등)
+  static const Color shadowCard = Color(0x14000000);
+  static const Color shadowAccent = Color(0x0F132145);
+
   //보관함 색상 목록
   static const List<Color> folderColors = [
     pink200, // #FFA2A4
@@ -68,27 +72,30 @@ class AppColors {
     gray100, // #DADADA
   ];
 
-  /// 서버 전송용 토큰명 (folderColors와 동일 순서)
+  /// 서버 전송용 토큰명 (folderColors와 동일 순서, snake_case)
   static const List<String> folderColorTokens = [
-    'pink200',
-    'orange200',
-    'yellow200',
-    'green200',
-    'pink100',
-    'blue300',
-    'blue400',
-    'purple500',
-    'gray200',
-    'gray100',
+    'pink_200',
+    'orange_200',
+    'yellow_200',
+    'green_200',
+    'pink_100',
+    'blue_300',
+    'blue_400',
+    'purple_500',
+    'gray_200',
+    'gray_100',
   ];
 
-  /// 서버 color 문자열 → Color 변환
+  /// 서버 color 문자열 → Color 변환 (토큰명 snake_case 또는 hex)
   static Color fromColorString(String value) {
-    // hex 직접 파싱 (#FFA2A4 → Color)
+    if (value.isEmpty) return folderColors[5];
+    // hex 직접 파싱 (#FFA2A4 또는 FFA2A4 → Color)
     final hex = value.replaceFirst('#', '');
     final parsed = int.tryParse('FF$hex', radix: 16);
     if (parsed != null) return Color(parsed);
-
+    // 토큰명으로 조회 (예: pink_200)
+    final tokenIdx = folderColorTokens.indexOf(value);
+    if (tokenIdx != -1) return folderColors[tokenIdx];
     return folderColors[5];
   }
 }
