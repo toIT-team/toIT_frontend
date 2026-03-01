@@ -67,6 +67,23 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 텍스트(노트) 추가 (POST /texts)
+  /// [foldersIdList] 노트를 저장할 보관함 ID 목록
+  Future<void> createText({
+    required int usersId,
+    required List<int> foldersIdList,
+    required String textContent,
+  }) async {
+    await _apiClient.post(
+      ApiConstants.textsEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersIdList': foldersIdList,
+        'textContent': textContent,
+      },
+    );
+  }
+
   /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
   Future<PageItemsResponseDto> fetchPageItems({
     required int usersId,

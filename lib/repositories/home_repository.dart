@@ -62,6 +62,18 @@ class HomeRepository {
     );
   }
 
+  /// 자료 텍스트(노트) 추가 (POST /texts)
+  Future<void> createText({
+    required List<int> foldersIdList,
+    required String textContent,
+  }) async {
+    await _remoteDatasource.createText(
+      usersId: ApiConstants.defaultUsersId,
+      foldersIdList: foldersIdList,
+      textContent: textContent,
+    );
+  }
+
   /// 보관함 내부 항목 조회 (GET /page/items)
   Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
     return _remoteDatasource.fetchPageItems(

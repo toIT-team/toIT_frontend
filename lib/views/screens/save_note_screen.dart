@@ -1,26 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/home/folder_item.dart';
+import '../../repositories/home_repository.dart';
+import '../widgets/common/folder_picker_sheet.dart';
 
-/// 노트 저장 화면 (퍼블리싱)
-class SaveNoteScreen extends StatefulWidget {
+/// 노트 저장 화면 (POST /texts API 연동)
+class SaveNoteScreen extends ConsumerStatefulWidget {
   const SaveNoteScreen({super.key});
 
   @override
-  State<SaveNoteScreen> createState() => _SaveNoteScreenState();
+  ConsumerState<SaveNoteScreen> createState() => _SaveNoteScreenState();
 }
 
-class _SaveNoteScreenState extends State<SaveNoteScreen> {
+class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
   final _noteController = TextEditingController();
   int _textLength = 0;
+  FolderItem? _selectedFolder;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _noteController.addListener(() {
       setState(() => _textLength = _noteController.text.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final folders = ref.read(homeProvider).folders;
+      if (folders.isEmpty) return;
+      final defaultFolder =
+          folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
+      setState(() => _selectedFolder = defaultFolder);
     });
   }
 
@@ -30,10 +45,49 @@ class _SaveNoteScreenState extends State<SaveNoteScreen> {
     super.dispose();
   }
 
-  void _onSave() {
-    final text = _noteController.text.trim();
-    if (text.isEmpty) return;
-    Navigator.of(context).pop({'textContent': text});
+  Future<void> _onSave() async {
+    final textContent = _noteController.text.trim();
+    if (textContent.isEmpty) {
+      _showSnackBar('내용을 입력해 주세요.');
+      return;
+    }
+    if (_selectedFolder == null) {
+      _showSnackBar('보관함을 선택해 주세요.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.createText(
+        foldersIdList: [_selectedFolder!.foldersId],
+        textContent: textContent,
+      );
+      ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
+      if (!mounted) return;
+      _showSnackBar('노트가 저장되었습니다.');
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('저장에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _openFolderPicker() {
+    showFolderPickerSheet(
+      context,
+      ref,
+      selectedFolder: _selectedFolder,
+      onSelect: (folder) => setState(() => _selectedFolder = folder),
+    );
   }
 
   @override
@@ -96,18 +150,24 @@ class _SaveNoteScreenState extends State<SaveNoteScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _onSave,
+              onTap: _isSaving ? null : _onSave,
               behavior: HitTestBehavior.opaque,
-              child: const Text(
-                '저장',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.blue500,
-                  letterSpacing: -0.025 * 16,
-                  height: 1.4,
-                ),
-              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.blue500,
+                        letterSpacing: -0.025 * 16,
+                        height: 1.4,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -198,22 +258,19 @@ class _SaveNoteScreenState extends State<SaveNoteScreen> {
     );
   }
 
-  /// 보관함 추가 섹션
+  /// 보관함 선택 섹션
   Widget _buildFolderSection() {
     return GestureDetector(
-      onTap: () {
-        // TODO: 보관함 선택 화면 연결
-        debugPrint('보관함 추가 탭');
-      },
+      onTap: _openFolderPicker,
       behavior: HitTestBehavior.opaque,
       child: Row(
         children: [
           const Icon(Icons.folder_outlined, size: 20, color: AppColors.blue500),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              '보관함 추가',
-              style: TextStyle(
+              _selectedFolder?.title ?? '보관함 선택',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gray900,
@@ -222,7 +279,7 @@ class _SaveNoteScreenState extends State<SaveNoteScreen> {
               ),
             ),
           ),
-          const Icon(Icons.add, size: 20, color: AppColors.gray600),
+          const Icon(Icons.chevron_right, size: 20, color: AppColors.gray600),
         ],
       ),
     );

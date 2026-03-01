@@ -22,4 +22,7 @@ class ApiConstants {
 
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
+
+  /// 자료 텍스트(노트) 추가 (POST)
+  static const String textsEndpoint = '/texts';
 }
