@@ -114,6 +114,32 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 이미지 추가 (POST /attachments/images)
+  /// Query: usersId, foldersIdList, textContent. Body: multipart/form-data (image 파트)
+  Future<void> createImage({
+    required int usersId,
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    final formData = FormData.fromMap({
+      'image': MultipartFile.fromBytes(
+        imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
+        filename: fileName,
+      ),
+    });
+    await _apiClient.post(
+      ApiConstants.attachmentsImagesEndpoint,
+      queryParameters: {
+        'usersId': usersId,
+        'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
+        'textContent': textContent,
+      },
+      data: formData,
+    );
+  }
+
   /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
   Future<PageItemsResponseDto> fetchPageItems({
     required int usersId,

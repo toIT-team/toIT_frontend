@@ -1,32 +1,50 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/home/folder_item.dart';
+import '../../repositories/home_repository.dart';
+import '../widgets/common/folder_picker_sheet.dart';
 
-/// 이미지 저장 화면 (이미지 선택 연동, API 업로드는 추후)
-class SaveImageScreen extends StatefulWidget {
+/// 이미지 저장 화면 (POST /attachments/images API 연동)
+class SaveImageScreen extends ConsumerStatefulWidget {
   const SaveImageScreen({super.key});
 
   @override
-  State<SaveImageScreen> createState() => _SaveImageScreenState();
+  ConsumerState<SaveImageScreen> createState() => _SaveImageScreenState();
 }
 
-class _SaveImageScreenState extends State<SaveImageScreen> {
+class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
+  static const int _maxImages = 3;
+
   final _memoController = TextEditingController();
   int _memoLength = 0;
-  XFile? _pickedImage;
+  final List<XFile> _pickedImages = [];
+  FolderItem? _selectedFolder;
+  bool _isSaving = false;
 
-  bool get _imageAttached => _pickedImage != null;
+  bool get _imageAttached => _pickedImages.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
     _memoController.addListener(() {
       setState(() => _memoLength = _memoController.text.length);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final folders = ref.read(homeProvider).folders;
+      if (folders.isEmpty) return;
+      final defaultFolder =
+          folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
+      setState(() => _selectedFolder = defaultFolder);
     });
   }
 
@@ -36,12 +54,95 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
     super.dispose();
   }
 
-  void _onSave() {
-    if (!_imageAttached) return;
-    Navigator.of(context).pop({'memo': _memoController.text.trim()});
+  Future<void> _onSave() async {
+    if (!_imageAttached) {
+      _showSnackBar('이미지를 선택해 주세요.');
+      return;
+    }
+    if (_selectedFolder == null) {
+      _showSnackBar('보관함을 선택해 주세요.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    final repository = ref.read(homeRepositoryProvider);
+    final folderId = _selectedFolder!.foldersId;
+    final textContent = _memoController.text.trim();
+    int successCount = 0;
+    String? lastError;
+
+    for (final xFile in _pickedImages) {
+      if (!mounted) break;
+      List<int> imageBytes;
+      try {
+        imageBytes = await xFile.readAsBytes();
+      } catch (_) {
+        lastError = '이미지 데이터를 읽을 수 없습니다.';
+        continue;
+      }
+      if (imageBytes.isEmpty) {
+        lastError = '이미지 데이터를 읽을 수 없습니다.';
+        continue;
+      }
+      try {
+        await repository.createImage(
+          foldersIdList: [folderId],
+          textContent: textContent,
+          imageBytes: imageBytes,
+          fileName: xFile.name,
+        );
+        successCount++;
+      } on DioException catch (e) {
+        final statusCode = e.response?.statusCode;
+        final data = e.response?.data;
+        if (statusCode == 413) {
+          lastError = '이미지 크기가 서버 제한을 초과했습니다. 더 작은 이미지를 선택해 주세요.';
+        } else if (statusCode == 500) {
+          lastError = '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+        } else if (statusCode == 400 &&
+            data is Map &&
+            data['message'] != null) {
+          lastError = data['message'] as String;
+        } else {
+          lastError = '저장에 실패했습니다. 다시 시도해 주세요.';
+        }
+      } catch (_) {
+        lastError = '저장에 실패했습니다. 다시 시도해 주세요.';
+      }
+    }
+
+    if (!mounted) return;
+    if (successCount > 0) {
+      ref.invalidate(pageItemsProvider(folderId));
+      _showSnackBar(
+        successCount == _pickedImages.length
+            ? '이미지가 저장되었습니다.'
+            : '$successCount장 저장됨. 일부 실패.',
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      _showSnackBar(lastError ?? '저장에 실패했습니다. 다시 시도해 주세요.');
+    }
+    setState(() => _isSaving = false);
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _openFolderPicker() {
+    showFolderPickerSheet(
+      context,
+      ref,
+      selectedFolder: _selectedFolder,
+      onSelect: (folder) => setState(() => _selectedFolder = folder),
+    );
   }
 
   Future<void> _onAttachImage() async {
+    if (_pickedImages.length >= _maxImages) return;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) => SafeArea(
@@ -66,9 +167,23 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
 
     try {
       final picker = ImagePicker();
-      final xFile = await picker.pickImage(source: source, imageQuality: 85);
-      if (xFile != null && mounted) {
-        setState(() => _pickedImage = xFile);
+      if (source == ImageSource.gallery) {
+        final remaining = _maxImages - _pickedImages.length;
+        final list = await picker.pickMultiImage(
+          imageQuality: 85,
+          limit: remaining,
+        );
+        if (list.isEmpty || !mounted) return;
+        final toAdd = list.take(remaining).toList();
+        setState(() => _pickedImages.addAll(toAdd));
+      } else {
+        final xFile = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 85,
+        );
+        if (xFile != null && mounted && _pickedImages.length < _maxImages) {
+          setState(() => _pickedImages.add(xFile));
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -90,6 +205,19 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<HomeState>(homeProvider, (prev, next) {
+      if (_selectedFolder != null) return;
+      if (next.folders.isEmpty) return;
+      final defaultFolder =
+          next.folders.where((f) => f.isDefault).firstOrNull ??
+          next.folders.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedFolder == null) {
+          setState(() => _selectedFolder = defaultFolder);
+        }
+      });
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -153,18 +281,24 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _onSave,
+              onTap: _isSaving ? null : _onSave,
               behavior: HitTestBehavior.opaque,
-              child: const Text(
-                '저장',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.blue500,
-                  letterSpacing: -0.025 * 16,
-                  height: 1.4,
-                ),
-              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(
+                      '저장',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.blue500,
+                        letterSpacing: -0.025 * 16,
+                        height: 1.4,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -206,13 +340,13 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
           onTap: _onAttachImage,
           child: Container(
             width: double.infinity,
-            height: 120,
+            height: 100,
             decoration: BoxDecoration(
               color: AppColors.neutral300,
               borderRadius: BorderRadius.circular(8),
             ),
             clipBehavior: Clip.antiAlias,
-            child: _pickedImage == null
+            child: _pickedImages.isEmpty
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -238,37 +372,10 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        if (_pickedImage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                Text(
-                  _pickedImage!.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.gray600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => setState(() => _pickedImage = null),
-                  child: const Icon(
-                    Icons.close,
-                    size: 20,
-                    color: AppColors.gray600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            '${_imageAttached ? 1 : 0}/1',
+            '${_pickedImages.length}/$_maxImages',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -282,55 +389,117 @@ class _SaveImageScreenState extends State<SaveImageScreen> {
     );
   }
 
+  /// 선택한 이미지 썸네일을 100x100 고정 크기로 최대 3개 가로 배치
   Widget _buildPickedImagePreview() {
-    final path = _pickedImage?.path;
-    if (path == null) return const SizedBox.shrink();
-    return Stack(
-      fit: StackFit.expand,
+    const double gap = 8;
+    const double size = 100;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Image.file(File(path), fit: BoxFit.cover),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: () => setState(() => _pickedImage = null),
-            child: const CircleAvatar(
-              radius: 14,
-              backgroundColor: Colors.black54,
-              child: Icon(Icons.close, size: 18, color: Colors.white),
+        for (int i = 0; i < _pickedImages.length; i++) ...[
+          if (i > 0) const SizedBox(width: gap),
+          _buildThumbnail(_pickedImages[i], index: i, size: size),
+        ],
+        if (_pickedImages.length < _maxImages) ...[
+          if (_pickedImages.isNotEmpty) const SizedBox(width: gap),
+          _buildAddImageSlot(size: size),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildThumbnail(
+    XFile xFile, {
+    required int index,
+    required double size,
+  }) {
+    final path = xFile.path;
+    if (path.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(File(path), fit: BoxFit.cover),
+            Positioned(
+              top: 4,
+              right: 4,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _pickedImages.removeAt(index));
+                },
+                child: const CircleAvatar(
+                  radius: 14,
+                  backgroundColor: Colors.black54,
+                  child: Icon(Icons.close, size: 18, color: Colors.white),
+                ),
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddImageSlot({required double size}) {
+    return GestureDetector(
+      onTap: _onAttachImage,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.neutral300,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Center(
+            child: Icon(Icons.add, size: 28, color: AppColors.gray600),
           ),
         ),
-      ],
+      ),
     );
   }
 
   /// 보관함 선택 섹션
   Widget _buildFolderSection() {
-    return GestureDetector(
-      onTap: () {
-        // TODO: 보관함 선택 + API 연동
-        debugPrint('보관함 선택 탭');
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Row(
-        children: [
-          const Icon(Icons.folder_outlined, size: 20, color: AppColors.blue500),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              '보관함 추가',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.gray900,
-                letterSpacing: -0.025 * 18,
-                height: 1.4,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openFolderPicker,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.folder_outlined,
+                size: 20,
+                color: AppColors.blue500,
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _selectedFolder?.title ?? '보관함 선택',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.gray900,
+                    letterSpacing: -0.025 * 18,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.gray600,
+              ),
+            ],
           ),
-          const Icon(Icons.add, size: 20, color: AppColors.gray600),
-        ],
+        ),
       ),
     );
   }

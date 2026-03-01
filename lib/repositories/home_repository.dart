@@ -90,6 +90,22 @@ class HomeRepository {
     );
   }
 
+  /// 자료 이미지 추가 (POST /attachments/images)
+  Future<void> createImage({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    await _remoteDatasource.createImage(
+      usersId: ApiConstants.defaultUsersId,
+      foldersIdList: foldersIdList,
+      textContent: textContent,
+      imageBytes: imageBytes,
+      fileName: fileName,
+    );
+  }
+
   /// 보관함 내부 항목 조회 (GET /page/items)
   Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
     return _remoteDatasource.fetchPageItems(
