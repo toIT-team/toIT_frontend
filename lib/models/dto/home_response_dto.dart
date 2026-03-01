@@ -3,6 +3,15 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'home_response_dto.freezed.dart';
 part 'home_response_dto.g.dart';
 
+/// JSON의 null/숫자/문자열을 bool로 안전 변환 (API 타입 불일치 대비)
+bool _boolFromJson(dynamic value) {
+  if (value == null) return false;
+  if (value is bool) return value;
+  if (value is int) return value != 0;
+  if (value is String) return value.toLowerCase() == 'true';
+  return false;
+}
+
 /// 홈 API 응답 DTO
 @freezed
 class HomeResponseDto with _$HomeResponseDto {
@@ -25,7 +34,7 @@ class FolderDto with _$FolderDto {
     required int usersId,
     @Default('') String name,
     @Default('') String memo,
-    @Default(false) bool isDefault,
+    @JsonKey(fromJson: _boolFromJson) @Default(false) bool isDefault,
     @Default('') String color,
     String? createdAt,
     @Default(false) bool isFavorite,

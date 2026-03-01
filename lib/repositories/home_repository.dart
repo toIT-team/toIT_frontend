@@ -50,6 +50,18 @@ class HomeRepository {
     );
   }
 
+  /// 자료 링크 추가 (POST /links)
+  Future<void> createLink({
+    required List<int> foldersIdList,
+    required String linksUrl,
+  }) async {
+    await _remoteDatasource.createLink(
+      usersId: ApiConstants.defaultUsersId,
+      foldersIdList: foldersIdList,
+      linksUrl: linksUrl,
+    );
+  }
+
   /// 보관함 내부 항목 조회 (GET /page/items)
   Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
     return _remoteDatasource.fetchPageItems(

@@ -36,6 +36,10 @@ mixin _$FolderItem {
   /// 색상 인덱스 (folderColors 기준)
   int get colorIndex => throw _privateConstructorUsedError;
 
+  /// 기본 보관함 여부 (자동 선택용)
+  @JsonKey(fromJson: _boolFromJson)
+  bool get isDefault => throw _privateConstructorUsedError;
+
   /// 강조 색상 (JSON 제외)
   @JsonKey(includeFromJson: false, includeToJson: false)
   Color get accentColor => throw _privateConstructorUsedError;
@@ -63,6 +67,7 @@ abstract class $FolderItemCopyWith<$Res> {
     String memo,
     String countText,
     int colorIndex,
+    @JsonKey(fromJson: _boolFromJson) bool isDefault,
     @JsonKey(includeFromJson: false, includeToJson: false) Color accentColor,
   });
 }
@@ -87,6 +92,7 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
     Object? memo = null,
     Object? countText = null,
     Object? colorIndex = null,
+    Object? isDefault = null,
     Object? accentColor = null,
   }) {
     return _then(
@@ -111,6 +117,10 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
                 ? _value.colorIndex
                 : colorIndex // ignore: cast_nullable_to_non_nullable
                       as int,
+            isDefault: null == isDefault
+                ? _value.isDefault
+                : isDefault // ignore: cast_nullable_to_non_nullable
+                      as bool,
             accentColor: null == accentColor
                 ? _value.accentColor
                 : accentColor // ignore: cast_nullable_to_non_nullable
@@ -136,6 +146,7 @@ abstract class _$$FolderItemImplCopyWith<$Res>
     String memo,
     String countText,
     int colorIndex,
+    @JsonKey(fromJson: _boolFromJson) bool isDefault,
     @JsonKey(includeFromJson: false, includeToJson: false) Color accentColor,
   });
 }
@@ -159,6 +170,7 @@ class __$$FolderItemImplCopyWithImpl<$Res>
     Object? memo = null,
     Object? countText = null,
     Object? colorIndex = null,
+    Object? isDefault = null,
     Object? accentColor = null,
   }) {
     return _then(
@@ -183,6 +195,10 @@ class __$$FolderItemImplCopyWithImpl<$Res>
             ? _value.colorIndex
             : colorIndex // ignore: cast_nullable_to_non_nullable
                   as int,
+        isDefault: null == isDefault
+            ? _value.isDefault
+            : isDefault // ignore: cast_nullable_to_non_nullable
+                  as bool,
         accentColor: null == accentColor
             ? _value.accentColor
             : accentColor // ignore: cast_nullable_to_non_nullable
@@ -201,6 +217,7 @@ class _$FolderItemImpl implements _FolderItem {
     this.memo = '',
     required this.countText,
     this.colorIndex = 5,
+    @JsonKey(fromJson: _boolFromJson) this.isDefault = false,
     @JsonKey(includeFromJson: false, includeToJson: false)
     this.accentColor = const Color(0xFFA2CAFF),
   });
@@ -231,6 +248,11 @@ class _$FolderItemImpl implements _FolderItem {
   @JsonKey()
   final int colorIndex;
 
+  /// 기본 보관함 여부 (자동 선택용)
+  @override
+  @JsonKey(fromJson: _boolFromJson)
+  final bool isDefault;
+
   /// 강조 색상 (JSON 제외)
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -238,7 +260,7 @@ class _$FolderItemImpl implements _FolderItem {
 
   @override
   String toString() {
-    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, accentColor: $accentColor)';
+    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, isDefault: $isDefault, accentColor: $accentColor)';
   }
 
   @override
@@ -254,6 +276,8 @@ class _$FolderItemImpl implements _FolderItem {
                 other.countText == countText) &&
             (identical(other.colorIndex, colorIndex) ||
                 other.colorIndex == colorIndex) &&
+            (identical(other.isDefault, isDefault) ||
+                other.isDefault == isDefault) &&
             (identical(other.accentColor, accentColor) ||
                 other.accentColor == accentColor));
   }
@@ -267,6 +291,7 @@ class _$FolderItemImpl implements _FolderItem {
     memo,
     countText,
     colorIndex,
+    isDefault,
     accentColor,
   );
 
@@ -291,6 +316,7 @@ abstract class _FolderItem implements FolderItem {
     final String memo,
     required final String countText,
     final int colorIndex,
+    @JsonKey(fromJson: _boolFromJson) final bool isDefault,
     @JsonKey(includeFromJson: false, includeToJson: false)
     final Color accentColor,
   }) = _$FolderItemImpl;
@@ -317,6 +343,11 @@ abstract class _FolderItem implements FolderItem {
   /// 색상 인덱스 (folderColors 기준)
   @override
   int get colorIndex;
+
+  /// 기본 보관함 여부 (자동 선택용)
+  @override
+  @JsonKey(fromJson: _boolFromJson)
+  bool get isDefault;
 
   /// 강조 색상 (JSON 제외)
   @override

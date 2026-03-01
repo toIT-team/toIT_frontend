@@ -13,6 +13,9 @@ _$FolderItemImpl _$$FolderItemImplFromJson(Map<String, dynamic> json) =>
       memo: json['memo'] as String? ?? '',
       countText: json['countText'] as String,
       colorIndex: (json['colorIndex'] as num?)?.toInt() ?? 5,
+      isDefault: json['isDefault'] == null
+          ? false
+          : _boolFromJson(json['isDefault']),
     );
 
 Map<String, dynamic> _$$FolderItemImplToJson(_$FolderItemImpl instance) =>
@@ -22,4 +25,5 @@ Map<String, dynamic> _$$FolderItemImplToJson(_$FolderItemImpl instance) =>
       'memo': instance.memo,
       'countText': instance.countText,
       'colorIndex': instance.colorIndex,
+      'isDefault': instance.isDefault,
     };

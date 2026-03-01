@@ -42,7 +42,9 @@ _$FolderDtoImpl _$$FolderDtoImplFromJson(Map<String, dynamic> json) =>
       usersId: (json['usersId'] as num).toInt(),
       name: json['name'] as String? ?? '',
       memo: json['memo'] as String? ?? '',
-      isDefault: json['isDefault'] as bool? ?? false,
+      isDefault: json['isDefault'] == null
+          ? false
+          : _boolFromJson(json['isDefault']),
       color: json['color'] as String? ?? '',
       createdAt: json['createdAt'] as String?,
       isFavorite: json['isFavorite'] as bool? ?? false,

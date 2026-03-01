@@ -104,6 +104,7 @@ FolderItem _mapFolder(FolderDto dto, int index) {
     memo: dto.memo,
     countText: '',
     colorIndex: ci,
+    isDefault: dto.isDefault,
     accentColor: AppColors.folderColors[ci],
   );
 }

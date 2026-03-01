@@ -19,4 +19,7 @@ class ApiConstants {
   static const String homePageEndpoint = '/page/home';
   static const String foldersEndpoint = '/folders';
   static const String pageItemsEndpoint = '/page/items';
+
+  /// 자료 링크 추가 (POST)
+  static const String linksEndpoint = '/links';
 }

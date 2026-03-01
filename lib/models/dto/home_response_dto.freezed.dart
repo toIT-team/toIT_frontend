@@ -285,6 +285,7 @@ mixin _$FolderDto {
   int get usersId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get memo => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _boolFromJson)
   bool get isDefault => throw _privateConstructorUsedError;
   String get color => throw _privateConstructorUsedError;
   String? get createdAt => throw _privateConstructorUsedError;
@@ -311,7 +312,7 @@ abstract class $FolderDtoCopyWith<$Res> {
     int usersId,
     String name,
     String memo,
-    bool isDefault,
+    @JsonKey(fromJson: _boolFromJson) bool isDefault,
     String color,
     String? createdAt,
     bool isFavorite,
@@ -402,7 +403,7 @@ abstract class _$$FolderDtoImplCopyWith<$Res>
     int usersId,
     String name,
     String memo,
-    bool isDefault,
+    @JsonKey(fromJson: _boolFromJson) bool isDefault,
     String color,
     String? createdAt,
     bool isFavorite,
@@ -485,7 +486,7 @@ class _$FolderDtoImpl implements _FolderDto {
     required this.usersId,
     this.name = '',
     this.memo = '',
-    this.isDefault = false,
+    @JsonKey(fromJson: _boolFromJson) this.isDefault = false,
     this.color = '',
     this.createdAt,
     this.isFavorite = false,
@@ -506,7 +507,7 @@ class _$FolderDtoImpl implements _FolderDto {
   @JsonKey()
   final String memo;
   @override
-  @JsonKey()
+  @JsonKey(fromJson: _boolFromJson)
   final bool isDefault;
   @override
   @JsonKey()
@@ -580,7 +581,7 @@ abstract class _FolderDto implements FolderDto {
     required final int usersId,
     final String name,
     final String memo,
-    final bool isDefault,
+    @JsonKey(fromJson: _boolFromJson) final bool isDefault,
     final String color,
     final String? createdAt,
     final bool isFavorite,
@@ -599,6 +600,7 @@ abstract class _FolderDto implements FolderDto {
   @override
   String get memo;
   @override
+  @JsonKey(fromJson: _boolFromJson)
   bool get isDefault;
   @override
   String get color;

@@ -267,30 +267,24 @@ class _LinkItemRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      link.textContent,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.gray600,
-                        letterSpacing: -0.025 * 14,
-                        height: 1.5,
+                    if (link.textContent.isNotEmpty)
+                      Text(
+                        link.textContent,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.gray600,
+                          letterSpacing: -0.025 * 14,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
               const SizedBox(width: AppSpacing.xxl),
-              Container(
-                width: 75,
-                height: 75,
-                decoration: BoxDecoration(
-                  color: AppColors.neutral100,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-              ),
+              _LinkThumbnail(thumbnailUrl: link.linksThumbnail),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -320,6 +314,52 @@ class _LinkItemRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// 링크 썸네일 (URL 있으면 네트워크 이미지, 없으면 플레이스홀더)
+class _LinkThumbnail extends StatelessWidget {
+  const _LinkThumbnail({required this.thumbnailUrl});
+
+  static const double _size = 75;
+
+  final String thumbnailUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUrl = thumbnailUrl.isNotEmpty;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: hasUrl
+            ? Image.network(
+                thumbnailUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    color: AppColors.neutral100,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            : _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(width: _size, height: _size, color: AppColors.neutral100);
   }
 }
 

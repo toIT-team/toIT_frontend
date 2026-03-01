@@ -50,6 +50,23 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 링크 추가 (POST /links)
+  /// [foldersIdList] 링크를 저장할 보관함 ID 목록 (복수 선택 가능)
+  Future<void> createLink({
+    required int usersId,
+    required List<int> foldersIdList,
+    required String linksUrl,
+  }) async {
+    await _apiClient.post(
+      ApiConstants.linksEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersIdList': foldersIdList,
+        'linksUrl': linksUrl,
+      },
+    );
+  }
+
   /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
   Future<PageItemsResponseDto> fetchPageItems({
     required int usersId,
