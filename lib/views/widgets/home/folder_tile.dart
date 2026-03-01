@@ -186,11 +186,10 @@ class FolderTile extends ConsumerWidget {
                                     }
                                     break;
                                   case FolderOption.delete:
-                                    final confirmed =
-                                        await showFolderDeleteDialog(
-                                          context,
-                                          folderName: title,
-                                        );
+                                    final confirmed = await showDeleteDialog(
+                                      context,
+                                      message: '[$title]을 정말 삭제하시겠습니까?',
+                                    );
                                     if (!confirmed || !context.mounted) {
                                       break;
                                     }

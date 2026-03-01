@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 
-/// 보관함 삭제 확인 다이얼로그
-/// true 반환 시 삭제 진행
-Future<bool> showFolderDeleteDialog(
+/// 삭제 확인 다이얼로그 (공통, Figma 스타일)
+/// [message] 문구 표시 후 취소/삭제 버튼. true 반환 시 삭제 진행
+Future<bool> showDeleteDialog(
   BuildContext context, {
-  required String folderName,
+  required String message,
 }) async {
   final result = await showGeneralDialog<bool>(
     context: context,
@@ -18,7 +18,7 @@ Future<bool> showFolderDeleteDialog(
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 32),
-          child: _DeleteDialogContent(folderName: folderName),
+          child: _DeleteDialogContent(message: message),
         ),
       );
     },
@@ -27,9 +27,9 @@ Future<bool> showFolderDeleteDialog(
 }
 
 class _DeleteDialogContent extends StatelessWidget {
-  final String folderName;
+  final String message;
 
-  const _DeleteDialogContent({required this.folderName});
+  const _DeleteDialogContent({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +55,7 @@ class _DeleteDialogContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '[$folderName]을 정말 삭제하시겠습니까?',
+              message,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,

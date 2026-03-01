@@ -71,6 +71,19 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 링크 삭제 (DELETE /links)
+  /// Body: usersId, foldersId, linksId
+  Future<void> deleteLink({
+    required int usersId,
+    required int foldersId,
+    required int linksId,
+  }) async {
+    await _apiClient.delete(
+      ApiConstants.linksEndpoint,
+      data: {'usersId': usersId, 'foldersId': foldersId, 'linksId': linksId},
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   /// [foldersIdList] 노트를 저장할 보관함 ID 목록
   Future<void> createText({

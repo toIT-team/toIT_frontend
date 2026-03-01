@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +7,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/link_kebab_sheet.dart';
+import '../widgets/home/folder_delete_dialog.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -37,6 +40,78 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _confirmAndDeleteLink(LinkDto link) async {
+    final confirmed = await showDeleteDialog(context, message: '정말 삭제하시겠습니까?');
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteLink(
+        foldersId: widget.foldersId,
+        linksId: link.linksId,
+      );
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('링크가 삭제되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final statusCode = e.response?.statusCode;
+      final data = e.response?.data;
+      String message = '삭제에 실패했습니다. 다시 시도해 주세요.';
+      if (statusCode == 404 && data is Map && data['message'] != null) {
+        message = data['message'] as String;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
+  void _showLinkKebabSheet(LinkDto link) {
+    showLinkKebabSheet(
+      context,
+      link: link,
+      onAction: (action) {
+        switch (action) {
+          case LinkKebabAction.editTitle:
+            // TODO: 제목 수정 화면/다이얼로그
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('제목 수정 (준비 중)')));
+            }
+            break;
+          case LinkKebabAction.moveFolder:
+            // TODO: 보관함 이동
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('보관함 이동 (준비 중)')));
+            }
+            break;
+          case LinkKebabAction.share:
+            // TODO: 공유
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('공유 (준비 중)')));
+            }
+            break;
+          case LinkKebabAction.delete:
+            if (mounted) _confirmAndDeleteLink(link);
+            break;
+        }
+      },
+    );
   }
 
   @override
@@ -125,7 +200,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _LinkTabContent(links: data.links),
+                  _LinkTabContent(
+                    links: data.links,
+                    onLinkKebabTap: _showLinkKebabSheet,
+                  ),
                   _NoteTabContent(texts: data.texts),
                   _FileTabContent(files: data.files),
                   _ImageTabContent(images: data.images),
@@ -184,8 +262,9 @@ Widget _buildSectionToolbar(int count) {
 // ─── 링크 탭 (API links[]) ───
 class _LinkTabContent extends StatelessWidget {
   final List<LinkDto> links;
+  final void Function(LinkDto link) onLinkKebabTap;
 
-  const _LinkTabContent({required this.links});
+  const _LinkTabContent({required this.links, required this.onLinkKebabTap});
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +299,10 @@ class _LinkTabContent extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final link = links[index];
-              return _LinkItemRow(link: link, onMoreTap: () {});
+              return _LinkItemRow(
+                link: link,
+                onMoreTap: () => onLinkKebabTap(link),
+              );
             },
           ),
         ),
@@ -303,10 +385,15 @@ class _LinkItemRow extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: onMoreTap,
-                child: const Icon(
-                  Icons.more_horiz,
-                  size: 20,
-                  color: AppColors.gray600,
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Icon(
+                    Icons.more_vert,
+                    size: 20,
+                    color: AppColors.gray600,
+                  ),
                 ),
               ),
             ],

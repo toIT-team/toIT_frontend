@@ -62,6 +62,18 @@ class HomeRepository {
     );
   }
 
+  /// 자료 링크 삭제 (DELETE /links)
+  Future<void> deleteLink({
+    required int foldersId,
+    required int linksId,
+  }) async {
+    await _remoteDatasource.deleteLink(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+      linksId: linksId,
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   Future<void> createText({
     required List<int> foldersIdList,
