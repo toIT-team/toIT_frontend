@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../models/dto/page_items_response_dto.dart';
+import '../../repositories/home_repository.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
-/// 퍼블리싱: API 연동 전
-class FolderDetailScreen extends StatefulWidget {
+/// GET /page/items API 연동
+class FolderDetailScreen extends ConsumerStatefulWidget {
   final int foldersId;
   final String folderName;
 
@@ -18,10 +20,10 @@ class FolderDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<FolderDetailScreen> createState() => _FolderDetailScreenState();
+  ConsumerState<FolderDetailScreen> createState() => _FolderDetailScreenState();
 }
 
-class _FolderDetailScreenState extends State<FolderDetailScreen>
+class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -39,6 +41,8 @@ class _FolderDetailScreenState extends State<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -70,46 +74,66 @@ class _FolderDetailScreenState extends State<FolderDetailScreen>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          TabBar(
-            controller: _tabController,
-            labelColor: AppColors.gray900,
-            unselectedLabelColor: AppColors.gray600,
-            labelStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.025 * 16,
-              height: 1.4,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.025 * 16,
-              height: 1.4,
-            ),
-            indicatorColor: AppColors.blue500,
-            indicatorWeight: 2,
-            dividerColor: AppColors.neutral50,
-            tabs: const [
-              Tab(text: '링크'),
-              Tab(text: '노트'),
-              Tab(text: '파일'),
-              Tab(text: '이미지'),
+      body: pageItemsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '항목을 불러오지 못했습니다.',
+                style: TextStyle(color: AppColors.gray600, fontSize: 16),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextButton(
+                onPressed: () =>
+                    ref.invalidate(pageItemsProvider(widget.foldersId)),
+                child: const Text('다시 시도'),
+              ),
             ],
           ),
-          Expanded(
-            child: TabBarView(
+        ),
+        data: (data) => Column(
+          children: [
+            TabBar(
               controller: _tabController,
-              children: [
-                _LinkTabContent(foldersId: widget.foldersId),
-                _NoteTabContent(foldersId: widget.foldersId),
-                _FileTabContent(foldersId: widget.foldersId),
-                _ImageTabContent(foldersId: widget.foldersId),
+              labelColor: AppColors.gray900,
+              unselectedLabelColor: AppColors.gray600,
+              labelStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.025 * 16,
+                height: 1.4,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.025 * 16,
+                height: 1.4,
+              ),
+              indicatorColor: AppColors.blue500,
+              indicatorWeight: 2,
+              dividerColor: AppColors.neutral50,
+              tabs: const [
+                Tab(text: '링크'),
+                Tab(text: '노트'),
+                Tab(text: '파일'),
+                Tab(text: '이미지'),
               ],
             ),
-          ),
-        ],
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _LinkTabContent(links: data.links),
+                  _NoteTabContent(texts: data.texts),
+                  _FileTabContent(files: data.files),
+                  _ImageTabContent(images: data.images),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -157,53 +181,45 @@ Widget _buildSectionToolbar(int count) {
   );
 }
 
-// ─── 링크 탭 (스웨거 links[] 필드명 사용) ───
+// ─── 링크 탭 (API links[]) ───
 class _LinkTabContent extends StatelessWidget {
-  final int foldersId;
+  final List<LinkDto> links;
 
-  const _LinkTabContent({required this.foldersId});
-
-  /// 목업: API 연동 시 PageItemsResponseDto.links 로 교체
-  static final List<LinkDto> _mockLinks = [
-    LinkDto(
-      linksId: 0,
-      linksName: '디자이너가 알아야할 개발 지식',
-      linksUrl: '',
-      linksThumbnail: '',
-      textContent:
-          'PM (Product Manager) - 상품 전략을 세우고 관리하는 역할\n'
-          'PD (Product Designer) - 사용자경험 설계 및 디지털 제품 비주얼 디자인',
-      createdAt: '2026-01-02T12:00:00Z',
-    ),
-    LinkDto(
-      linksId: 1,
-      linksName: '디자이너가 알아야할 개발 지식 디자이너가 알아야할 개발 지식',
-      linksUrl: '',
-      linksThumbnail: '',
-      textContent:
-          'PM (Product Manager) - 상품 전략을 세우고 관리하는 역할\n'
-          'PD (Product Designer) - 사용자경험 설계 및 디지털 제품 비주얼 디자인',
-      createdAt: '2026-01-02T12:00:00Z',
-    ),
-  ];
+  const _LinkTabContent({required this.links});
 
   @override
   Widget build(BuildContext context) {
+    if (links.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSectionToolbar(0),
+          const Expanded(
+            child: Center(
+              child: Text(
+                '저장된 링크가 없습니다.',
+                style: TextStyle(fontSize: 16, color: AppColors.gray600),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(_mockLinks.length),
+        _buildSectionToolbar(links.length),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
-            itemCount: _mockLinks.length,
+            itemCount: links.length,
             separatorBuilder: (_, __) => const Divider(
               height: 1,
               thickness: 1,
               color: AppColors.neutral50,
             ),
             itemBuilder: (context, index) {
-              final link = _mockLinks[index];
+              final link = links[index];
               return _LinkItemRow(link: link, onMoreTap: () {});
             },
           ),
@@ -314,39 +330,46 @@ String _formatCreatedAt(String? createdAt) {
   return '${date.year}.${date.month}.${date.day}';
 }
 
-// ─── 노트 탭 (스웨거 texts[]: List<String> 사용) ───
+// ─── 노트 탭 (API texts[] = 객체 배열) ───
 class _NoteTabContent extends StatelessWidget {
-  final int foldersId;
+  final List<TextDto> texts;
 
-  const _NoteTabContent({required this.foldersId});
-
-  /// 목업: API 연동 시 PageItemsResponseDto.texts 로 교체
-  static const List<String> _mockTexts = [
-    '링크에 대한 정보를 간단하게 메모해보세요.',
-    '링크에 대한 정보를 간단하게 메모해보세요.',
-    '링크에 대한 정보를 간단하게 메모해보세요.',
-    '링크에 대한 정보를 간단하게 메모해보세요. '
-        '링크에 대한 정보를 간단하게 메모해보세요.',
-    '링크에 대한 정보를 간단하게 메모해보세요.',
-    '링크에 대한 정보를 간단하게 메모해보세요.',
-  ];
+  const _NoteTabContent({required this.texts});
 
   @override
   Widget build(BuildContext context) {
+    if (texts.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSectionToolbar(0),
+          const Expanded(
+            child: Center(
+              child: Text(
+                '저장된 노트가 없습니다.',
+                style: TextStyle(fontSize: 16, color: AppColors.gray600),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(_mockTexts.length),
+        _buildSectionToolbar(texts.length),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Wrap(
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.md,
-              children: _mockTexts
+              children: texts
                   .map(
-                    (text) =>
-                        SizedBox(width: 104, child: _NoteCard(content: text)),
+                    (text) => SizedBox(
+                      width: 104,
+                      child: _NoteCard(content: text.textContent),
+                    ),
                   )
                   .toList(),
             ),
@@ -357,7 +380,7 @@ class _NoteTabContent extends StatelessWidget {
   }
 }
 
-/// 노트 카드 1개 (스웨거 texts[] 요소 = String)
+/// 노트 카드 1개 (TextDto.textContent 표시)
 class _NoteCard extends StatelessWidget {
   final String content;
 
@@ -414,61 +437,45 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-// ─── 파일 탭 (스웨거 files[] 필드명 사용) ───
+// ─── 파일 탭 (API files[]) ───
 class _FileTabContent extends StatelessWidget {
-  final int foldersId;
+  final List<AttachmentFileDto> files;
 
-  const _FileTabContent({required this.foldersId});
-
-  /// 목업: API 연동 시 PageItemsResponseDto.files 로 교체
-  static final List<AttachmentFileDto> _mockFiles = [
-    AttachmentFileDto(
-      attachmentsId: 0,
-      usersId: 0,
-      fileName: '20112323443.pdf',
-      attachmentsSize: 27.6,
-      createdAt: '2025-12-25T21:00:00Z',
-    ),
-    AttachmentFileDto(
-      attachmentsId: 1,
-      usersId: 0,
-      fileName: '디자이너가 알아야할 개발.hwp',
-      attachmentsSize: 27.6,
-      createdAt: '2025-12-25T21:00:00Z',
-    ),
-    AttachmentFileDto(
-      attachmentsId: 2,
-      usersId: 0,
-      fileName: '디자이너가 알아야할...발지식.hwp',
-      attachmentsSize: 27.6,
-      createdAt: '2025-12-25T21:00:00Z',
-    ),
-    AttachmentFileDto(
-      attachmentsId: 3,
-      usersId: 0,
-      fileName: '디자이너가 알아야할 개발 지식',
-      attachmentsSize: 27.6,
-      createdAt: '2025-12-25T21:00:00Z',
-    ),
-  ];
+  const _FileTabContent({required this.files});
 
   @override
   Widget build(BuildContext context) {
+    if (files.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSectionToolbar(0),
+          const Expanded(
+            child: Center(
+              child: Text(
+                '저장된 파일이 없습니다.',
+                style: TextStyle(fontSize: 16, color: AppColors.gray600),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(_mockFiles.length),
+        _buildSectionToolbar(files.length),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
-            itemCount: _mockFiles.length,
+            itemCount: files.length,
             separatorBuilder: (_, __) => const Divider(
               height: 1,
               thickness: 1,
               color: AppColors.neutral50,
             ),
             itemBuilder: (context, index) {
-              final file = _mockFiles[index];
+              final file = files[index];
               return _FileItemRow(file: file, onMoreTap: () {});
             },
           ),
@@ -556,53 +563,41 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
   return dateStr.isEmpty ? sizeStr : '$dateStr | $sizeStr';
 }
 
-// ─── 이미지 탭 (스웨거 images[] 필드명 사용) ───
+// ─── 이미지 탭 (API images[]) ───
 class _ImageTabContent extends StatelessWidget {
-  final int foldersId;
+  final List<AttachmentImageDto> images;
 
-  const _ImageTabContent({required this.foldersId});
-
-  /// 목업: API 연동 시 PageItemsResponseDto.images 로 교체
-  static final List<AttachmentImageDto> _mockImages = [
-    AttachmentImageDto(
-      attachmentsId: 0,
-      usersId: 0,
-      fileName: 'image1.jpg',
-      presignedUrl: '',
-      imagesWidth: 161,
-      imagesHeight: 163,
-    ),
-    AttachmentImageDto(
-      attachmentsId: 1,
-      usersId: 0,
-      fileName: 'image2.jpg',
-      presignedUrl: '',
-      imagesWidth: 161,
-      imagesHeight: 163,
-    ),
-    AttachmentImageDto(
-      attachmentsId: 2,
-      usersId: 0,
-      fileName: 'image3.jpg',
-      presignedUrl: '',
-      imagesWidth: 161,
-      imagesHeight: 163,
-    ),
-  ];
+  const _ImageTabContent({required this.images});
 
   @override
   Widget build(BuildContext context) {
+    if (images.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSectionToolbar(0),
+          const Expanded(
+            child: Center(
+              child: Text(
+                '저장된 이미지가 없습니다.',
+                style: TextStyle(fontSize: 16, color: AppColors.gray600),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(_mockImages.length),
+        _buildSectionToolbar(images.length),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Wrap(
               spacing: AppSpacing.sm + 1,
               runSpacing: AppSpacing.md,
-              children: _mockImages
+              children: images
                   .map(
                     (img) => Container(
                       width: 161,

@@ -24,7 +24,7 @@ mixin _$PageItemsResponseDto {
   int get usersId => throw _privateConstructorUsedError;
   int get foldersId => throw _privateConstructorUsedError;
   List<LinkDto> get links => throw _privateConstructorUsedError;
-  List<String> get texts => throw _privateConstructorUsedError;
+  List<TextDto> get texts => throw _privateConstructorUsedError;
   List<AttachmentFileDto> get files => throw _privateConstructorUsedError;
   List<AttachmentImageDto> get images => throw _privateConstructorUsedError;
 
@@ -49,7 +49,7 @@ abstract class $PageItemsResponseDtoCopyWith<$Res> {
     int usersId,
     int foldersId,
     List<LinkDto> links,
-    List<String> texts,
+    List<TextDto> texts,
     List<AttachmentFileDto> files,
     List<AttachmentImageDto> images,
   });
@@ -97,7 +97,7 @@ class _$PageItemsResponseDtoCopyWithImpl<
             texts: null == texts
                 ? _value.texts
                 : texts // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
+                      as List<TextDto>,
             files: null == files
                 ? _value.files
                 : files // ignore: cast_nullable_to_non_nullable
@@ -125,7 +125,7 @@ abstract class _$$PageItemsResponseDtoImplCopyWith<$Res>
     int usersId,
     int foldersId,
     List<LinkDto> links,
-    List<String> texts,
+    List<TextDto> texts,
     List<AttachmentFileDto> files,
     List<AttachmentImageDto> images,
   });
@@ -169,7 +169,7 @@ class __$$PageItemsResponseDtoImplCopyWithImpl<$Res>
         texts: null == texts
             ? _value._texts
             : texts // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
+                  as List<TextDto>,
         files: null == files
             ? _value._files
             : files // ignore: cast_nullable_to_non_nullable
@@ -190,7 +190,7 @@ class _$PageItemsResponseDtoImpl implements _PageItemsResponseDto {
     required this.usersId,
     required this.foldersId,
     final List<LinkDto> links = const [],
-    final List<String> texts = const [],
+    final List<TextDto> texts = const [],
     final List<AttachmentFileDto> files = const [],
     final List<AttachmentImageDto> images = const [],
   }) : _links = links,
@@ -214,10 +214,10 @@ class _$PageItemsResponseDtoImpl implements _PageItemsResponseDto {
     return EqualUnmodifiableListView(_links);
   }
 
-  final List<String> _texts;
+  final List<TextDto> _texts;
   @override
   @JsonKey()
-  List<String> get texts {
+  List<TextDto> get texts {
     if (_texts is EqualUnmodifiableListView) return _texts;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_texts);
@@ -295,7 +295,7 @@ abstract class _PageItemsResponseDto implements PageItemsResponseDto {
     required final int usersId,
     required final int foldersId,
     final List<LinkDto> links,
-    final List<String> texts,
+    final List<TextDto> texts,
     final List<AttachmentFileDto> files,
     final List<AttachmentImageDto> images,
   }) = _$PageItemsResponseDtoImpl;
@@ -310,7 +310,7 @@ abstract class _PageItemsResponseDto implements PageItemsResponseDto {
   @override
   List<LinkDto> get links;
   @override
-  List<String> get texts;
+  List<TextDto> get texts;
   @override
   List<AttachmentFileDto> get files;
   @override
@@ -322,6 +322,199 @@ abstract class _PageItemsResponseDto implements PageItemsResponseDto {
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PageItemsResponseDtoImplCopyWith<_$PageItemsResponseDtoImpl>
   get copyWith => throw _privateConstructorUsedError;
+}
+
+TextDto _$TextDtoFromJson(Map<String, dynamic> json) {
+  return _TextDto.fromJson(json);
+}
+
+/// @nodoc
+mixin _$TextDto {
+  int get textsId => throw _privateConstructorUsedError;
+  String get textContent => throw _privateConstructorUsedError;
+  String? get createdAt => throw _privateConstructorUsedError;
+
+  /// Serializes this TextDto to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of TextDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $TextDtoCopyWith<TextDto> get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $TextDtoCopyWith<$Res> {
+  factory $TextDtoCopyWith(TextDto value, $Res Function(TextDto) then) =
+      _$TextDtoCopyWithImpl<$Res, TextDto>;
+  @useResult
+  $Res call({int textsId, String textContent, String? createdAt});
+}
+
+/// @nodoc
+class _$TextDtoCopyWithImpl<$Res, $Val extends TextDto>
+    implements $TextDtoCopyWith<$Res> {
+  _$TextDtoCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of TextDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? textsId = null,
+    Object? textContent = null,
+    Object? createdAt = freezed,
+  }) {
+    return _then(
+      _value.copyWith(
+            textsId: null == textsId
+                ? _value.textsId
+                : textsId // ignore: cast_nullable_to_non_nullable
+                      as int,
+            textContent: null == textContent
+                ? _value.textContent
+                : textContent // ignore: cast_nullable_to_non_nullable
+                      as String,
+            createdAt: freezed == createdAt
+                ? _value.createdAt
+                : createdAt // ignore: cast_nullable_to_non_nullable
+                      as String?,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$TextDtoImplCopyWith<$Res> implements $TextDtoCopyWith<$Res> {
+  factory _$$TextDtoImplCopyWith(
+    _$TextDtoImpl value,
+    $Res Function(_$TextDtoImpl) then,
+  ) = __$$TextDtoImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({int textsId, String textContent, String? createdAt});
+}
+
+/// @nodoc
+class __$$TextDtoImplCopyWithImpl<$Res>
+    extends _$TextDtoCopyWithImpl<$Res, _$TextDtoImpl>
+    implements _$$TextDtoImplCopyWith<$Res> {
+  __$$TextDtoImplCopyWithImpl(
+    _$TextDtoImpl _value,
+    $Res Function(_$TextDtoImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of TextDto
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? textsId = null,
+    Object? textContent = null,
+    Object? createdAt = freezed,
+  }) {
+    return _then(
+      _$TextDtoImpl(
+        textsId: null == textsId
+            ? _value.textsId
+            : textsId // ignore: cast_nullable_to_non_nullable
+                  as int,
+        textContent: null == textContent
+            ? _value.textContent
+            : textContent // ignore: cast_nullable_to_non_nullable
+                  as String,
+        createdAt: freezed == createdAt
+            ? _value.createdAt
+            : createdAt // ignore: cast_nullable_to_non_nullable
+                  as String?,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$TextDtoImpl implements _TextDto {
+  const _$TextDtoImpl({
+    required this.textsId,
+    this.textContent = '',
+    this.createdAt,
+  });
+
+  factory _$TextDtoImpl.fromJson(Map<String, dynamic> json) =>
+      _$$TextDtoImplFromJson(json);
+
+  @override
+  final int textsId;
+  @override
+  @JsonKey()
+  final String textContent;
+  @override
+  final String? createdAt;
+
+  @override
+  String toString() {
+    return 'TextDto(textsId: $textsId, textContent: $textContent, createdAt: $createdAt)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$TextDtoImpl &&
+            (identical(other.textsId, textsId) || other.textsId == textsId) &&
+            (identical(other.textContent, textContent) ||
+                other.textContent == textContent) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, textsId, textContent, createdAt);
+
+  /// Create a copy of TextDto
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$TextDtoImplCopyWith<_$TextDtoImpl> get copyWith =>
+      __$$TextDtoImplCopyWithImpl<_$TextDtoImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$TextDtoImplToJson(this);
+  }
+}
+
+abstract class _TextDto implements TextDto {
+  const factory _TextDto({
+    required final int textsId,
+    final String textContent,
+    final String? createdAt,
+  }) = _$TextDtoImpl;
+
+  factory _TextDto.fromJson(Map<String, dynamic> json) = _$TextDtoImpl.fromJson;
+
+  @override
+  int get textsId;
+  @override
+  String get textContent;
+  @override
+  String? get createdAt;
+
+  /// Create a copy of TextDto
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$TextDtoImplCopyWith<_$TextDtoImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 LinkDto _$LinkDtoFromJson(Map<String, dynamic> json) {

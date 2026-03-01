@@ -1,6 +1,7 @@
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/home_response_dto.dart';
+import '../../models/dto/page_items_response_dto.dart';
 
 /// 홈 화면 원격 데이터 소스 (API 통신)
 class HomeRemoteDatasource {
@@ -47,6 +48,19 @@ class HomeRemoteDatasource {
       ApiConstants.foldersEndpoint,
       data: {'usersId': usersId, 'foldersId': foldersId},
     );
+  }
+
+  /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
+  Future<PageItemsResponseDto> fetchPageItems({
+    required int usersId,
+    required int foldersId,
+  }) async {
+    final response = await _apiClient.get(
+      ApiConstants.pageItemsEndpoint,
+      queryParameters: {'usersId': usersId, 'foldersId': foldersId},
+    );
+
+    return PageItemsResponseDto.fromJson(response.data as Map<String, dynamic>);
   }
 
   /// 보관함(폴더) 수정

@@ -10,13 +10,26 @@ class PageItemsResponseDto with _$PageItemsResponseDto {
     required int usersId,
     required int foldersId,
     @Default([]) List<LinkDto> links,
-    @Default([]) List<String> texts,
+    @Default([]) List<TextDto> texts,
     @Default([]) List<AttachmentFileDto> files,
     @Default([]) List<AttachmentImageDto> images,
   }) = _PageItemsResponseDto;
 
   factory PageItemsResponseDto.fromJson(Map<String, dynamic> json) =>
       _$PageItemsResponseDtoFromJson(json);
+}
+
+/// 노트(텍스트) 항목 (스웨거 texts[] 요소 - 객체 배열)
+@freezed
+class TextDto with _$TextDto {
+  const factory TextDto({
+    required int textsId,
+    @Default('') String textContent,
+    String? createdAt,
+  }) = _TextDto;
+
+  factory TextDto.fromJson(Map<String, dynamic> json) =>
+      _$TextDtoFromJson(json);
 }
 
 /// 링크 항목 (스웨거 links[] 요소)

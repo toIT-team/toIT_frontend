@@ -4,6 +4,7 @@ import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/home_response_dto.dart';
+import '../models/dto/page_items_response_dto.dart';
 
 /// 홈 화면 리포지토리
 /// - Remote/Local DataSource 선택
@@ -49,6 +50,14 @@ class HomeRepository {
     );
   }
 
+  /// 보관함 내부 항목 조회 (GET /page/items)
+  Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
+    return _remoteDatasource.fetchPageItems(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+    );
+  }
+
   /// 보관함(폴더) 생성
   Future<FolderDto> createFolder({
     required String name,
@@ -74,4 +83,13 @@ final homeRemoteDatasourceProvider = Provider<HomeRemoteDatasource>((ref) {
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
   final remoteDatasource = ref.watch(homeRemoteDatasourceProvider);
   return HomeRepository(remoteDatasource);
+});
+
+/// 보관함 상세 항목 (GET /page/items) - foldersId별 캐시
+final pageItemsProvider = FutureProvider.family<PageItemsResponseDto, int>((
+  ref,
+  foldersId,
+) async {
+  final repository = ref.watch(homeRepositoryProvider);
+  return repository.getPageItems(foldersId: foldersId);
 });

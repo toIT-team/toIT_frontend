@@ -17,7 +17,9 @@ _$PageItemsResponseDtoImpl _$$PageItemsResponseDtoImplFromJson(
           .toList() ??
       const [],
   texts:
-      (json['texts'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      (json['texts'] as List<dynamic>?)
+          ?.map((e) => TextDto.fromJson(e as Map<String, dynamic>))
+          .toList() ??
       const [],
   files:
       (json['files'] as List<dynamic>?)
@@ -41,6 +43,20 @@ Map<String, dynamic> _$$PageItemsResponseDtoImplToJson(
   'files': instance.files,
   'images': instance.images,
 };
+
+_$TextDtoImpl _$$TextDtoImplFromJson(Map<String, dynamic> json) =>
+    _$TextDtoImpl(
+      textsId: (json['textsId'] as num).toInt(),
+      textContent: json['textContent'] as String? ?? '',
+      createdAt: json['createdAt'] as String?,
+    );
+
+Map<String, dynamic> _$$TextDtoImplToJson(_$TextDtoImpl instance) =>
+    <String, dynamic>{
+      'textsId': instance.textsId,
+      'textContent': instance.textContent,
+      'createdAt': instance.createdAt,
+    };
 
 _$LinkDtoImpl _$$LinkDtoImplFromJson(Map<String, dynamic> json) =>
     _$LinkDtoImpl(
