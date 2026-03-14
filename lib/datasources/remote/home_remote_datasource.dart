@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/home_response_dto.dart';
+import '../../models/dto/link_preview_response_dto.dart';
 import '../../models/dto/page_items_response_dto.dart';
 
 /// 홈 화면 원격 데이터 소스 (API 통신)
@@ -54,21 +55,45 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 링크 미리보기 추출 (POST /links/preview)
+  /// [linksUrl]을 받아 링크 제목, 본문, 썸네일 추출
+  Future<LinkPreviewResponseDto> fetchLinkPreview({
+    required String linksUrl,
+  }) async {
+    final response = await _apiClient.post(
+      ApiConstants.linksPreviewEndpoint,
+      data: {'linksUrl': linksUrl},
+    );
+    return LinkPreviewResponseDto.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
   /// 자료 링크 추가 (POST /links)
   /// [foldersIdList] 링크를 저장할 보관함 ID 목록 (복수 선택 가능)
+  /// [linksName], [textContent], [linksThumbnail] 미리보기에서 추출한 값(선택)
   Future<void> createLink({
     required int usersId,
     required List<int> foldersIdList,
     required String linksUrl,
+    String? linksName,
+    String? textContent,
+    String? linksThumbnail,
   }) async {
-    await _apiClient.post(
-      ApiConstants.linksEndpoint,
-      data: {
-        'usersId': usersId,
-        'foldersIdList': foldersIdList,
-        'linksUrl': linksUrl,
-      },
-    );
+    final data = <String, dynamic>{
+      'usersId': usersId,
+      'foldersIdList': foldersIdList,
+      'linksUrl': linksUrl,
+    };
+    if (linksName != null && linksName.isNotEmpty)
+      data['linksName'] = linksName;
+    if (textContent != null && textContent.isNotEmpty) {
+      data['textContent'] = textContent;
+    }
+    if (linksThumbnail != null && linksThumbnail.isNotEmpty) {
+      data['linksThumbnail'] = linksThumbnail;
+    }
+    await _apiClient.post(ApiConstants.linksEndpoint, data: data);
   }
 
   /// 자료 링크 삭제 (DELETE /links)

@@ -4,6 +4,7 @@ import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/home_response_dto.dart';
+import '../models/dto/link_preview_response_dto.dart';
 import '../models/dto/page_items_response_dto.dart';
 
 /// 홈 화면 리포지토리
@@ -50,15 +51,28 @@ class HomeRepository {
     );
   }
 
+  /// 링크 미리보기 추출 (POST /links/preview)
+  Future<LinkPreviewResponseDto> fetchLinkPreview({
+    required String linksUrl,
+  }) async {
+    return _remoteDatasource.fetchLinkPreview(linksUrl: linksUrl);
+  }
+
   /// 자료 링크 추가 (POST /links)
   Future<void> createLink({
     required List<int> foldersIdList,
     required String linksUrl,
+    String? linksName,
+    String? textContent,
+    String? linksThumbnail,
   }) async {
     await _remoteDatasource.createLink(
       usersId: ApiConstants.defaultUsersId,
       foldersIdList: foldersIdList,
       linksUrl: linksUrl,
+      linksName: linksName,
+      textContent: textContent,
+      linksThumbnail: linksThumbnail,
     );
   }
 

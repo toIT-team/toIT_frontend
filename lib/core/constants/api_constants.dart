@@ -23,6 +23,9 @@ class ApiConstants {
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
 
+  /// 링크 미리보기 추출 (POST)
+  static const String linksPreviewEndpoint = '/links/preview';
+
   /// 자료 텍스트(노트) 추가 (POST)
   static const String textsEndpoint = '/texts';
 
