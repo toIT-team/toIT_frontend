@@ -74,11 +74,32 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   Future<void> _confirmAndDelete() async {
     final confirmed = await showDeleteDialog(context, message: '정말 삭제하시겠습니까?');
     if (confirmed != true || !mounted) return;
-    // TODO: DELETE /texts API 연동 후 호출 후 pop
-    if (mounted) {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteText(
+        foldersId: widget.foldersId,
+        textsId: _note.textsId,
+      );
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('삭제 (준비 중)')));
+      ).showSnackBar(const SnackBar(content: Text('노트가 삭제되었습니다.')));
+      Navigator.of(context).pop();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '삭제에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
     }
   }
 

@@ -164,6 +164,18 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 텍스트(노트) 삭제 (DELETE /texts)
+  Future<void> deleteText({
+    required int usersId,
+    required int foldersId,
+    required int textsId,
+  }) async {
+    await _apiClient.delete(
+      ApiConstants.textsEndpoint,
+      data: {'usersId': usersId, 'foldersId': foldersId, 'textsId': textsId},
+    );
+  }
+
   /// 자료 파일 추가 (POST /attachments/files)
   /// Query: usersId, foldersIdList, textContent. Body: multipart/form-data (file 파트)
   Future<void> createFile({

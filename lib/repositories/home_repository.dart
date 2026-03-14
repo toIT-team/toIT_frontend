@@ -130,6 +130,18 @@ class HomeRepository {
     );
   }
 
+  /// 자료 텍스트(노트) 삭제 (DELETE /texts)
+  Future<void> deleteText({
+    required int foldersId,
+    required int textsId,
+  }) async {
+    await _remoteDatasource.deleteText(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+      textsId: textsId,
+    );
+  }
+
   /// 자료 파일 추가 (POST /attachments/files)
   Future<void> createFile({
     required List<int> foldersIdList,

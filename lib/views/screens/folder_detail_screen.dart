@@ -122,10 +122,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   void _openNoteDetail(TextDto note) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => NoteDetailScreen(
-          note: note,
-          foldersId: widget.foldersId,
-        ),
+        builder: (_) =>
+            NoteDetailScreen(note: note, foldersId: widget.foldersId),
       ),
     );
   }
@@ -154,11 +152,31 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   Future<void> _confirmAndDeleteNote(TextDto note) async {
     final confirmed = await showDeleteDialog(context, message: '정말 삭제하시겠습니까?');
     if (confirmed != true || !mounted) return;
-    // TODO: DELETE /texts API 연동 후 호출
-    if (mounted) {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteText(
+        foldersId: widget.foldersId,
+        textsId: note.textsId,
+      );
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('삭제 (준비 중)')));
+      ).showSnackBar(const SnackBar(content: Text('노트가 삭제되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '삭제에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
     }
   }
 
@@ -610,69 +628,69 @@ class _NoteCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-          width: _boxWidth,
-          height: _boxHeight,
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border.all(color: AppColors.neutral50),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          ),
-          child: Text(
-            content.isEmpty ? '링크에 대한 정보를 간단하게 메모해보세요.' : content,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray900,
-              letterSpacing: -0.025 * 14,
-              height: 1.5,
+            width: _boxWidth,
+            height: _boxHeight,
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border.all(color: AppColors.neutral50),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.gray900,
-            letterSpacing: -0.025 * 18,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              dateText,
+            child: Text(
+              content.isEmpty ? '링크에 대한 정보를 간단하게 메모해보세요.' : content,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.gray600,
+                color: AppColors.gray900,
                 letterSpacing: -0.025 * 14,
                 height: 1.5,
               ),
             ),
-            GestureDetector(
-              onTap: onKebabTap,
-              behavior: HitTestBehavior.opaque,
-              child: const SizedBox(
-                width: 20,
-                height: 20,
-                child: Icon(
-                  Icons.more_vert,
-                  size: 20,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.gray900,
+              letterSpacing: -0.025 * 18,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                dateText,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.gray600,
+                  letterSpacing: -0.025 * 14,
+                  height: 1.5,
                 ),
               ),
-            ),
-          ],
-        ),
+              GestureDetector(
+                onTap: onKebabTap,
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Icon(
+                    Icons.more_vert,
+                    size: 20,
+                    color: AppColors.gray600,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
