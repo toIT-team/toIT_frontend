@@ -109,6 +109,26 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 링크 수정 (PATCH /links/update) - 제목·설명
+  Future<void> updateLink({
+    required int usersId,
+    required int foldersId,
+    required int linksId,
+    required String linksName,
+    required String textContent,
+  }) async {
+    await _apiClient.patch(
+      ApiConstants.linksUpdateEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersId': foldersId,
+        'linksId': linksId,
+        'linksName': linksName,
+        'textContent': textContent,
+      },
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   /// [foldersIdList] 노트를 저장할 보관함 ID 목록
   Future<void> createText({

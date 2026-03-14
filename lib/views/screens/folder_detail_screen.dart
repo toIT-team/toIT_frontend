@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
 
@@ -83,11 +84,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       onAction: (action) {
         switch (action) {
           case LinkKebabAction.editTitle:
-            // TODO: 제목 수정 화면/다이얼로그
             if (mounted) {
-              ScaffoldMessenger.of(
+              showLinkEditSheet(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('제목 수정 (준비 중)')));
+                link: link,
+                foldersId: widget.foldersId,
+                ref: ref,
+              );
             }
             break;
           case LinkKebabAction.moveFolder:

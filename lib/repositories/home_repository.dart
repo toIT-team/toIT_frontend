@@ -88,6 +88,22 @@ class HomeRepository {
     );
   }
 
+  /// 자료 링크 수정 (PATCH /links/update) - 제목·설명
+  Future<void> updateLink({
+    required int foldersId,
+    required int linksId,
+    required String linksName,
+    required String textContent,
+  }) async {
+    await _remoteDatasource.updateLink(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+      linksId: linksId,
+      linksName: linksName,
+      textContent: textContent,
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   Future<void> createText({
     required List<int> foldersIdList,
