@@ -9,7 +9,9 @@ import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
+import '../widgets/common/note_kebab_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
+import 'note_detail_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -117,6 +119,49 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     );
   }
 
+  void _openNoteDetail(TextDto note) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NoteDetailScreen(
+          note: note,
+          foldersId: widget.foldersId,
+        ),
+      ),
+    );
+  }
+
+  void _showNoteKebabSheet(TextDto note) {
+    showNoteKebabSheet(
+      context,
+      note: note,
+      onAction: (action) {
+        switch (action) {
+          case NoteKebabAction.moveFolder:
+            if (mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('보관함 이동 (준비 중)')));
+            }
+            break;
+          case NoteKebabAction.delete:
+            if (mounted) _confirmAndDeleteNote(note);
+            break;
+        }
+      },
+    );
+  }
+
+  Future<void> _confirmAndDeleteNote(TextDto note) async {
+    final confirmed = await showDeleteDialog(context, message: '정말 삭제하시겠습니까?');
+    if (confirmed != true || !mounted) return;
+    // TODO: DELETE /texts API 연동 후 호출
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제 (준비 중)')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
@@ -207,7 +252,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                     links: data.links,
                     onLinkKebabTap: _showLinkKebabSheet,
                   ),
-                  _NoteTabContent(texts: data.texts),
+                  _NoteTabContent(
+                    texts: data.texts,
+                    onNoteTap: _openNoteDetail,
+                    onNoteKebabTap: _showNoteKebabSheet,
+                  ),
                   _FileTabContent(files: data.files),
                   _ImageTabContent(images: data.images),
                 ],
@@ -460,11 +509,23 @@ String _formatCreatedAt(String? createdAt) {
   return '${date.year}.${date.month}.${date.day}';
 }
 
-// ─── 노트 탭 (API texts[] = 객체 배열) ───
+// ─── 노트 탭 (API texts[] = 객체 배열, 3열 그리드) ───
 class _NoteTabContent extends StatelessWidget {
   final List<TextDto> texts;
+  final void Function(TextDto note) onNoteTap;
+  final void Function(TextDto note) onNoteKebabTap;
 
-  const _NoteTabContent({required this.texts});
+  const _NoteTabContent({
+    required this.texts,
+    required this.onNoteTap,
+    required this.onNoteKebabTap,
+  });
+
+  static const double _cardWidth = 104;
+
+  /// 제목(1줄) + 간격 + 날짜행 높이 여유 포함해 셀 높이 확보 (오버플로우 방지)
+  static const double _cardTotalHeight = 214;
+  static const double _gridSpacing = 12;
 
   @override
   Widget build(BuildContext context) {
@@ -489,19 +550,25 @@ class _NoteTabContent extends StatelessWidget {
       children: [
         _buildSectionToolbar(texts.length),
         Expanded(
-          child: SingleChildScrollView(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.md,
-              children: texts
-                  .map(
-                    (text) => SizedBox(
-                      width: 104,
-                      child: _NoteCard(content: text.textContent),
-                    ),
-                  )
-                  .toList(),
+            child: GridView.builder(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: _gridSpacing,
+                crossAxisSpacing: _gridSpacing,
+                childAspectRatio: _cardWidth / _cardTotalHeight,
+              ),
+              itemCount: texts.length,
+              itemBuilder: (context, index) {
+                final note = texts[index];
+                return _NoteCard(
+                  note: note,
+                  onTap: () => onNoteTap(note),
+                  onKebabTap: () => onNoteKebabTap(note),
+                );
+              },
             ),
           ),
         ),
@@ -510,26 +577,41 @@ class _NoteTabContent extends StatelessWidget {
   }
 }
 
-/// 노트 카드 1개 (TextDto.textContent 표시)
+/// 노트 카드 1개 (Figma: 104x150 내용 + 제목·날짜·케밥). 카드 탭 시 상세 화면 이동.
 class _NoteCard extends StatelessWidget {
-  final String content;
+  final TextDto note;
+  final VoidCallback onTap;
+  final VoidCallback onKebabTap;
 
-  const _NoteCard({required this.content});
+  const _NoteCard({
+    required this.note,
+    required this.onTap,
+    required this.onKebabTap,
+  });
+
+  static const double _boxWidth = 104;
+  static const double _boxHeight = 150;
 
   @override
   Widget build(BuildContext context) {
+    final content = note.textContent;
     final title = content.length > 20
         ? '${content.substring(0, 20)}...'
         : content.isEmpty
         ? '노트'
         : content;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 104,
-          height: 150,
+    final dateText = _formatCreatedAt(note.createdAt);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+          width: _boxWidth,
+          height: _boxHeight,
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.surface,
@@ -537,7 +619,7 @@ class _NoteCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           ),
           child: Text(
-            content,
+            content.isEmpty ? '링크에 대한 정보를 간단하게 메모해보세요.' : content,
             maxLines: 4,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -549,7 +631,7 @@ class _NoteCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: 6),
         Text(
           title,
           maxLines: 1,
@@ -562,7 +644,37 @@ class _NoteCard extends StatelessWidget {
             height: 1.4,
           ),
         ),
-      ],
+        const SizedBox(height: 2),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              dateText,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.gray600,
+                letterSpacing: -0.025 * 14,
+                height: 1.5,
+              ),
+            ),
+            GestureDetector(
+              onTap: onKebabTap,
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox(
+                width: 20,
+                height: 20,
+                child: Icon(
+                  Icons.more_vert,
+                  size: 20,
+                  color: AppColors.gray600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        ],
+      ),
     );
   }
 }
