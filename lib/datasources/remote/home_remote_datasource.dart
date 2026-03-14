@@ -146,6 +146,24 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 텍스트(노트) 수정 (PATCH /texts/update)
+  Future<void> updateText({
+    required int usersId,
+    required int foldersId,
+    required int textsId,
+    required String textContent,
+  }) async {
+    await _apiClient.patch(
+      ApiConstants.textsUpdateEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersId': foldersId,
+        'textsId': textsId,
+        'textContent': textContent,
+      },
+    );
+  }
+
   /// 자료 파일 추가 (POST /attachments/files)
   /// Query: usersId, foldersIdList, textContent. Body: multipart/form-data (file 파트)
   Future<void> createFile({

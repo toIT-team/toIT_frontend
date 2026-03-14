@@ -32,6 +32,9 @@ class ApiConstants {
   /// 자료 텍스트(노트) 추가 (POST)
   static const String textsEndpoint = '/texts';
 
+  /// 자료 텍스트(노트) 수정 (PATCH)
+  static const String textsUpdateEndpoint = '/texts/update';
+
   /// 자료 파일 추가 (POST, multipart)
   static const String attachmentsFilesEndpoint = '/attachments/files';
 
