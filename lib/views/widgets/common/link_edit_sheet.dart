@@ -132,7 +132,7 @@ class _LinkEditSheetState extends ConsumerState<_LinkEditSheet> {
                   width: 42,
                   height: 3,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD9D9D9),
+                    color: AppColors.borderLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),

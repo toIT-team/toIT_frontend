@@ -28,7 +28,7 @@ class _FolderMemoSheet extends StatelessWidget {
         border: Border(top: BorderSide(color: AppColors.neutral50)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x293F3F3F),
+            color: AppColors.overlayScrim,
             blurRadius: 4,
             offset: Offset(0, 2),
           ),

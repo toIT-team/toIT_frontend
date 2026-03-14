@@ -47,7 +47,7 @@ class _LinkKebabSheet extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
         boxShadow: [
           BoxShadow(
-            color: Color(0x29636363),
+            color: AppColors.shadowSheet,
             blurRadius: 4,
             offset: Offset(0, 2),
           ),
@@ -111,7 +111,7 @@ class _LinkKebabSheet extends StatelessWidget {
       width: 42,
       height: 3,
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9),
+        color: AppColors.borderLight,
         borderRadius: BorderRadius.circular(20),
       ),
     );

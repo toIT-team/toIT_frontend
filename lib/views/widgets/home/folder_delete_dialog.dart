@@ -42,7 +42,7 @@ class _DeleteDialogContent extends StatelessWidget {
           border: Border.all(color: AppColors.neutral50),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x0F000D43),
+              color: AppColors.overlayDialog,
               blurRadius: 16,
               offset: Offset(0, 2),
             ),

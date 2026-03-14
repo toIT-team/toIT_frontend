@@ -37,7 +37,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 borderRadius: BorderRadius.circular(99),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF007CC9).withOpacity(0.06),
+                    color: AppColors.shadowNavBlue.withOpacity(0.06),
                     blurRadius: 4,
                     offset: const Offset(0, 4),
                   ),
@@ -136,7 +136,7 @@ class _AddButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF007CC9).withOpacity(0.12),
+              color: AppColors.shadowNavBlue.withOpacity(0.12),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../models/calendar/calendar_event.dart';
 import 'day_event_card.dart';
 
@@ -13,10 +14,7 @@ void showDayEventsBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DayEventsBottomSheet(
-      date: date,
-      events: events,
-    ),
+    builder: (context) => DayEventsBottomSheet(date: date, events: events),
   );
 }
 
@@ -40,7 +38,7 @@ class DayEventsBottomSheet extends StatelessWidget {
       builder: (context, scrollController) {
         return Container(
           decoration: const BoxDecoration(
-            color: Color(0xFFF5F5F5),
+            color: AppColors.surfaceLight,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -97,10 +95,7 @@ class DayEventsBottomSheet extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 lunarDate,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -127,18 +122,11 @@ class DayEventsBottomSheet extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.event_note_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.event_note_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             '일정이 없습니다',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
         ],
       ),
