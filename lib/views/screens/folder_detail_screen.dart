@@ -139,9 +139,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         switch (action) {
           case NoteKebabAction.moveFolder:
             if (mounted) {
-              ScaffoldMessenger.of(
+              showMoveToFolderSheet(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('보관함 이동 (준비 중)')));
+                ref,
+                currentFoldersId: widget.foldersId,
+                onSelect: (folder) => _moveNoteToFolder(note, folder.foldersId),
+              );
             }
             break;
           case NoteKebabAction.delete:
@@ -150,6 +153,37 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         }
       },
     );
+  }
+
+  Future<void> _moveNoteToFolder(TextDto note, int moveFoldersId) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.moveText(
+        foldersId: widget.foldersId,
+        moveFoldersId: moveFoldersId,
+        textsId: note.textsId,
+      );
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      ref.invalidate(pageItemsProvider(moveFoldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('노트가 이동되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '이동에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+    }
   }
 
   Future<void> _moveLinkToFolder(LinkDto link, int moveFoldersId) async {

@@ -156,6 +156,20 @@ class HomeRepository {
     );
   }
 
+  /// 자료 텍스트(노트) 보관함 이동 (PATCH /texts)
+  Future<void> moveText({
+    required int foldersId,
+    required int moveFoldersId,
+    required int textsId,
+  }) async {
+    await _remoteDatasource.moveText(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+      moveFoldersId: moveFoldersId,
+      textsId: textsId,
+    );
+  }
+
   /// 자료 파일 추가 (POST /attachments/files)
   Future<void> createFile({
     required List<int> foldersIdList,
