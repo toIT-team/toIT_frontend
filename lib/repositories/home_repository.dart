@@ -104,6 +104,20 @@ class HomeRepository {
     );
   }
 
+  /// 자료 링크 보관함 이동 (PATCH /links)
+  Future<void> moveLink({
+    required int foldersId,
+    required int moveFoldersId,
+    required int linksId,
+  }) async {
+    await _remoteDatasource.moveLink(
+      usersId: ApiConstants.defaultUsersId,
+      foldersId: foldersId,
+      moveFoldersId: moveFoldersId,
+      linksId: linksId,
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   Future<void> createText({
     required List<int> foldersIdList,

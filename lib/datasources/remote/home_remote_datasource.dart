@@ -129,6 +129,24 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 링크 보관함 이동 (PATCH /links) - Body: moveFoldersId
+  Future<void> moveLink({
+    required int usersId,
+    required int foldersId,
+    required int moveFoldersId,
+    required int linksId,
+  }) async {
+    await _apiClient.patch(
+      ApiConstants.linksEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersId': foldersId,
+        'moveFoldersId': moveFoldersId,
+        'linksId': linksId,
+      },
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   /// [foldersIdList] 노트를 저장할 보관함 ID 목록
   Future<void> createText({

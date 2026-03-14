@@ -93,7 +93,7 @@ int _resolveColorIndex(String colorStr, int fallback) {
 }
 
 /// DTO → Domain 변환: FolderDto → FolderItem
-FolderItem _mapFolder(FolderDto dto, int index) {
+FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
   final ci = _resolveColorIndex(
     dto.color,
     index % AppColors.folderColors.length,
@@ -102,7 +102,7 @@ FolderItem _mapFolder(FolderDto dto, int index) {
     foldersId: dto.foldersId,
     title: dto.name,
     memo: dto.memo,
-    countText: '',
+    countText: countText,
     colorIndex: ci,
     isDefault: dto.isDefault,
     accentColor: AppColors.folderColors[ci],
@@ -134,11 +134,19 @@ class HomeController extends Notifier<HomeState> {
           .map((e) => _mapSchedule(e.value, e.key))
           .toList();
 
-      final folders = dto.folders
-          .asMap()
-          .entries
-          .map((e) => _mapFolder(e.value, e.key))
-          .toList();
+      // 폴더별 항목 개수 조회 (GET /page/items 병렬 호출 후 countText 설정)
+      final folderCounts = await Future.wait(
+        dto.folders.map((f) => repository.getPageItems(foldersId: f.foldersId)),
+      );
+      final folders = dto.folders.asMap().entries.map((e) {
+        final items = folderCounts[e.key];
+        final total =
+            items.links.length +
+            items.texts.length +
+            items.files.length +
+            items.images.length;
+        return _mapFolder(e.value, e.key, countText: '${total}개');
+      }).toList();
 
       state = state.copyWith(
         userName: '사용자',

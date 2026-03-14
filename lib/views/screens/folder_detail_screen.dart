@@ -9,6 +9,7 @@ import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
+import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
 import 'note_detail_screen.dart';
@@ -96,11 +97,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             }
             break;
           case LinkKebabAction.moveFolder:
-            // TODO: 보관함 이동
             if (mounted) {
-              ScaffoldMessenger.of(
+              showMoveToFolderSheet(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('보관함 이동 (준비 중)')));
+                ref,
+                currentFoldersId: widget.foldersId,
+                onSelect: (folder) => _moveLinkToFolder(link, folder.foldersId),
+              );
             }
             break;
           case LinkKebabAction.share:
@@ -147,6 +150,37 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         }
       },
     );
+  }
+
+  Future<void> _moveLinkToFolder(LinkDto link, int moveFoldersId) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.moveLink(
+        foldersId: widget.foldersId,
+        moveFoldersId: moveFoldersId,
+        linksId: link.linksId,
+      );
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      ref.invalidate(pageItemsProvider(moveFoldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('링크가 이동되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '이동에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+    }
   }
 
   Future<void> _confirmAndDeleteNote(TextDto note) async {
