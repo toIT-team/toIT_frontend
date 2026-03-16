@@ -2,98 +2,148 @@ import 'package:flutter/material.dart';
 
 import '../../../models/calendar/calendar_event.dart';
 import '../../screens/event_detail_screen.dart';
+import '../event/event_card_context_menu.dart';
 
 /// 일정 카드 위젯 (바텀시트 내 사용)
-class DayEventCard extends StatelessWidget {
+class DayEventCard extends StatefulWidget {
   const DayEventCard({
     super.key,
     required this.event,
+    this.onEdit,
+    this.onDelete,
   });
 
   final CalendarEvent event;
 
+  /// 수정 탭 시 호출 (null이면 롱 프레스 메뉴 미표시)
+  final VoidCallback? onEdit;
+
+  /// 삭제 탭 시 호출 (null이면 롱 프레스 메뉴 미표시)
+  final VoidCallback? onDelete;
+
+  @override
+  State<DayEventCard> createState() => _DayEventCardState();
+}
+
+class _DayEventCardState extends State<DayEventCard> {
+  Offset _lastTouchPosition = Offset.zero;
+  bool _isPressed = false;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // 바텀시트 닫고 상세 화면으로 이동
-        Navigator.of(context).pop();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => EventDetailScreen(event: event),
-          ),
-        );
+    final hasContextMenu =
+        widget.onEdit != null && widget.onDelete != null;
+
+    return Listener(
+      onPointerDown: (event) {
+        _lastTouchPosition = event.position;
       },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onLongPressStart: hasContextMenu
+            ? (_) => setState(() => _isPressed = true)
+            : null,
+        onLongPressEnd: hasContextMenu
+            ? (_) => setState(() => _isPressed = false)
+            : null,
+        onTap: () {
+          setState(() => _isPressed = false);
+          final schedulesId = int.tryParse(widget.event.id);
+          if (schedulesId == null) return;
+
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  EventDetailScreen(schedulesId: schedulesId),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // 왼쪽 색상 바
-            Container(
-              width: 4,
-              height: 60,
-              decoration: BoxDecoration(
-                color: event.color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
+          );
+        },
+        onLongPress: hasContextMenu
+            ? () {
+                setState(() => _isPressed = false);
+                _showContextMenu(context, _lastTouchPosition);
+              }
+            : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: _isPressed ? Colors.grey[300]! : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: widget.event.color,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
               ),
-            ),
-            // 일정 내용
-            Expanded(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 일정 제목
-                    Text(
-                      event.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+              Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.event.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    // 시간 정보
-                    Text(
-                      _getTimeText(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 4),
+                      Text(
+                        _getTimeText(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  void _showContextMenu(BuildContext context, Offset touchPosition) {
+    showEventCardContextMenu(
+      context: context,
+      touchPosition: touchPosition,
+      onEdit: widget.onEdit!,
+      onDelete: widget.onDelete!,
+    );
+  }
+
   /// 시간 텍스트 생성
   String _getTimeText() {
-    if (!event.timeSetting) {
+    if (!widget.event.timeSetting) {
       return '하루 종일';
     }
 
-    final startTime = _formatTime(event.startTime);
-    final endTime = _formatTime(event.endTime);
+    final startTime = _formatTime(widget.event.startTime);
+    final endTime = _formatTime(widget.event.endTime);
 
     if (startTime != null && endTime != null) {
       return '$startTime - $endTime';

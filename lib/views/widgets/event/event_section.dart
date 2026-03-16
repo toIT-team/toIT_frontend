@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/setting_layout_tokens.dart';
+
 /// 이벤트 섹션 레이아웃 상수
+///
+/// 설정 레이아웃 1 토큰을 사용하여 보관함/위치/알림/메모 등
+/// 아이콘-타이틀-아이콘 구조의 일관된 크기 유지
 class EventSectionConstants {
   EventSectionConstants._();
 
-  static const horizontalPadding = 20.0;
-  static const verticalPadding = 16.0;
-  static const iconSize = 24.0;
-  static const iconGap = 16.0;
+  static const horizontalPadding = SettingLayout1Tokens.horizontalPadding;
+  static const verticalPadding = SettingLayout1Tokens.verticalPadding;
+  static const iconSize = SettingLayout1Tokens.leadingIconSize;
+  static const iconGap = SettingLayout1Tokens.iconTitleGap;
 }
 
 /// 이벤트 섹션 아이템 데이터

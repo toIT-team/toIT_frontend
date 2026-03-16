@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'search_screen.dart';
 import '../widgets/calendar/calendar_widget.dart';
 
 /// 캘린더 화면
@@ -22,7 +23,11 @@ class CalendarScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // TODO: 검색 기능
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SearchScreen(),
+                ),
+              );
             },
           ),
           Stack(

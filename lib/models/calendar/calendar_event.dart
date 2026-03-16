@@ -34,6 +34,9 @@ class CalendarEvent with _$CalendarEvent {
     /// 시간 설정 여부
     @Default(false) bool timeSetting,
 
+    /// 보관함(폴더) 이름
+    String? folderName,
+
     /// 생성 일시
     @JsonKey(fromJson: _dateTimeFromJson, toJson: _dateTimeToJson)
     DateTime? createdAt,

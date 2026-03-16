@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../core/theme/app_theme.dart';
 import '../core/utils/calendar_utils.dart';
 import '../models/calendar/calendar_event.dart';
+import '../services/schedule_api_client.dart';
 
 part 'calendar_controller.freezed.dart';
 
@@ -146,43 +146,63 @@ class CalendarState with _$CalendarState {
 
 /// 캘린더 컨트롤러 (Notifier)
 class CalendarController extends Notifier<CalendarState> {
+  final _apiClient = ScheduleApiClient();
+
   @override
   CalendarState build() {
     final now = DateTime.now();
     return CalendarState(
       focusedMonth: DateTime(now.year, now.month, 1),
       selectedDate: now,
-      events: _generateSampleEvents(),
+      events: [],
     );
+  }
+
+  /// API에서 일정 로드
+  Future<void> loadEvents(DateTime month) async {
+    final targetMonth = DateTime(month.year, month.month, 1);
+    state = state.copyWith(isLoading: true);
+    try {
+      final startDate = targetMonth;
+      final endDate = DateTime(targetMonth.year, targetMonth.month + 1, 0);
+      final events = await _apiClient.searchSchedules(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      state = state.copyWith(
+        focusedMonth: targetMonth,
+        events: events,
+        isLoading: false,
+      );
+    } catch (e) {
+      debugPrint('일정 로드 실패: $e');
+      state = state.copyWith(isLoading: false);
+    }
   }
 
   /// 이전 달로 이동
   void goToPreviousMonth() {
-    state = state.copyWith(
-      focusedMonth: DateTime(
-        state.focusedMonth.year,
-        state.focusedMonth.month - 1,
-        1,
-      ),
+    final prev = DateTime(
+      state.focusedMonth.year,
+      state.focusedMonth.month - 1,
+      1,
     );
+    loadEvents(prev);
   }
 
   /// 다음 달로 이동
   void goToNextMonth() {
-    state = state.copyWith(
-      focusedMonth: DateTime(
-        state.focusedMonth.year,
-        state.focusedMonth.month + 1,
-        1,
-      ),
+    final next = DateTime(
+      state.focusedMonth.year,
+      state.focusedMonth.month + 1,
+      1,
     );
+    loadEvents(next);
   }
 
   /// 특정 월로 이동
   void goToMonth(DateTime month) {
-    state = state.copyWith(
-      focusedMonth: DateTime(month.year, month.month, 1),
-    );
+    loadEvents(DateTime(month.year, month.month, 1));
   }
 
   /// 날짜 선택
@@ -207,151 +227,6 @@ class CalendarController extends Notifier<CalendarState> {
     state = state.copyWith(
       events: state.events.map((e) => e.id == event.id ? event : e).toList(),
     );
-  }
-
-  /// 샘플 일정 생성 (데모용)
-  List<CalendarEvent> _generateSampleEvents() {
-    final now = DateTime.now();
-    final year = now.year;
-    final month = now.month;
-
-    // 날짜 문자열 생성 헬퍼
-    String formatDate(int y, int m, int d) =>
-        '$y-${m.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
-
-    return [
-      // 시간 설정된 일정 (단일 날짜)
-      CalendarEvent(
-        id: '1',
-        usersId: 1,
-        title: '팀 미팅',
-        startAt: formatDate(year, month, 22),
-        endAt: formatDate(year, month, 22),
-        startTime: '14:00',
-        endTime: '16:00',
-        timeSetting: true,
-        createdAt: DateTime(year, month, 22, 14, 30),
-        color: AppTheme.eventColors[0],
-      ),
-      // 시간 미설정 일정 (여러 날)
-      CalendarEvent(
-        id: '2',
-        usersId: 1,
-        title: '1월 휴가',
-        startAt: formatDate(year, month, 10),
-        endAt: formatDate(year, month, 12),
-        timeSetting: false,
-        createdAt: DateTime(year, month, 1, 9, 0),
-        color: AppTheme.eventColors[1],
-      ),
-      // 체력관리
-      CalendarEvent(
-        id: '3',
-        usersId: 1,
-        title: '체력관리 수업',
-        startAt: formatDate(year, month, 1),
-        endAt: formatDate(year, month, 1),
-        timeSetting: false,
-        createdAt: DateTime(year, month, 1),
-        color: AppTheme.eventColors[1],
-      ),
-      // 시각디자인 (여러 날)
-      CalendarEvent(
-        id: '4',
-        usersId: 1,
-        title: '시각디자인 설명회',
-        startAt: formatDate(year, month, 9),
-        endAt: formatDate(year, month, 13),
-        timeSetting: false,
-        createdAt: DateTime(year, month, 8),
-        color: AppTheme.eventColors[1],
-      ),
-      // 임상실험학
-      CalendarEvent(
-        id: '5',
-        usersId: 1,
-        title: '임상실험학',
-        startAt: formatDate(year, month, 9),
-        endAt: formatDate(year, month, 9),
-        startTime: '09:00',
-        endTime: '12:00',
-        timeSetting: true,
-        createdAt: DateTime(year, month, 8),
-        color: AppTheme.eventColors[2],
-      ),
-      // 임상실험학 2
-      CalendarEvent(
-        id: '6',
-        usersId: 1,
-        title: '임상실험학',
-        startAt: formatDate(year, month, 10),
-        endAt: formatDate(year, month, 10),
-        startTime: '09:00',
-        endTime: '12:00',
-        timeSetting: true,
-        createdAt: DateTime(year, month, 8),
-        color: AppTheme.eventColors[2],
-      ),
-      // UX 방법론
-      CalendarEvent(
-        id: '7',
-        usersId: 1,
-        title: 'UX 방법론 특강',
-        startAt: formatDate(year, month, 11),
-        endAt: formatDate(year, month, 11),
-        timeSetting: false,
-        createdAt: DateTime(year, month, 10),
-        color: AppTheme.eventColors[2],
-      ),
-      // 물리치료학 (여러 날)
-      CalendarEvent(
-        id: '8',
-        usersId: 1,
-        title: '물리치료학',
-        startAt: formatDate(year, month, 11),
-        endAt: formatDate(year, month, 13),
-        timeSetting: false,
-        createdAt: DateTime(year, month, 10),
-        color: AppTheme.eventColors[0],
-      ),
-      // 미용실
-      CalendarEvent(
-        id: '9',
-        usersId: 1,
-        title: '미용실',
-        startAt: formatDate(year, month, 10),
-        endAt: formatDate(year, month, 10),
-        startTime: '15:00',
-        endTime: '17:00',
-        timeSetting: true,
-        createdAt: DateTime(year, month, 9),
-        color: AppTheme.eventColors[2],
-      ),
-      // 물리치료학 2 (여러 날)
-      CalendarEvent(
-        id: '10',
-        usersId: 1,
-        title: '물리치료학',
-        startAt: formatDate(year, month, 14),
-        endAt: formatDate(year, month, 17),
-        timeSetting: false,
-        createdAt: DateTime(year, month, 13),
-        color: AppTheme.eventColors[0],
-      ),
-      // 크리스마스 파티
-      CalendarEvent(
-        id: '11',
-        usersId: 1,
-        title: '크리스마스 파티',
-        startAt: formatDate(year, month, 25),
-        endAt: formatDate(year, month, 25),
-        startTime: '18:00',
-        endTime: '22:00',
-        timeSetting: true,
-        createdAt: DateTime(year, month, 20),
-        color: AppTheme.eventColors[2],
-      ),
-    ];
   }
 }
 
