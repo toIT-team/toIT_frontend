@@ -1,3 +1,6 @@
+# Environment (API URL 등 민감 정보)
+.env
+
 # Miscellaneous
 *.class
 *.log
