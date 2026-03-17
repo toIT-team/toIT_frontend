@@ -16,7 +16,7 @@ class ApiConstants {
   static const int receiveTimeout = 10000;
 
   /// 개발용 고정 사용자 ID (계정 연동 전까지 사용할 예정임 TODO: 추후 삭제해야할 것)
-  static const int devUserId = 1;
+  static const int devUserId = 2;
 
   // ─── 엔드포인트 ───
   static const String homePageEndpoint = '/page/home';
@@ -26,8 +26,17 @@ class ApiConstants {
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
 
+  /// 링크 미리보기 추출 (POST)
+  static const String linksPreviewEndpoint = '/links/preview';
+
+  /// 자료 링크 수정 (PATCH, 제목·설명)
+  static const String linksUpdateEndpoint = '/links/update';
+
   /// 자료 텍스트(노트) 추가 (POST)
   static const String textsEndpoint = '/texts';
+
+  /// 자료 텍스트(노트) 수정 (PATCH)
+  static const String textsUpdateEndpoint = '/texts/update';
 
   /// 자료 파일 추가 (POST, multipart)
   static const String attachmentsFilesEndpoint = '/attachments/files';

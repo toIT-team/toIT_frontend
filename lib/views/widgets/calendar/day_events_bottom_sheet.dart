@@ -21,10 +21,7 @@ void showDayEventsBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DayEventsBottomSheet(
-      date: date,
-      events: events,
-    ),
+    builder: (context) => DayEventsBottomSheet(date: date, events: events),
   );
 }
 
@@ -44,8 +41,7 @@ class DayEventsBottomSheet extends ConsumerStatefulWidget {
       _DayEventsBottomSheetState();
 }
 
-class _DayEventsBottomSheetState
-    extends ConsumerState<DayEventsBottomSheet> {
+class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
   /// + 버튼 위치 계산용 GlobalKey
   final _fabKey = GlobalKey();
 
@@ -54,8 +50,7 @@ class _DayEventsBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding =
-        MediaQuery.of(context).padding.bottom;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
@@ -87,10 +82,7 @@ class _DayEventsBottomSheetState
             Positioned(
               right: 20,
               bottom: bottomPadding + _fabBottomPadding,
-              child: AddActionButton(
-                key: _fabKey,
-                onTap: _handleFabTap,
-              ),
+              child: AddActionButton(key: _fabKey, onTap: _handleFabTap),
             ),
           ],
         );
@@ -157,10 +149,7 @@ class _DayEventsBottomSheetState
               const SizedBox(width: 8),
               Text(
                 lunarDate,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -190,11 +179,9 @@ class _DayEventsBottomSheetState
 
   void _handleEdit(CalendarEvent event) {
     Navigator.of(context).pop();
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => EventFormScreen(event: event),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => EventFormScreen(event: event)));
   }
 
   Future<void> _handleDelete(CalendarEvent event) async {
@@ -227,9 +214,7 @@ class _DayEventsBottomSheetState
       } else {
         message = e.toString();
       }
-      messenger.showSnackBar(
-        SnackBar(content: Text('삭제 실패: $message')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('삭제 실패: $message')));
     }
   }
 
@@ -239,18 +224,11 @@ class _DayEventsBottomSheetState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.event_note_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.event_note_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             '일정이 없습니다',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
         ],
       ),

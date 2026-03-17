@@ -4,6 +4,7 @@ import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/home_response_dto.dart';
+import '../models/dto/link_preview_response_dto.dart';
 import '../models/dto/page_items_response_dto.dart';
 
 /// 홈 화면 리포지토리
@@ -50,15 +51,28 @@ class HomeRepository {
     );
   }
 
+  /// 링크 미리보기 추출 (POST /links/preview)
+  Future<LinkPreviewResponseDto> fetchLinkPreview({
+    required String linksUrl,
+  }) async {
+    return _remoteDatasource.fetchLinkPreview(linksUrl: linksUrl);
+  }
+
   /// 자료 링크 추가 (POST /links)
   Future<void> createLink({
     required List<int> foldersIdList,
     required String linksUrl,
+    String? linksName,
+    String? textContent,
+    String? linksThumbnail,
   }) async {
     await _remoteDatasource.createLink(
       usersId: ApiConstants.devUserId,
       foldersIdList: foldersIdList,
       linksUrl: linksUrl,
+      linksName: linksName,
+      textContent: textContent,
+      linksThumbnail: linksThumbnail,
     );
   }
 
@@ -74,6 +88,36 @@ class HomeRepository {
     );
   }
 
+  /// 자료 링크 수정 (PATCH /links/update) - 제목·설명
+  Future<void> updateLink({
+    required int foldersId,
+    required int linksId,
+    required String linksName,
+    required String textContent,
+  }) async {
+    await _remoteDatasource.updateLink(
+      usersId: ApiConstants.devUserId,
+      foldersId: foldersId,
+      linksId: linksId,
+      linksName: linksName,
+      textContent: textContent,
+    );
+  }
+
+  /// 자료 링크 보관함 이동 (PATCH /links)
+  Future<void> moveLink({
+    required int foldersId,
+    required int moveFoldersId,
+    required int linksId,
+  }) async {
+    await _remoteDatasource.moveLink(
+      usersId: ApiConstants.devUserId,
+      foldersId: foldersId,
+      moveFoldersId: moveFoldersId,
+      linksId: linksId,
+    );
+  }
+
   /// 자료 텍스트(노트) 추가 (POST /texts)
   Future<void> createText({
     required List<int> foldersIdList,
@@ -83,6 +127,46 @@ class HomeRepository {
       usersId: ApiConstants.devUserId,
       foldersIdList: foldersIdList,
       textContent: textContent,
+    );
+  }
+
+  /// 자료 텍스트(노트) 수정 (PATCH /texts/update)
+  Future<void> updateText({
+    required int foldersId,
+    required int textsId,
+    required String textContent,
+  }) async {
+    await _remoteDatasource.updateText(
+      usersId: ApiConstants.devUserId,
+      foldersId: foldersId,
+      textsId: textsId,
+      textContent: textContent,
+    );
+  }
+
+  /// 자료 텍스트(노트) 삭제 (DELETE /texts)
+  Future<void> deleteText({
+    required int foldersId,
+    required int textsId,
+  }) async {
+    await _remoteDatasource.deleteText(
+      usersId: ApiConstants.devUserId,
+      foldersId: foldersId,
+      textsId: textsId,
+    );
+  }
+
+  /// 자료 텍스트(노트) 보관함 이동 (PATCH /texts)
+  Future<void> moveText({
+    required int foldersId,
+    required int moveFoldersId,
+    required int textsId,
+  }) async {
+    await _remoteDatasource.moveText(
+      usersId: ApiConstants.devUserId,
+      foldersId: foldersId,
+      moveFoldersId: moveFoldersId,
+      textsId: textsId,
     );
   }
 

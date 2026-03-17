@@ -96,7 +96,7 @@ class _AddPopupMenuContent extends StatelessWidget {
         border: Border.all(color: AppColors.neutral50),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000D43).withOpacity(0.06),
+            color: AppColors.shadowPopup.withOpacity(0.06),
             blurRadius: 16,
             offset: const Offset(0, 2),
           ),

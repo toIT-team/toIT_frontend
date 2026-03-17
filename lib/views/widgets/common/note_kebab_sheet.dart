@@ -3,23 +3,20 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 
-/// 링크 케밥(미트볼) 메뉴 선택 액션
-enum LinkKebabAction { editTitle, moveFolder, share, delete }
+/// 노트 케밥(미트볼) 메뉴 선택 액션 (Figma: 노트 미트볼메뉴)
+enum NoteKebabAction { moveFolder, delete }
 
-/// 링크 항목 케밥 메뉴 바텀시트 (Figma: 링크 미트볼메뉴)
-///
-/// 제목 수정 / 보관함 이동 / 공유 / 삭제 4가지 옵션.
-/// [onAction]으로 선택된 액션 전달 후 시트가 닫힘.
-void showLinkKebabSheet(
+/// 노트 항목 케밥 메뉴 바텀시트 - 보관함 이동 / 삭제
+void showNoteKebabSheet(
   BuildContext context, {
-  required LinkDto link,
-  required ValueChanged<LinkKebabAction> onAction,
+  required TextDto note,
+  required ValueChanged<NoteKebabAction> onAction,
 }) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) => _LinkKebabSheet(
-      link: link,
+    builder: (sheetContext) => _NoteKebabSheet(
+      note: note,
       onAction: (action) {
         Navigator.of(sheetContext).pop();
         WidgetsBinding.instance.addPostFrameCallback((_) => onAction(action));
@@ -28,11 +25,11 @@ void showLinkKebabSheet(
   );
 }
 
-class _LinkKebabSheet extends StatelessWidget {
-  final LinkDto link;
-  final ValueChanged<LinkKebabAction> onAction;
+class _NoteKebabSheet extends StatelessWidget {
+  final TextDto note;
+  final ValueChanged<NoteKebabAction> onAction;
 
-  const _LinkKebabSheet({required this.link, required this.onAction});
+  const _NoteKebabSheet({required this.note, required this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -69,32 +66,18 @@ class _LinkKebabSheet extends StatelessWidget {
                 child: Column(
                   children: [
                     _KebabRow(
-                      icon: Icons.drive_file_rename_outline,
-                      label: '제목 수정',
-                      iconColor: AppColors.gray600,
-                      textColor: AppColors.gray900,
-                      onTap: () => onAction(LinkKebabAction.editTitle),
-                    ),
-                    _KebabRow(
                       icon: Icons.drive_file_move_outline,
                       label: '보관함 이동',
                       iconColor: AppColors.gray600,
                       textColor: AppColors.gray900,
-                      onTap: () => onAction(LinkKebabAction.moveFolder),
-                    ),
-                    _KebabRow(
-                      icon: Icons.share_outlined,
-                      label: '공유',
-                      iconColor: AppColors.gray600,
-                      textColor: AppColors.gray900,
-                      onTap: () => onAction(LinkKebabAction.share),
+                      onTap: () => onAction(NoteKebabAction.moveFolder),
                     ),
                     _KebabRow(
                       icon: Icons.delete_outline,
                       label: '삭제',
                       iconColor: AppColors.red500,
                       textColor: AppColors.red500,
-                      onTap: () => onAction(LinkKebabAction.delete),
+                      onTap: () => onAction(NoteKebabAction.delete),
                     ),
                   ],
                 ),

@@ -58,6 +58,31 @@ class AppColors {
   static const Color shadowCard = Color(0x14000000);
   static const Color shadowAccent = Color(0x0F132145);
 
+  /// 바텀시트 등 모달 그림자
+  static const Color shadowSheet = Color(0x29636363);
+
+  /// 카드 그림자 (연한)
+  static const Color shadowCardLight = Color(0x12000000);
+
+  /// 바텀시트/모달 딤 배경
+  static const Color overlayScrim = Color(0x293F3F3F);
+
+  /// 다이얼로그 그림자
+  static const Color overlayDialog = Color(0x0F000D43);
+
+  /// 네비/팝업 그림자용 블루
+  static const Color shadowNavBlue = Color(0xFF007CC9);
+  static const Color shadowPopup = Color(0xFF000D43);
+
+  /// 구분선 기본
+  static const Color dividerDefault = Color(0xFFECECEC);
+
+  /// 시트 등 연한 배경
+  static const Color surfaceLight = Color(0xFFF5F5F5);
+
+  /// 그라데이션용 연한 블루
+  static const Color gradientLightBlue = Color(0xFFE6F1FF);
+
   //보관함 색상 목록
   static const List<Color> folderColors = [
     pink200, // #FFA2A4

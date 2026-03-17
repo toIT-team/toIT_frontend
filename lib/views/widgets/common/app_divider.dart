@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
+
 /// 앱 전역에서 사용하는 구분선
 class AppDivider extends StatelessWidget {
   const AppDivider({
@@ -13,7 +15,7 @@ class AppDivider extends StatelessWidget {
   final double endIndent;
   final Color? color;
 
-  static const defaultColor = Color(0xFFECECEC);
+  static const defaultColor = AppColors.dividerDefault;
 
   @override
   Widget build(BuildContext context) {
