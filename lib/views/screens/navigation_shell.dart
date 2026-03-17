@@ -9,6 +9,7 @@ import 'save_link_screen.dart';
 import 'save_note_screen.dart';
 import 'save_file_screen.dart';
 import 'save_image_screen.dart';
+import 'event_form_screen.dart';
 
 /// 현재 선택된 탭 인덱스 Provider
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -37,21 +38,38 @@ class NavigationShell extends ConsumerWidget {
         onAddMenuTap: (menuIndex) {
           switch (menuIndex) {
             case 0:
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SaveLinkScreen()));
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SaveLinkScreen()),
+              );
+              break;
             case 1:
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SaveNoteScreen()));
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SaveNoteScreen()),
+              );
+              break;
             case 2:
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SaveFileScreen()));
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SaveFileScreen()),
+              );
+              break;
             case 3:
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SaveImageScreen()),
               );
+              break;
+            case 4:
+              Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (_) => const EventFormScreen(),
+                    ),
+                  )
+                  .then((result) {
+                if (result != null) {
+                  ref.read(currentTabIndexProvider.notifier).state = 1;
+                }
+              });
+              break;
           }
         },
       ),
