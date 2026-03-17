@@ -58,30 +58,41 @@ class _DayEventsBottomSheetState
         MediaQuery.of(context).padding.bottom;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.5,
+      initialChildSize: 0.65,
       minChildSize: 0.3,
       maxChildSize: 0.9,
       builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(20),
-              topRight: Radius.circular(20),
-            ),
-          ),
-          child: Column(
-            children: [
-              // 드래그 핸들 + 날짜 헤더
-              _buildHeader(),
-              // 일정 목록
-              Expanded(
-                child: widget.events.isEmpty
-                    ? _buildEmptyState()
-                    : _buildEventsList(scrollController),
+        return Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
               ),
-            ],
-          ),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: widget.events.isEmpty
+                        ? _buildEmptyState()
+                        : _buildEventsList(scrollController),
+                  ),
+                ],
+              ),
+            ),
+            // 오른쪽 하단 버튼 positon 고정.
+            Positioned(
+              right: 20,
+              bottom: bottomPadding + _fabBottomPadding,
+              child: AddActionButton(
+                key: _fabKey,
+                onTap: _handleFabTap,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -158,11 +169,13 @@ class _DayEventsBottomSheetState
     );
   }
 
-  /// 일정 목록
+  /// 일정 목록 (+ 버튼 56px + 여백 고려)
+  static const _listBottomPadding = 72.0;
+
   Widget _buildEventsList(ScrollController scrollController) {
     return ListView.builder(
       controller: scrollController,
-      padding: const EdgeInsets.only(top: 8, bottom: 20),
+      padding: const EdgeInsets.only(top: 8, bottom: _listBottomPadding),
       itemCount: widget.events.length,
       itemBuilder: (context, index) {
         final event = widget.events[index];
