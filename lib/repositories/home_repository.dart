@@ -20,7 +20,7 @@ class HomeRepository {
   Future<HomeResponseDto> fetchHomeData({required String todayDate}) async {
     // TODO: 로그인 구현 후 실제 userId 사용
     final response = await _remoteDatasource.fetchHomeData(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       todayDate: todayDate,
     );
 
@@ -30,7 +30,7 @@ class HomeRepository {
   /// 보관함(폴더) 삭제
   Future<void> deleteFolder({required int foldersId}) async {
     await _remoteDatasource.deleteFolder(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
     );
   }
@@ -43,7 +43,7 @@ class HomeRepository {
     required String color,
   }) async {
     await _remoteDatasource.updateFolder(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       name: name,
       memo: memo,
@@ -67,7 +67,7 @@ class HomeRepository {
     String? linksThumbnail,
   }) async {
     await _remoteDatasource.createLink(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersIdList: foldersIdList,
       linksUrl: linksUrl,
       linksName: linksName,
@@ -82,7 +82,7 @@ class HomeRepository {
     required int linksId,
   }) async {
     await _remoteDatasource.deleteLink(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       linksId: linksId,
     );
@@ -96,7 +96,7 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.updateLink(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       linksId: linksId,
       linksName: linksName,
@@ -111,7 +111,7 @@ class HomeRepository {
     required int linksId,
   }) async {
     await _remoteDatasource.moveLink(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       linksId: linksId,
@@ -124,7 +124,7 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.createText(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersIdList: foldersIdList,
       textContent: textContent,
     );
@@ -137,7 +137,7 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.updateText(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       textsId: textsId,
       textContent: textContent,
@@ -150,7 +150,7 @@ class HomeRepository {
     required int textsId,
   }) async {
     await _remoteDatasource.deleteText(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       textsId: textsId,
     );
@@ -163,7 +163,7 @@ class HomeRepository {
     required int textsId,
   }) async {
     await _remoteDatasource.moveText(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       textsId: textsId,
@@ -178,7 +178,7 @@ class HomeRepository {
     required String fileName,
   }) async {
     await _remoteDatasource.createFile(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersIdList: foldersIdList,
       textContent: textContent,
       fileBytes: fileBytes,
@@ -194,7 +194,7 @@ class HomeRepository {
     required String fileName,
   }) async {
     await _remoteDatasource.createImage(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersIdList: foldersIdList,
       textContent: textContent,
       imageBytes: imageBytes,
@@ -205,7 +205,7 @@ class HomeRepository {
   /// 보관함 내부 항목 조회 (GET /page/items)
   Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
     return _remoteDatasource.fetchPageItems(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       foldersId: foldersId,
     );
   }
@@ -217,7 +217,7 @@ class HomeRepository {
     required String color,
   }) async {
     return _remoteDatasource.createFolder(
-      usersId: ApiConstants.defaultUsersId,
+      usersId: ApiConstants.devUserId,
       name: name,
       memo: memo,
       color: color,

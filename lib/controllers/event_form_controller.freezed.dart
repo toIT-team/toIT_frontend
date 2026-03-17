@@ -38,20 +38,20 @@ mixin _$EventFormState {
   /// 시간 설정 여부
   bool get timeSetting => throw _privateConstructorUsedError;
 
-  /// 위치
-  String? get location => throw _privateConstructorUsedError;
-
   /// 메모
   String? get memo => throw _privateConstructorUsedError;
 
-  /// 알림 설정 (분 단위, 예: 10 = 10분 전)
+  /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
   int? get alarmMinutes => throw _privateConstructorUsedError;
 
   /// 폴더/보관함 이름
   String? get folderName => throw _privateConstructorUsedError;
 
-  /// 색상
-  Color? get color => throw _privateConstructorUsedError;
+  /// 폴더 ID (null이면 미선택)
+  int? get foldersId => throw _privateConstructorUsedError;
+
+  /// 일정 색상 토큰 (캘린더 UI 표시용)
+  EventColorToken? get appColorToken => throw _privateConstructorUsedError;
 
   /// 저장 중 여부
   bool get isSaving => throw _privateConstructorUsedError;
@@ -81,11 +81,11 @@ abstract class $EventFormStateCopyWith<$Res> {
     String? startTime,
     String? endTime,
     bool timeSetting,
-    String? location,
     String? memo,
     int? alarmMinutes,
     String? folderName,
-    Color? color,
+    int? foldersId,
+    EventColorToken? appColorToken,
     bool isSaving,
     String? errorMessage,
   });
@@ -113,11 +113,11 @@ class _$EventFormStateCopyWithImpl<$Res, $Val extends EventFormState>
     Object? startTime = freezed,
     Object? endTime = freezed,
     Object? timeSetting = null,
-    Object? location = freezed,
     Object? memo = freezed,
     Object? alarmMinutes = freezed,
     Object? folderName = freezed,
-    Object? color = freezed,
+    Object? foldersId = freezed,
+    Object? appColorToken = freezed,
     Object? isSaving = null,
     Object? errorMessage = freezed,
   }) {
@@ -151,10 +151,6 @@ class _$EventFormStateCopyWithImpl<$Res, $Val extends EventFormState>
                 ? _value.timeSetting
                 : timeSetting // ignore: cast_nullable_to_non_nullable
                       as bool,
-            location: freezed == location
-                ? _value.location
-                : location // ignore: cast_nullable_to_non_nullable
-                      as String?,
             memo: freezed == memo
                 ? _value.memo
                 : memo // ignore: cast_nullable_to_non_nullable
@@ -167,10 +163,14 @@ class _$EventFormStateCopyWithImpl<$Res, $Val extends EventFormState>
                 ? _value.folderName
                 : folderName // ignore: cast_nullable_to_non_nullable
                       as String?,
-            color: freezed == color
-                ? _value.color
-                : color // ignore: cast_nullable_to_non_nullable
-                      as Color?,
+            foldersId: freezed == foldersId
+                ? _value.foldersId
+                : foldersId // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            appColorToken: freezed == appColorToken
+                ? _value.appColorToken
+                : appColorToken // ignore: cast_nullable_to_non_nullable
+                      as EventColorToken?,
             isSaving: null == isSaving
                 ? _value.isSaving
                 : isSaving // ignore: cast_nullable_to_non_nullable
@@ -202,11 +202,11 @@ abstract class _$$EventFormStateImplCopyWith<$Res>
     String? startTime,
     String? endTime,
     bool timeSetting,
-    String? location,
     String? memo,
     int? alarmMinutes,
     String? folderName,
-    Color? color,
+    int? foldersId,
+    EventColorToken? appColorToken,
     bool isSaving,
     String? errorMessage,
   });
@@ -233,11 +233,11 @@ class __$$EventFormStateImplCopyWithImpl<$Res>
     Object? startTime = freezed,
     Object? endTime = freezed,
     Object? timeSetting = null,
-    Object? location = freezed,
     Object? memo = freezed,
     Object? alarmMinutes = freezed,
     Object? folderName = freezed,
-    Object? color = freezed,
+    Object? foldersId = freezed,
+    Object? appColorToken = freezed,
     Object? isSaving = null,
     Object? errorMessage = freezed,
   }) {
@@ -271,10 +271,6 @@ class __$$EventFormStateImplCopyWithImpl<$Res>
             ? _value.timeSetting
             : timeSetting // ignore: cast_nullable_to_non_nullable
                   as bool,
-        location: freezed == location
-            ? _value.location
-            : location // ignore: cast_nullable_to_non_nullable
-                  as String?,
         memo: freezed == memo
             ? _value.memo
             : memo // ignore: cast_nullable_to_non_nullable
@@ -287,10 +283,14 @@ class __$$EventFormStateImplCopyWithImpl<$Res>
             ? _value.folderName
             : folderName // ignore: cast_nullable_to_non_nullable
                   as String?,
-        color: freezed == color
-            ? _value.color
-            : color // ignore: cast_nullable_to_non_nullable
-                  as Color?,
+        foldersId: freezed == foldersId
+            ? _value.foldersId
+            : foldersId // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        appColorToken: freezed == appColorToken
+            ? _value.appColorToken
+            : appColorToken // ignore: cast_nullable_to_non_nullable
+                  as EventColorToken?,
         isSaving: null == isSaving
             ? _value.isSaving
             : isSaving // ignore: cast_nullable_to_non_nullable
@@ -315,11 +315,11 @@ class _$EventFormStateImpl extends _EventFormState {
     this.startTime,
     this.endTime,
     this.timeSetting = false,
-    this.location,
     this.memo,
     this.alarmMinutes,
     this.folderName,
-    this.color,
+    this.foldersId,
+    this.appColorToken,
     this.isSaving = false,
     this.errorMessage,
   }) : super._();
@@ -354,15 +354,11 @@ class _$EventFormStateImpl extends _EventFormState {
   @JsonKey()
   final bool timeSetting;
 
-  /// 위치
-  @override
-  final String? location;
-
   /// 메모
   @override
   final String? memo;
 
-  /// 알림 설정 (분 단위, 예: 10 = 10분 전)
+  /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
   @override
   final int? alarmMinutes;
 
@@ -370,9 +366,13 @@ class _$EventFormStateImpl extends _EventFormState {
   @override
   final String? folderName;
 
-  /// 색상
+  /// 폴더 ID (null이면 미선택)
   @override
-  final Color? color;
+  final int? foldersId;
+
+  /// 일정 색상 토큰 (캘린더 UI 표시용)
+  @override
+  final EventColorToken? appColorToken;
 
   /// 저장 중 여부
   @override
@@ -385,7 +385,7 @@ class _$EventFormStateImpl extends _EventFormState {
 
   @override
   String toString() {
-    return 'EventFormState(id: $id, title: $title, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, location: $location, memo: $memo, alarmMinutes: $alarmMinutes, folderName: $folderName, color: $color, isSaving: $isSaving, errorMessage: $errorMessage)';
+    return 'EventFormState(id: $id, title: $title, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, memo: $memo, alarmMinutes: $alarmMinutes, folderName: $folderName, foldersId: $foldersId, appColorToken: $appColorToken, isSaving: $isSaving, errorMessage: $errorMessage)';
   }
 
   @override
@@ -403,14 +403,15 @@ class _$EventFormStateImpl extends _EventFormState {
             (identical(other.endTime, endTime) || other.endTime == endTime) &&
             (identical(other.timeSetting, timeSetting) ||
                 other.timeSetting == timeSetting) &&
-            (identical(other.location, location) ||
-                other.location == location) &&
             (identical(other.memo, memo) || other.memo == memo) &&
             (identical(other.alarmMinutes, alarmMinutes) ||
                 other.alarmMinutes == alarmMinutes) &&
             (identical(other.folderName, folderName) ||
                 other.folderName == folderName) &&
-            (identical(other.color, color) || other.color == color) &&
+            (identical(other.foldersId, foldersId) ||
+                other.foldersId == foldersId) &&
+            (identical(other.appColorToken, appColorToken) ||
+                other.appColorToken == appColorToken) &&
             (identical(other.isSaving, isSaving) ||
                 other.isSaving == isSaving) &&
             (identical(other.errorMessage, errorMessage) ||
@@ -427,11 +428,11 @@ class _$EventFormStateImpl extends _EventFormState {
     startTime,
     endTime,
     timeSetting,
-    location,
     memo,
     alarmMinutes,
     folderName,
-    color,
+    foldersId,
+    appColorToken,
     isSaving,
     errorMessage,
   );
@@ -457,11 +458,11 @@ abstract class _EventFormState extends EventFormState {
     final String? startTime,
     final String? endTime,
     final bool timeSetting,
-    final String? location,
     final String? memo,
     final int? alarmMinutes,
     final String? folderName,
-    final Color? color,
+    final int? foldersId,
+    final EventColorToken? appColorToken,
     final bool isSaving,
     final String? errorMessage,
   }) = _$EventFormStateImpl;
@@ -495,15 +496,11 @@ abstract class _EventFormState extends EventFormState {
   @override
   bool get timeSetting;
 
-  /// 위치
-  @override
-  String? get location;
-
   /// 메모
   @override
   String? get memo;
 
-  /// 알림 설정 (분 단위, 예: 10 = 10분 전)
+  /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
   @override
   int? get alarmMinutes;
 
@@ -511,9 +508,13 @@ abstract class _EventFormState extends EventFormState {
   @override
   String? get folderName;
 
-  /// 색상
+  /// 폴더 ID (null이면 미선택)
   @override
-  Color? get color;
+  int? get foldersId;
+
+  /// 일정 색상 토큰 (캘린더 UI 표시용)
+  @override
+  EventColorToken? get appColorToken;
 
   /// 저장 중 여부
   @override

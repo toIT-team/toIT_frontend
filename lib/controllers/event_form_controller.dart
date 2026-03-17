@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../core/constants/api_constants.dart';
+import '../core/constants/event_color_tokens.dart';
 import '../models/calendar/calendar_event.dart';
+import '../models/schedule/schedule_response.dart';
 
 part 'event_form_controller.freezed.dart';
 
@@ -31,20 +33,20 @@ class EventFormState with _$EventFormState {
     /// 시간 설정 여부
     @Default(false) bool timeSetting,
 
-    /// 위치
-    String? location,
-
     /// 메모
     String? memo,
 
-    /// 알림 설정 (분 단위, 예: 10 = 10분 전)
+    /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
     int? alarmMinutes,
 
     /// 폴더/보관함 이름
     String? folderName,
 
-    /// 색상
-    Color? color,
+    /// 폴더 ID (null이면 미선택)
+    int? foldersId,
+
+    /// 일정 색상 토큰 (캘린더 UI 표시용)
+    EventColorToken? appColorToken,
 
     /// 저장 중 여부
     @Default(false) bool isSaving,
@@ -67,7 +69,7 @@ class EventFormState with _$EventFormState {
   /// 알림 텍스트 변환
   String? get alarmText {
     if (alarmMinutes == null) return null;
-    if (alarmMinutes == 0) return '정시';
+    if (alarmMinutes == 0) return '일정 시작';
     if (alarmMinutes! < 60) return '$alarmMinutes분 전';
     if (alarmMinutes! < 1440) return '${alarmMinutes! ~/ 60}시간 전';
     return '${alarmMinutes! ~/ 1440}일 전';
@@ -87,6 +89,7 @@ class EventFormController extends Notifier<EventFormState> {
 
   /// 기존 이벤트로 폼 초기화 (수정 모드)
   void initWithEvent(CalendarEvent event) {
+    final token = EventColorTokens.tryParseFromColor(event.color);
     state = EventFormState(
       id: event.id,
       title: event.title,
@@ -95,17 +98,48 @@ class EventFormController extends Notifier<EventFormState> {
       startTime: event.startTime,
       endTime: event.endTime,
       timeSetting: event.timeSetting,
-      color: event.color,
-      // TODO: 추가 필드 (location, memo, alarm 등)
+      folderName: event.folderName,
+      appColorToken: token ?? EventColorToken.blue300,
     );
   }
 
-  /// 폼 초기화 (생성 모드)
-  void reset() {
-    final now = DateTime.now();
+  /// 일정 상세 API 응답으로 폼 초기화 (수정 모드)
+  void initWithScheduleDetail(ScheduleDetailResponse detail) {
+    final startTime = _toHhMm(detail.startTime);
+    final endTime = _toHhMm(detail.endTime);
     state = EventFormState(
-      startDate: now,
-      endDate: now,
+      id: detail.schedulesId.toString(),
+      title: detail.title,
+      startDate: DateTime.parse(detail.startDate),
+      endDate: DateTime.parse(detail.endDate),
+      startTime: startTime,
+      endTime: endTime,
+      timeSetting: detail.timeSetting,
+      memo: detail.memo.isEmpty ? null : detail.memo,
+      alarmMinutes: detail.alarmState ? detail.alarmOffsetMinutes : null,
+      folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
+      foldersId: detail.foldersId > 0 ? detail.foldersId : null,
+      appColorToken: EventColorToken.blue300,
+    );
+  }
+
+  /// HH:mm:ss → HH:mm 변환
+  String? _toHhMm(String? time) {
+    if (time == null || time.isEmpty) return null;
+    final parts = time.split(':');
+    if (parts.length >= 2) {
+      return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+    }
+    return null;
+  }
+
+  /// 폼 초기화 (생성 모드)
+  void reset({DateTime? initialDate}) {
+    final date = initialDate ?? DateTime.now();
+    state = EventFormState(
+      startDate: date,
+      endDate: date,
+      appColorToken: EventColorToken.blue300,
     );
   }
 
@@ -153,11 +187,6 @@ class EventFormController extends Notifier<EventFormState> {
     );
   }
 
-  /// 위치 업데이트
-  void updateLocation(String? value) {
-    state = state.copyWith(location: value);
-  }
-
   /// 메모 업데이트
   void updateMemo(String? value) {
     state = state.copyWith(memo: value);
@@ -173,9 +202,14 @@ class EventFormController extends Notifier<EventFormState> {
     state = state.copyWith(folderName: value);
   }
 
-  /// 색상 업데이트
-  void updateColor(Color? value) {
-    state = state.copyWith(color: value);
+  /// 폴더 ID 업데이트 (null이면 미선택)
+  void updateFoldersId(int? value) {
+    state = state.copyWith(foldersId: value);
+  }
+
+  /// 일정 색상 토큰 업데이트
+  void updateAppColorToken(EventColorToken? token) {
+    state = state.copyWith(appColorToken: token);
   }
 
   /// 폼 데이터를 CalendarEvent로 변환
@@ -193,23 +227,33 @@ class EventFormController extends Notifier<EventFormState> {
         '${date.year}-${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';
 
+    final color = state.appColorToken != null
+        ? EventColorTokens.of(state.appColorToken!)
+        : EventColorTokens.defaultColor;
+
     return CalendarEvent(
       id: state.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      usersId: 1, // TODO: 실제 사용자 ID
+      usersId: ApiConstants.devUserId,
       title: state.title,
       startAt: formatDate(startDate),
       endAt: formatDate(endDate),
       startTime: state.startTime,
       endTime: state.endTime,
       timeSetting: state.timeSetting,
+      folderName: state.folderName,
       createdAt: now,
-      color: state.color ?? const Color(0xFF4285F4),
+      color: color,
     );
   }
 
   /// 저장 시작
   void setSaving(bool value) {
     state = state.copyWith(isSaving: value);
+  }
+
+  /// 오류 메시지 설정
+  void setError(String? message) {
+    state = state.copyWith(errorMessage: message);
   }
 }
 

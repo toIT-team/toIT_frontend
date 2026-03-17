@@ -50,7 +50,7 @@ dependencies:
   json_annotation: ^4.9.0
   firebase_core: ^4.4.0
   firebase_messaging: ^16.1.1
-  flutter_dotenv: ^6.0.0
+  flutter_dotenv: ^5.1.0
   flutter_svg: ^2.2.3
 
   # 파일/이미지 선택 (시뮬레이터·실기기 동일 로직)
