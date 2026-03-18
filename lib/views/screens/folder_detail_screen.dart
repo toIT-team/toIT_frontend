@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/constants/folder_tab_index.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/link_edit_sheet.dart';
@@ -20,10 +21,15 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
   final int foldersId;
   final String folderName;
 
+  /// 초기 탭 인덱스 ([FolderTab.order] 기준)
+  /// 만약 탭 순서 변경시 /core/constants/folder_tab_index.dart 에서 수정
+  final int initialTabIndex;
+
   const FolderDetailScreen({
     super.key,
     required this.foldersId,
     required this.folderName,
+    this.initialTabIndex = FolderTab.indexOf(FolderTab.links),
   });
 
   @override
@@ -37,7 +43,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    final tabCount = FolderTab.order.length;
+    _tabController = TabController(
+      length: tabCount,
+      vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, tabCount - 1),
+    );
   }
 
   @override
@@ -248,6 +259,28 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
   }
 
+  List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {
+    return FolderTab.order.map((tab) {
+      switch (tab) {
+        case FolderTab.links:
+          return _LinkTabContent(
+            links: data.links,
+            onLinkKebabTap: _showLinkKebabSheet,
+          );
+        case FolderTab.notes:
+          return _NoteTabContent(
+            texts: data.texts,
+            onNoteTap: _openNoteDetail,
+            onNoteKebabTap: _showNoteKebabSheet,
+          );
+        case FolderTab.files:
+          return _FileTabContent(files: data.files);
+        case FolderTab.images:
+          return _ImageTabContent(images: data.images);
+      }
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
@@ -323,29 +356,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               indicatorColor: AppColors.blue500,
               indicatorWeight: 2,
               dividerColor: AppColors.neutral50,
-              tabs: const [
-                Tab(text: '링크'),
-                Tab(text: '노트'),
-                Tab(text: '파일'),
-                Tab(text: '이미지'),
-              ],
+              tabs: FolderTab.order
+                  .map((tab) => Tab(text: tab.label))
+                  .toList(),
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [
-                  _LinkTabContent(
-                    links: data.links,
-                    onLinkKebabTap: _showLinkKebabSheet,
-                  ),
-                  _NoteTabContent(
-                    texts: data.texts,
-                    onNoteTap: _openNoteDetail,
-                    onNoteKebabTap: _showNoteKebabSheet,
-                  ),
-                  _FileTabContent(files: data.files),
-                  _ImageTabContent(images: data.images),
-                ],
+                children: _buildTabViewChildren(data),
               ),
             ),
           ],

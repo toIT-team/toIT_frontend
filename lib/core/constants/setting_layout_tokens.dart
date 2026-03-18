@@ -11,10 +11,10 @@ class SettingLayout1Tokens {
   /// 행 최소 높이 (아이콘-타이틀-아이콘 전체)
   static const double rowMinHeight = 24.0;
 
-  /// 선행 아이콘 크기 (EventSection에서 사용)
+  /// 선행 아이콘 크기
   static const double leadingIconSize = 24.0;
 
-  /// 후행 아이콘 크기 (+, chevron_right 등)
+  /// 후행 아이콘 크기
   static const double trailingIconSize = 22.0;
 
   /// 선행 아이콘과 타이틀 사이 간격

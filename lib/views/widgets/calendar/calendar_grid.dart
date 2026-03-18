@@ -82,19 +82,27 @@ class CalendarGrid extends ConsumerWidget {
       weeks.add(days.sublist(i, i + 7));
     }
 
-    return Column(
-      children: weeks
-          .map((week) => _buildWeekRow(week, eventIndex))
-          .toList(),
+    return SingleChildScrollView(
+      physics: const ClampingScrollPhysics(),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: weeks
+            .map((week) => _buildWeekRow(week, eventIndex))
+            .toList(),
+      ),
     );
   }
+
+  /// 주 단위 행 높이 (날짜 + 이벤트 3개 + overflow 표시에 필요한 최소 높이 보장)
+  static const double weekRowHeight = 104.0;
 
   /// 주 단위 행 위젯
   Widget _buildWeekRow(
     List<DateTime> week,
     CalendarEventIndex eventIndex,
   ) {
-    return Expanded(
+    return SizedBox(
+      height: weekRowHeight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: week.asMap().entries.map((entry) {

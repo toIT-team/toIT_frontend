@@ -49,7 +49,7 @@ class EventColorTokens {
 
   static final Map<String, EventColorToken> _nameToToken = {
     for (final e in EventColorToken.values) _tokenNames[e]!: e,
-    // 백엔드가 snake_case 값 반환 시 호환
+    // 백엔드가 snake_case 값 반환 시 호환 후에 전부 카멜로 변경될 경우 삭제 예정
     'pink_200': EventColorToken.pink200,
     'orange_200': EventColorToken.orange200,
     'yellow_200': EventColorToken.yellow200,
