@@ -44,7 +44,6 @@ class CalendarDayCell extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.all(1),
         padding: const EdgeInsets.only(bottom: 4),
-        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           color: isSelected

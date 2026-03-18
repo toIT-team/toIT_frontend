@@ -4,9 +4,18 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 
-/// 홈 화면 상단 앱바
+/// 홈/캘린더 등 공통 상단 앱바
 class HomeAppBar extends StatelessWidget {
-  const HomeAppBar({super.key});
+  const HomeAppBar({
+    super.key,
+    this.title = '마이',
+    this.onSearchPressed,
+    this.onNotificationPressed,
+  });
+
+  final String title;
+  final VoidCallback? onSearchPressed;
+  final VoidCallback? onNotificationPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +28,9 @@ class HomeAppBar extends StatelessWidget {
         children: [
           const Icon(Icons.menu, color: AppColors.gray900),
           const SizedBox(width: AppSpacing.sm),
-          const Text(
-            '마이',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               color: AppColors.gray900,
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -30,7 +39,7 @@ class HomeAppBar extends StatelessWidget {
           const Spacer(),
           IconButton(
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
-            onPressed: () {},
+            onPressed: onSearchPressed,
           ),
           Stack(
             clipBehavior: Clip.none,
@@ -41,7 +50,7 @@ class HomeAppBar extends StatelessWidget {
                   width: 24,
                   height: 24,
                 ),
-                onPressed: () {},
+                onPressed: onNotificationPressed,
               ),
               Positioned(
                 right: 10,
