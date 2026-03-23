@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -175,6 +176,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         moveFoldersId: moveFoldersId,
         textsId: note.textsId,
       );
+      ref.invalidate(homeProvider);
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
@@ -206,6 +208,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         moveFoldersId: moveFoldersId,
         linksId: link.linksId,
       );
+      ref.invalidate(homeProvider);
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;

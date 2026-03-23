@@ -39,6 +39,7 @@ class FolderDto with _$FolderDto {
     String? createdAt,
     @Default(false) bool isFavorite,
     @Default(0) int iconIdx,
+    @Default(0) int itemsCount,
   }) = _FolderDto;
 
   factory FolderDto.fromJson(Map<String, dynamic> json) =>

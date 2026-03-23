@@ -291,6 +291,7 @@ mixin _$FolderDto {
   String? get createdAt => throw _privateConstructorUsedError;
   bool get isFavorite => throw _privateConstructorUsedError;
   int get iconIdx => throw _privateConstructorUsedError;
+  int get itemsCount => throw _privateConstructorUsedError;
 
   /// Serializes this FolderDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -317,6 +318,7 @@ abstract class $FolderDtoCopyWith<$Res> {
     String? createdAt,
     bool isFavorite,
     int iconIdx,
+    int itemsCount,
   });
 }
 
@@ -344,6 +346,7 @@ class _$FolderDtoCopyWithImpl<$Res, $Val extends FolderDto>
     Object? createdAt = freezed,
     Object? isFavorite = null,
     Object? iconIdx = null,
+    Object? itemsCount = null,
   }) {
     return _then(
       _value.copyWith(
@@ -383,6 +386,10 @@ class _$FolderDtoCopyWithImpl<$Res, $Val extends FolderDto>
                 ? _value.iconIdx
                 : iconIdx // ignore: cast_nullable_to_non_nullable
                       as int,
+            itemsCount: null == itemsCount
+                ? _value.itemsCount
+                : itemsCount // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -408,6 +415,7 @@ abstract class _$$FolderDtoImplCopyWith<$Res>
     String? createdAt,
     bool isFavorite,
     int iconIdx,
+    int itemsCount,
   });
 }
 
@@ -434,6 +442,7 @@ class __$$FolderDtoImplCopyWithImpl<$Res>
     Object? createdAt = freezed,
     Object? isFavorite = null,
     Object? iconIdx = null,
+    Object? itemsCount = null,
   }) {
     return _then(
       _$FolderDtoImpl(
@@ -473,6 +482,10 @@ class __$$FolderDtoImplCopyWithImpl<$Res>
             ? _value.iconIdx
             : iconIdx // ignore: cast_nullable_to_non_nullable
                   as int,
+        itemsCount: null == itemsCount
+            ? _value.itemsCount
+            : itemsCount // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -491,6 +504,7 @@ class _$FolderDtoImpl implements _FolderDto {
     this.createdAt,
     this.isFavorite = false,
     this.iconIdx = 0,
+    this.itemsCount = 0,
   });
 
   factory _$FolderDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -520,10 +534,13 @@ class _$FolderDtoImpl implements _FolderDto {
   @override
   @JsonKey()
   final int iconIdx;
+  @override
+  @JsonKey()
+  final int itemsCount;
 
   @override
   String toString() {
-    return 'FolderDto(foldersId: $foldersId, usersId: $usersId, name: $name, memo: $memo, isDefault: $isDefault, color: $color, createdAt: $createdAt, isFavorite: $isFavorite, iconIdx: $iconIdx)';
+    return 'FolderDto(foldersId: $foldersId, usersId: $usersId, name: $name, memo: $memo, isDefault: $isDefault, color: $color, createdAt: $createdAt, isFavorite: $isFavorite, iconIdx: $iconIdx, itemsCount: $itemsCount)';
   }
 
   @override
@@ -543,7 +560,9 @@ class _$FolderDtoImpl implements _FolderDto {
                 other.createdAt == createdAt) &&
             (identical(other.isFavorite, isFavorite) ||
                 other.isFavorite == isFavorite) &&
-            (identical(other.iconIdx, iconIdx) || other.iconIdx == iconIdx));
+            (identical(other.iconIdx, iconIdx) || other.iconIdx == iconIdx) &&
+            (identical(other.itemsCount, itemsCount) ||
+                other.itemsCount == itemsCount));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -559,6 +578,7 @@ class _$FolderDtoImpl implements _FolderDto {
     createdAt,
     isFavorite,
     iconIdx,
+    itemsCount,
   );
 
   /// Create a copy of FolderDto
@@ -586,6 +606,7 @@ abstract class _FolderDto implements FolderDto {
     final String? createdAt,
     final bool isFavorite,
     final int iconIdx,
+    final int itemsCount,
   }) = _$FolderDtoImpl;
 
   factory _FolderDto.fromJson(Map<String, dynamic> json) =
@@ -610,6 +631,8 @@ abstract class _FolderDto implements FolderDto {
   bool get isFavorite;
   @override
   int get iconIdx;
+  @override
+  int get itemsCount;
 
   /// Create a copy of FolderDto
   /// with the given fields replaced by the non-null parameter values.

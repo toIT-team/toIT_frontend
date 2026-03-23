@@ -134,18 +134,8 @@ class HomeController extends Notifier<HomeState> {
           .map((e) => _mapSchedule(e.value, e.key))
           .toList();
 
-      // 폴더별 항목 개수 조회 (GET /page/items 병렬 호출 후 countText 설정)
-      final folderCounts = await Future.wait(
-        dto.folders.map((f) => repository.getPageItems(foldersId: f.foldersId)),
-      );
       final folders = dto.folders.asMap().entries.map((e) {
-        final items = folderCounts[e.key];
-        final total =
-            items.links.length +
-            items.texts.length +
-            items.files.length +
-            items.images.length;
-        return _mapFolder(e.value, e.key, countText: '${total}개');
+        return _mapFolder(e.value, e.key, countText: '${e.value.itemsCount}개');
       }).toList();
 
       state = state.copyWith(
