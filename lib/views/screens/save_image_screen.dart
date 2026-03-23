@@ -113,6 +113,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
     if (!mounted) return;
     if (successCount > 0) {
+      await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(folderId));
       _showSnackBar(
         successCount == _pickedImages.length

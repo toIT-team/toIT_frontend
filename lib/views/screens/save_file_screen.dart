@@ -82,6 +82,7 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
         fileBytes: fileBytes,
         fileName: _pickedFile!.name,
       );
+      await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('파일이 저장되었습니다.');

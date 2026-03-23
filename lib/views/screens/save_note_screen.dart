@@ -63,6 +63,7 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
         foldersIdList: [_selectedFolder!.foldersId],
         textContent: textContent,
       );
+      await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('노트가 저장되었습니다.');

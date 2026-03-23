@@ -947,14 +947,34 @@ class _ImageTabContent extends StatelessWidget {
               runSpacing: AppSpacing.md,
               children: images
                   .map(
-                    (img) => Container(
-                      width: 161,
-                      height: 163,
-                      decoration: BoxDecoration(
-                        color: AppColors.borderLight,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusSm,
-                        ),
+                    (img) => ClipRRect(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      child: SizedBox(
+                        width: 161,
+                        height: 163,
+                        child: img.presignedUrl.isNotEmpty
+                            ? Image.network(
+                                img.presignedUrl,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (_, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    color: AppColors.neutral100,
+                                    child: const Center(
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (_, __, ___) =>
+                                    Container(color: AppColors.borderLight),
+                              )
+                            : Container(color: AppColors.borderLight),
                       ),
                     ),
                   )

@@ -136,6 +136,7 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
         textContent: desc.isEmpty ? null : desc,
         linksThumbnail: _linksThumbnail,
       );
+      await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('링크가 저장되었습니다.');
