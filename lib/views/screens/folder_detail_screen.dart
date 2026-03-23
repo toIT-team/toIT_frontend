@@ -21,15 +21,15 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
   final int foldersId;
   final String folderName;
 
-  /// 초기 탭 인덱스 ([FolderTab.order] 기준)
-  /// 만약 탭 순서 변경시 /core/constants/folder_tab_index.dart 에서 수정
-  final int initialTabIndex;
+  /// 초기 탭 ([FolderTab.order] 기준)
+  /// 탭 순서 변경 시 /core/constants/folder_tab_index.dart 의 order만 수정
+  final FolderTab initialTab;
 
   const FolderDetailScreen({
     super.key,
     required this.foldersId,
     required this.folderName,
-    this.initialTabIndex = FolderTab.indexOf(FolderTab.links),
+    this.initialTab = FolderTab.links,
   });
 
   @override
@@ -44,10 +44,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   void initState() {
     super.initState();
     final tabCount = FolderTab.order.length;
+    final initialIndex = FolderTab.indexOf(widget.initialTab);
     _tabController = TabController(
       length: tabCount,
       vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, tabCount - 1),
+      initialIndex: initialIndex.clamp(0, tabCount - 1),
     );
   }
 
@@ -356,9 +357,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               indicatorColor: AppColors.blue500,
               indicatorWeight: 2,
               dividerColor: AppColors.neutral50,
-              tabs: FolderTab.order
-                  .map((tab) => Tab(text: tab.label))
-                  .toList(),
+              tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
             ),
             Expanded(
               child: TabBarView(
