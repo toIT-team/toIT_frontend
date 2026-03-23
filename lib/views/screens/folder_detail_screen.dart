@@ -8,13 +8,17 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../models/dto/page_items_response_dto.dart';
+import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/file_kebab_sheet.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
+import '../widgets/home/add_folder_bottom_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
+import '../widgets/home/folder_memo_bottom_sheet.dart';
+import '../widgets/home/folder_options_bottom_sheet.dart';
 import 'image_detail_screen.dart';
 import 'note_detail_screen.dart';
 
@@ -42,10 +46,12 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
 class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String _folderName = '';
 
   @override
   void initState() {
     super.initState();
+    _folderName = widget.folderName;
     final tabCount = FolderTab.order.length;
     final initialIndex = FolderTab.indexOf(widget.initialTab);
     _tabController = TabController(
@@ -92,6 +98,74 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
+  Future<void> _openFolderOptions() async {
+    final option = await showFolderOptionsBottomSheet(context);
+    if (option == null || !mounted) return;
+
+    FolderItem? currentFolder;
+    for (final folder in ref.read(homeProvider).folders) {
+      if (folder.foldersId == widget.foldersId) {
+        currentFolder = folder;
+        break;
+      }
+    }
+    final currentMemo = currentFolder?.memo ?? '';
+    final currentColorIndex = currentFolder?.colorIndex ?? 5;
+    final currentTitle = currentFolder?.title ?? _folderName;
+
+    switch (option) {
+      case FolderOption.viewMemo:
+        showFolderMemoBottomSheet(context, memo: currentMemo);
+        break;
+      case FolderOption.edit:
+        final editResult = await showAddFolderBottomSheet(
+          context,
+          initialName: currentTitle,
+          initialMemo: currentMemo,
+          initialColorIndex: currentColorIndex,
+          isEditMode: true,
+        );
+        if (editResult == null || !mounted) return;
+        final success = await ref
+            .read(homeProvider.notifier)
+            .updateFolder(
+              foldersId: widget.foldersId,
+              name: editResult['name'] as String,
+              memo: editResult['memo'] as String,
+              colorIndex: editResult['colorIndex'] as int,
+            );
+        if (!mounted) return;
+        if (!success) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('보관함 수정에 실패했습니다.')));
+          return;
+        }
+        setState(() {
+          _folderName = editResult['name'] as String;
+        });
+        break;
+      case FolderOption.delete:
+        final confirmed = await showDeleteDialog(
+          context,
+          message: '[$_folderName]을 정말 삭제하시겠습니까?',
+        );
+        if (!confirmed || !mounted) return;
+        final deleted = await ref
+            .read(homeProvider.notifier)
+            .deleteFolder(foldersId: widget.foldersId);
+        if (!mounted) return;
+        if (!deleted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('보관함 삭제에 실패했습니다.')));
+          return;
+        }
+        Navigator.of(context).pop();
+        break;
     }
   }
 
@@ -467,7 +541,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          widget.folderName,
+          _folderName,
           style: const TextStyle(
             color: AppColors.gray900,
             fontSize: 22,
@@ -483,7 +557,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
-            onPressed: () {},
+            onPressed: _openFolderOptions,
           ),
         ],
       ),
