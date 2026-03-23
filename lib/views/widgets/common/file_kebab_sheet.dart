@@ -4,23 +4,20 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 
-/// 링크 케밥(미트볼) 메뉴 선택 액션
-enum LinkKebabAction { editTitle, moveFolder, share, delete }
+/// 파일 케밥(미트볼) 메뉴 선택 액션 (Figma: 파일 미트볼메뉴)
+enum FileKebabAction { editInfo, moveFolder, share, delete }
 
-/// 링크 항목 케밥 메뉴 바텀시트 (Figma: 링크 미트볼메뉴)
-///
-/// 제목 수정 / 보관함 이동 / 공유 / 삭제 4가지 옵션.
-/// [onAction]으로 선택된 액션 전달 후 시트가 닫힘.
-void showLinkKebabSheet(
+/// 파일 항목 케밥 메뉴 바텀시트 - 정보 수정 / 보관함 이동 / 공유 / 삭제
+void showFileKebabSheet(
   BuildContext context, {
-  required LinkDto link,
-  required ValueChanged<LinkKebabAction> onAction,
+  required AttachmentFileDto file,
+  required ValueChanged<FileKebabAction> onAction,
 }) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) => _LinkKebabSheet(
-      link: link,
+    builder: (sheetContext) => _FileKebabSheet(
+      file: file,
       onAction: (action) {
         Navigator.of(sheetContext).pop();
         WidgetsBinding.instance.addPostFrameCallback((_) => onAction(action));
@@ -29,11 +26,11 @@ void showLinkKebabSheet(
   );
 }
 
-class _LinkKebabSheet extends StatelessWidget {
-  final LinkDto link;
-  final ValueChanged<LinkKebabAction> onAction;
+class _FileKebabSheet extends StatelessWidget {
+  const _FileKebabSheet({required this.file, required this.onAction});
 
-  const _LinkKebabSheet({required this.link, required this.onAction});
+  final AttachmentFileDto file;
+  final ValueChanged<FileKebabAction> onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -71,27 +68,27 @@ class _LinkKebabSheet extends StatelessWidget {
                   children: [
                     _KebabRow(
                       iconAssetPath: AppAssets.editInformationIcon,
-                      label: '제목 수정',
+                      label: '정보 수정',
                       textColor: AppColors.gray900,
-                      onTap: () => onAction(LinkKebabAction.editTitle),
+                      onTap: () => onAction(FileKebabAction.editInfo),
                     ),
                     _KebabRow(
                       iconAssetPath: AppAssets.moveFolderIcon,
                       label: '보관함 이동',
                       textColor: AppColors.gray900,
-                      onTap: () => onAction(LinkKebabAction.moveFolder),
+                      onTap: () => onAction(FileKebabAction.moveFolder),
                     ),
                     _KebabRow(
                       iconAssetPath: AppAssets.shareIcon,
                       label: '공유',
                       textColor: AppColors.gray900,
-                      onTap: () => onAction(LinkKebabAction.share),
+                      onTap: () => onAction(FileKebabAction.share),
                     ),
                     _KebabRow(
                       iconAssetPath: AppAssets.bottomSheetDeleteIcon,
                       label: '삭제',
                       textColor: AppColors.red500,
-                      onTap: () => onAction(LinkKebabAction.delete),
+                      onTap: () => onAction(FileKebabAction.delete),
                     ),
                   ],
                 ),
@@ -116,17 +113,17 @@ class _LinkKebabSheet extends StatelessWidget {
 }
 
 class _KebabRow extends StatelessWidget {
-  final String iconAssetPath;
-  final String label;
-  final Color textColor;
-  final VoidCallback onTap;
-
   const _KebabRow({
     required this.iconAssetPath,
     required this.label,
     required this.textColor,
     required this.onTap,
   });
+
+  final String iconAssetPath;
+  final String label;
+  final Color textColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {

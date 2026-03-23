@@ -9,6 +9,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/file_kebab_sheet.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
@@ -263,6 +264,38 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
   }
 
+  void _showFileKebabSheet(AttachmentFileDto file) {
+    showFileKebabSheet(
+      context,
+      file: file,
+      onAction: (action) {
+        final messenger = ScaffoldMessenger.of(context);
+        switch (action) {
+          case FileKebabAction.editInfo:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('정보 수정 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.moveFolder:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('보관함 이동 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.share:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.delete:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('삭제 기능은 준비 중입니다.')),
+            );
+            break;
+        }
+      },
+    );
+  }
+
   List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {
     return FolderTab.order.map((tab) {
       switch (tab) {
@@ -278,7 +311,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             onNoteKebabTap: _showNoteKebabSheet,
           );
         case FolderTab.files:
-          return _FileTabContent(files: data.files);
+          return _FileTabContent(
+            files: data.files,
+            onFileKebabTap: _showFileKebabSheet,
+          );
         case FolderTab.images:
           return _ImageTabContent(images: data.images);
       }
@@ -788,8 +824,9 @@ class _NoteCard extends StatelessWidget {
 // ─── 파일 탭 (API files[]) ───
 class _FileTabContent extends StatelessWidget {
   final List<AttachmentFileDto> files;
+  final void Function(AttachmentFileDto file) onFileKebabTap;
 
-  const _FileTabContent({required this.files});
+  const _FileTabContent({required this.files, required this.onFileKebabTap});
 
   @override
   Widget build(BuildContext context) {
@@ -824,7 +861,10 @@ class _FileTabContent extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final file = files[index];
-              return _FileItemRow(file: file, onMoreTap: () {});
+              return _FileItemRow(
+                file: file,
+                onMoreTap: () => onFileKebabTap(file),
+              );
             },
           ),
         ),

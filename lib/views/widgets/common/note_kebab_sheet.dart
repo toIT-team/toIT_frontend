@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 
@@ -66,16 +67,14 @@ class _NoteKebabSheet extends StatelessWidget {
                 child: Column(
                   children: [
                     _KebabRow(
-                      icon: Icons.drive_file_move_outline,
+                      iconAssetPath: AppAssets.moveFolderIcon,
                       label: '보관함 이동',
-                      iconColor: AppColors.gray600,
                       textColor: AppColors.gray900,
                       onTap: () => onAction(NoteKebabAction.moveFolder),
                     ),
                     _KebabRow(
-                      icon: Icons.delete_outline,
+                      iconAssetPath: AppAssets.bottomSheetDeleteIcon,
                       label: '삭제',
-                      iconColor: AppColors.red500,
                       textColor: AppColors.red500,
                       onTap: () => onAction(NoteKebabAction.delete),
                     ),
@@ -102,16 +101,14 @@ class _NoteKebabSheet extends StatelessWidget {
 }
 
 class _KebabRow extends StatelessWidget {
-  final IconData icon;
+  final String iconAssetPath;
   final String label;
-  final Color iconColor;
   final Color textColor;
   final VoidCallback onTap;
 
   const _KebabRow({
-    required this.icon,
+    required this.iconAssetPath,
     required this.label,
-    required this.iconColor,
     required this.textColor,
     required this.onTap,
   });
@@ -126,7 +123,7 @@ class _KebabRow extends StatelessWidget {
           height: 54,
           child: Row(
             children: [
-              Icon(icon, size: 20, color: iconColor),
+              Image.asset(iconAssetPath, width: 20, height: 20),
               const SizedBox(width: 8),
               Text(
                 label,
