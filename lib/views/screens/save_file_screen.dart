@@ -12,6 +12,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 파일 저장 화면 (POST /attachments/files API 연동)
 class SaveFileScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,16 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
   bool _isSaving = false;
 
   bool get _fileAttached => _pickedFile != null;
+
+  bool get _hasDraft {
+    return _fileAttached || _memoController.text.trim().isNotEmpty;
+  }
+
+  Future<bool> _handleExitAttempt() async {
+    if (_isSaving) return false;
+    if (!_hasDraft) return true;
+    return showUnsavedExitDialog(context);
+  }
 
   @override
   void initState() {
@@ -178,29 +189,40 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       });
     });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(44),
-        child: _buildAppBar(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            _buildFileSection(),
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 16),
-            _buildFolderSection(),
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 20),
-            _buildMemoSection(),
-            const SizedBox(height: 24),
-          ],
+    return WillPopScope(
+      onWillPop: _handleExitAttempt,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: _buildAppBar(),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              _buildFileSection(),
+              const SizedBox(height: 16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 16),
+              _buildFolderSection(),
+              const SizedBox(height: 16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 20),
+              _buildMemoSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -216,7 +238,11 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () async {
+                final shouldExit = await _handleExitAttempt();
+                if (!shouldExit || !mounted) return;
+                Navigator.of(context).pop();
+              },
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 24,

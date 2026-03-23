@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 링크 저장 화면 섹션 간 간격 (px)
 const double _kSectionSpacing = 10;
@@ -78,6 +79,19 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
     if (_trimmedUrl.isEmpty) return false;
     if (_previewUrl == null) return true;
     return _previewUrl != _trimmedUrl;
+  }
+
+  bool get _hasDraft {
+    return _trimmedUrl.isNotEmpty ||
+        _linkTitleController.text.trim().isNotEmpty ||
+        _linkDescController.text.trim().isNotEmpty ||
+        _previewUrl != null;
+  }
+
+  Future<bool> _handleExitAttempt() async {
+    if (_isSaving) return false;
+    if (!_hasDraft) return true;
+    return showUnsavedExitDialog(context);
   }
 
   Future<void> _onInputComplete() async {
@@ -166,31 +180,38 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(44),
-        child: _buildAppBar(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: _kSectionSpacing),
-            _buildLinkSection(),
-            if (_previewUrl != null) ...[
+    return WillPopScope(
+      onWillPop: _handleExitAttempt,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: _buildAppBar(),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               const SizedBox(height: _kSectionSpacing),
-              _buildLinkTitleSection(),
+              _buildLinkSection(),
+              if (_previewUrl != null) ...[
+                const SizedBox(height: _kSectionSpacing),
+                _buildLinkTitleSection(),
+                const SizedBox(height: _kSectionSpacing),
+                _buildLinkDescSection(),
+              ],
               const SizedBox(height: _kSectionSpacing),
-              _buildLinkDescSection(),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: _kSectionSpacing),
+              _buildFolderSection(),
+              const SizedBox(height: _kSectionSpacing),
             ],
-            const SizedBox(height: _kSectionSpacing),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: _kSectionSpacing),
-            _buildFolderSection(),
-            const SizedBox(height: _kSectionSpacing),
-          ],
+          ),
         ),
       ),
     );
@@ -206,7 +227,11 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () async {
+                final shouldExit = await _handleExitAttempt();
+                if (!shouldExit || !mounted) return;
+                Navigator.of(context).pop();
+              },
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 24,

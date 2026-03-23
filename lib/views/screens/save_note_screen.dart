@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 노트 저장 화면 (POST /texts API 연동)
 class SaveNoteScreen extends ConsumerStatefulWidget {
@@ -22,6 +23,16 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
   int _textLength = 0;
   FolderItem? _selectedFolder;
   bool _isSaving = false;
+
+  bool get _hasDraft {
+    return _noteController.text.trim().isNotEmpty;
+  }
+
+  Future<bool> _handleExitAttempt() async {
+    if (_isSaving) return false;
+    if (!_hasDraft) return true;
+    return showUnsavedExitDialog(context);
+  }
 
   @override
   void initState() {
@@ -107,24 +118,31 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
       });
     });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(44),
-        child: _buildAppBar(),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            _buildNoteSection(),
-            const SizedBox(height: 20),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 16),
-            _buildFolderSection(),
-          ],
+    return WillPopScope(
+      onWillPop: _handleExitAttempt,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: _buildAppBar(),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              _buildNoteSection(),
+              const SizedBox(height: 20),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 16),
+              _buildFolderSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -140,7 +158,11 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () async {
+                final shouldExit = await _handleExitAttempt();
+                if (!shouldExit || !mounted) return;
+                Navigator.of(context).pop();
+              },
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 24,
