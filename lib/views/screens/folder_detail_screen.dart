@@ -15,6 +15,7 @@ import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
+import 'image_detail_screen.dart';
 import 'note_detail_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
@@ -141,6 +142,18 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       MaterialPageRoute<void>(
         builder: (_) =>
             NoteDetailScreen(note: note, foldersId: widget.foldersId),
+      ),
+    );
+  }
+
+  void _openImageDetail(AttachmentImageDto image) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ImageDetailScreen(
+          image: image,
+          onMoreTap: (detailContext) =>
+              _showImageKebabSheet(image, contextOverride: detailContext),
+        ),
       ),
     );
   }
@@ -297,11 +310,16 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     );
   }
 
-  void _showImageKebabSheet(AttachmentImageDto image) {
+  void _showImageKebabSheet(
+    AttachmentImageDto image, {
+    BuildContext? contextOverride,
+  }) {
+    final baseContext = contextOverride ?? context;
+    final shouldCloseDetailOnSuccess = contextOverride != null;
     showFileKebabSheet(
-      context,
+      baseContext,
       onAction: (action) {
-        final messenger = ScaffoldMessenger.of(context);
+        final messenger = ScaffoldMessenger.of(baseContext);
         switch (action) {
           case FileKebabAction.editInfo:
             messenger.showSnackBar(
@@ -310,12 +328,15 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             break;
           case FileKebabAction.moveFolder:
             showMoveToFolderSheet(
-              context,
+              baseContext,
               ref,
               currentFoldersId: widget.foldersId,
               onSelect: (folder) => _moveAttachmentToFolder(
                 image.attachmentsId,
                 folder.foldersId,
+                detailContextToClose: shouldCloseDetailOnSuccess
+                    ? contextOverride
+                    : null,
               ),
             );
             break;
@@ -334,8 +355,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   Future<void> _moveAttachmentToFolder(
     int attachmentsId,
-    int moveFoldersId,
-  ) async {
+    int moveFoldersId, {
+    BuildContext? detailContextToClose,
+  }) async {
     try {
       final repository = ref.read(homeRepositoryProvider);
       await repository.moveAttachment(
@@ -350,6 +372,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('보관함 이동이 완료되었습니다.')));
+      if (detailContextToClose != null &&
+          Navigator.of(detailContextToClose).canPop()) {
+        Navigator.of(detailContextToClose).pop();
+      }
     } on DioException catch (e) {
       if (!mounted) return;
       final data = e.response?.data;
@@ -419,7 +445,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         case FolderTab.images:
           return _ImageTabContent(
             images: data.images,
-            onImageKebabTap: _showImageKebabSheet,
+            onImageLongPress: _showImageKebabSheet,
+            onImageTap: _openImageDetail,
           );
       }
     }).toList();
@@ -1058,9 +1085,14 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
 // ─── 이미지 탭 (API images[]) ───
 class _ImageTabContent extends StatelessWidget {
   final List<AttachmentImageDto> images;
-  final void Function(AttachmentImageDto image) onImageKebabTap;
+  final void Function(AttachmentImageDto image) onImageLongPress;
+  final void Function(AttachmentImageDto image) onImageTap;
 
-  const _ImageTabContent({required this.images, required this.onImageKebabTap});
+  const _ImageTabContent({
+    required this.images,
+    required this.onImageLongPress,
+    required this.onImageTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1092,66 +1124,51 @@ class _ImageTabContent extends StatelessWidget {
               runSpacing: AppSpacing.md,
               children: images
                   .map(
-                    (img) => SizedBox(
-                      width: 161,
-                      height: 163,
-                      child: Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusSm,
-                            ),
-                            child: SizedBox(
-                              width: 161,
-                              height: 163,
-                              child: img.presignedUrl.isNotEmpty
-                                  ? Image.network(
-                                      img.presignedUrl,
-                                      fit: BoxFit.cover,
-                                      loadingBuilder: (_, child, progress) {
-                                        if (progress == null) return child;
-                                        return Container(
-                                          color: AppColors.neutral100,
-                                          child: const Center(
-                                            child: SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
+                    (img) => GestureDetector(
+                      onTap: () => onImageTap(img),
+                      onLongPress: () => onImageLongPress(img),
+                      behavior: HitTestBehavior.opaque,
+                      child: SizedBox(
+                        width: 161,
+                        height: 163,
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusSm,
+                              ),
+                              child: SizedBox(
+                                width: 161,
+                                height: 163,
+                                child: img.presignedUrl.isNotEmpty
+                                    ? Image.network(
+                                        img.presignedUrl,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (_, child, progress) {
+                                          if (progress == null) return child;
+                                          return Container(
+                                            color: AppColors.neutral100,
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
                                               ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: AppColors.borderLight,
-                                      ),
-                                    )
-                                  : Container(color: AppColors.borderLight),
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () => onImageKebabTap(img),
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: AppColors.overlayDialog,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.more_horiz,
-                                  size: 16,
-                                  color: AppColors.gray900,
-                                ),
+                                          );
+                                        },
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: AppColors.borderLight,
+                                        ),
+                                      )
+                                    : Container(color: AppColors.borderLight),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   )
