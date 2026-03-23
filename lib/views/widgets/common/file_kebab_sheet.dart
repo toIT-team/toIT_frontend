@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../models/dto/page_items_response_dto.dart';
 
 /// 파일 케밥(미트볼) 메뉴 선택 액션 (Figma: 파일 미트볼메뉴)
 enum FileKebabAction { editInfo, moveFolder, share, delete }
@@ -10,14 +9,12 @@ enum FileKebabAction { editInfo, moveFolder, share, delete }
 /// 파일 항목 케밥 메뉴 바텀시트 - 정보 수정 / 보관함 이동 / 공유 / 삭제
 void showFileKebabSheet(
   BuildContext context, {
-  required AttachmentFileDto file,
   required ValueChanged<FileKebabAction> onAction,
 }) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
     builder: (sheetContext) => _FileKebabSheet(
-      file: file,
       onAction: (action) {
         Navigator.of(sheetContext).pop();
         WidgetsBinding.instance.addPostFrameCallback((_) => onAction(action));
@@ -27,9 +24,7 @@ void showFileKebabSheet(
 }
 
 class _FileKebabSheet extends StatelessWidget {
-  const _FileKebabSheet({required this.file, required this.onAction});
-
-  final AttachmentFileDto file;
+  const _FileKebabSheet({required this.onAction});
   final ValueChanged<FileKebabAction> onAction;
 
   @override

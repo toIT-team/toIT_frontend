@@ -202,6 +202,28 @@ class HomeRepository {
     );
   }
 
+  /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
+  Future<void> moveAttachment({
+    required int foldersId,
+    required int moveFoldersId,
+    required int attachmentsId,
+  }) async {
+    await _remoteDatasource.moveAttachment(
+      usersId: ApiConstants.devUserId,
+      foldersId: foldersId,
+      moveFoldersId: moveFoldersId,
+      attachmentsId: attachmentsId,
+    );
+  }
+
+  /// 자료 파일/이미지 삭제 (DELETE /attachments)
+  Future<void> deleteAttachment({required int attachmentsId}) async {
+    await _remoteDatasource.deleteAttachment(
+      usersId: ApiConstants.devUserId,
+      attachmentsId: attachmentsId,
+    );
+  }
+
   /// 보관함 내부 항목 조회 (GET /page/items)
   Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
     return _remoteDatasource.fetchPageItems(

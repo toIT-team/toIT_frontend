@@ -264,6 +264,35 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
+  Future<void> moveAttachment({
+    required int usersId,
+    required int foldersId,
+    required int moveFoldersId,
+    required int attachmentsId,
+  }) async {
+    await _apiClient.patch(
+      ApiConstants.attachmentsEndpoint,
+      data: {
+        'usersId': usersId,
+        'foldersId': foldersId,
+        'moveFoldersId': moveFoldersId,
+        'attachmentsId': attachmentsId,
+      },
+    );
+  }
+
+  /// 자료 파일/이미지 삭제 (DELETE /attachments)
+  Future<void> deleteAttachment({
+    required int usersId,
+    required int attachmentsId,
+  }) async {
+    await _apiClient.delete(
+      ApiConstants.attachmentsEndpoint,
+      queryParameters: {'usersId': usersId, 'attachmentsId': attachmentsId},
+    );
+  }
+
   /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
   Future<PageItemsResponseDto> fetchPageItems({
     required int usersId,

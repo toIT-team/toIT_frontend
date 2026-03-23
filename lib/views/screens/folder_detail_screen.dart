@@ -267,7 +267,6 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   void _showFileKebabSheet(AttachmentFileDto file) {
     showFileKebabSheet(
       context,
-      file: file,
       onAction: (action) {
         final messenger = ScaffoldMessenger.of(context);
         switch (action) {
@@ -277,8 +276,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
             break;
           case FileKebabAction.moveFolder:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('보관함 이동 기능은 준비 중입니다.')),
+            showMoveToFolderSheet(
+              context,
+              ref,
+              currentFoldersId: widget.foldersId,
+              onSelect: (folder) =>
+                  _moveAttachmentToFolder(file.attachmentsId, folder.foldersId),
             );
             break;
           case FileKebabAction.share:
@@ -287,13 +290,111 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
             break;
           case FileKebabAction.delete:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('삭제 기능은 준비 중입니다.')),
-            );
+            _confirmAndDeleteAttachment(file.attachmentsId);
             break;
         }
       },
     );
+  }
+
+  void _showImageKebabSheet(AttachmentImageDto image) {
+    showFileKebabSheet(
+      context,
+      onAction: (action) {
+        final messenger = ScaffoldMessenger.of(context);
+        switch (action) {
+          case FileKebabAction.editInfo:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('정보 수정 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.moveFolder:
+            showMoveToFolderSheet(
+              context,
+              ref,
+              currentFoldersId: widget.foldersId,
+              onSelect: (folder) => _moveAttachmentToFolder(
+                image.attachmentsId,
+                folder.foldersId,
+              ),
+            );
+            break;
+          case FileKebabAction.share:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.delete:
+            _confirmAndDeleteAttachment(image.attachmentsId);
+            break;
+        }
+      },
+    );
+  }
+
+  Future<void> _moveAttachmentToFolder(
+    int attachmentsId,
+    int moveFoldersId,
+  ) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.moveAttachment(
+        foldersId: widget.foldersId,
+        moveFoldersId: moveFoldersId,
+        attachmentsId: attachmentsId,
+      );
+      ref.invalidate(homeProvider);
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      ref.invalidate(pageItemsProvider(moveFoldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('보관함 이동이 완료되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '이동에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
+  Future<void> _confirmAndDeleteAttachment(int attachmentsId) async {
+    final confirmed = await showDeleteDialog(context, message: '정말 삭제하시겠습니까?');
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteAttachment(attachmentsId: attachmentsId);
+      ref.invalidate(homeProvider);
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제가 완료되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '삭제에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+    }
   }
 
   List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {
@@ -316,7 +417,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             onFileKebabTap: _showFileKebabSheet,
           );
         case FolderTab.images:
-          return _ImageTabContent(images: data.images);
+          return _ImageTabContent(
+            images: data.images,
+            onImageKebabTap: _showImageKebabSheet,
+          );
       }
     }).toList();
   }
@@ -954,8 +1058,9 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
 // ─── 이미지 탭 (API images[]) ───
 class _ImageTabContent extends StatelessWidget {
   final List<AttachmentImageDto> images;
+  final void Function(AttachmentImageDto image) onImageKebabTap;
 
-  const _ImageTabContent({required this.images});
+  const _ImageTabContent({required this.images, required this.onImageKebabTap});
 
   @override
   Widget build(BuildContext context) {
@@ -987,34 +1092,66 @@ class _ImageTabContent extends StatelessWidget {
               runSpacing: AppSpacing.md,
               children: images
                   .map(
-                    (img) => ClipRRect(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                      child: SizedBox(
-                        width: 161,
-                        height: 163,
-                        child: img.presignedUrl.isNotEmpty
-                            ? Image.network(
-                                img.presignedUrl,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (_, child, progress) {
-                                  if (progress == null) return child;
-                                  return Container(
-                                    color: AppColors.neutral100,
-                                    child: const Center(
-                                      child: SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
+                    (img) => SizedBox(
+                      width: 161,
+                      height: 163,
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusSm,
+                            ),
+                            child: SizedBox(
+                              width: 161,
+                              height: 163,
+                              child: img.presignedUrl.isNotEmpty
+                                  ? Image.network(
+                                      img.presignedUrl,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (_, child, progress) {
+                                        if (progress == null) return child;
+                                        return Container(
+                                          color: AppColors.neutral100,
+                                          child: const Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: AppColors.borderLight,
                                       ),
-                                    ),
-                                  );
-                                },
-                                errorBuilder: (_, __, ___) =>
-                                    Container(color: AppColors.borderLight),
-                              )
-                            : Container(color: AppColors.borderLight),
+                                    )
+                                  : Container(color: AppColors.borderLight),
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () => onImageKebabTap(img),
+                              behavior: HitTestBehavior.opaque,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppColors.overlayDialog,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.more_horiz,
+                                  size: 16,
+                                  color: AppColors.gray900,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )
