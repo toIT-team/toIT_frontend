@@ -344,46 +344,52 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
                   ),
                 ),
               ),
-              if (_showInputCompleteButton) ...[
-                const SizedBox(width: _kSectionSpacing),
-                _buildInputCompleteButton(),
-              ] else if (_previewUrl != null) ...[
+              if (_previewUrl != null) ...[
                 const SizedBox(width: _kSectionSpacing),
                 _buildClearButton(),
               ],
             ],
           ),
         ),
+        if (_showInputCompleteButton) ...[
+          const SizedBox(height: _kSectionSpacing),
+          _buildConfirmButton(),
+        ],
       ],
     );
   }
 
-  Widget _buildInputCompleteButton() {
+  Widget _buildConfirmButton() {
     return GestureDetector(
       onTap: _isLoadingPreview ? null : _onInputComplete,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        width: double.infinity,
+        height: 54,
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.neutral50),
-          borderRadius: BorderRadius.circular(99),
+          color: AppColors.blue500,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: _isLoadingPreview
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text(
-                '입력 완료',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.blue500,
-                  letterSpacing: -0.025 * 16,
-                  height: 1.5,
+        child: Center(
+          child: _isLoadingPreview
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  '확인',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: -0.025 * 18,
+                    height: 1.4,
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }
