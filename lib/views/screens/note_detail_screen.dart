@@ -31,6 +31,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
   late TextDto _note;
   late TextEditingController _contentController;
   static const int _maxLength = 1000;
+  bool _isSavingOnExit = false;
 
   @override
   void initState() {
@@ -143,8 +144,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
 
   bool get _hasContentChanged => _contentController.text != _note.textContent;
 
-  Future<void> _saveNote() async {
-    if (!_hasContentChanged || !mounted) return;
+  Future<bool> _saveNoteOnBack() async {
+    if (!_hasContentChanged || !mounted) return true;
+    if (_isSavingOnExit) return false;
+
+    _isSavingOnExit = true;
     final newContent = _contentController.text;
     try {
       final repository = ref.read(homeRepositoryProvider);
@@ -153,18 +157,14 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
         textsId: _note.textsId,
         textContent: newContent,
       );
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _note = _note.copyWith(textContent: newContent);
       });
       ref.invalidate(pageItemsProvider(widget.foldersId));
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('노트가 수정되었습니다.')));
-      Navigator.of(context).pop();
+      return true;
     } on DioException catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       final message =
           e.response?.data is Map &&
               (e.response?.data as Map)['message'] != null
@@ -173,11 +173,15 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+      return false;
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted) return false;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')));
+      return false;
+    } finally {
+      _isSavingOnExit = false;
     }
   }
 
@@ -192,117 +196,111 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     final dateText = _formatDate(_note.createdAt);
     final charCount = content.length;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: _saveNoteOnBack,
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: AppColors.gray900),
-          onPressed: () => Navigator.of(context).pop(),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.chevron_left, color: AppColors.gray900),
+            onPressed: () async {
+              final canPop = await _saveNoteOnBack();
+              if (!canPop || !mounted) return;
+              Navigator.of(context).pop();
+            },
+          ),
+          title: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.gray900,
+              letterSpacing: -0.025 * 22,
+              height: 1.25,
+            ),
+          ),
+          centerTitle: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: AppColors.gray900),
+              onPressed: _openKebab,
+            ),
+          ],
         ),
-        title: Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: AppColors.gray900,
-            letterSpacing: -0.025 * 22,
-            height: 1.25,
-          ),
-        ),
-        centerTitle: false,
-        actions: [
-          TextButton(
-            onPressed: _hasContentChanged ? _saveNote : null,
-            child: Text(
-              '수정',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: _hasContentChanged
-                    ? AppColors.primary
-                    : AppColors.gray400,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.gray900),
-            onPressed: _openKebab,
-          ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.sm,
-                AppSpacing.lg,
-                AppSpacing.xl,
-              ),
-              child: TextField(
-                controller: _contentController,
-                maxLines: null,
-                maxLength: _maxLength,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: '링크에 대한 정보를 간단하게 메모해보세요.',
-                  border: InputBorder.none,
-                  counterText: '',
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
                 ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.gray900,
-                  letterSpacing: -0.025 * 16,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              20,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  '$charCount/$_maxLength',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.gray600,
-                    letterSpacing: -0.025 * 14,
-                    height: 1.25,
+                child: TextField(
+                  controller: _contentController,
+                  maxLines: null,
+                  maxLength: _maxLength,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    hintText: '링크에 대한 정보를 간단하게 메모해보세요.',
+                    border: InputBorder.none,
+                    counterText: '',
+                    contentPadding: EdgeInsets.zero,
+                    isDense: true,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  dateText,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.gray600,
-                    letterSpacing: -0.025 * 14,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray900,
+                    letterSpacing: -0.025 * 16,
                     height: 1.5,
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                20,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    '$charCount/$_maxLength',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.gray600,
+                      letterSpacing: -0.025 * 14,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    dateText,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.gray600,
+                      letterSpacing: -0.025 * 14,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
