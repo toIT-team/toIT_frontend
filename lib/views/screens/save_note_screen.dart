@@ -12,7 +12,9 @@ import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 노트 저장 화면 (POST /texts API 연동)
 class SaveNoteScreen extends ConsumerStatefulWidget {
-  const SaveNoteScreen({super.key});
+  const SaveNoteScreen({super.key, this.initialFolderId});
+
+  final int? initialFolderId;
 
   @override
   ConsumerState<SaveNoteScreen> createState() => _SaveNoteScreenState();
@@ -44,10 +46,18 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
       if (!mounted) return;
       final folders = ref.read(homeProvider).folders;
       if (folders.isEmpty) return;
-      final defaultFolder =
-          folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
-      setState(() => _selectedFolder = defaultFolder);
+      setState(() => _selectedFolder = _resolveInitialFolder(folders));
     });
+  }
+
+  FolderItem _resolveInitialFolder(List<FolderItem> folders) {
+    final initialId = widget.initialFolderId;
+    if (initialId != null) {
+      for (final folder in folders) {
+        if (folder.foldersId == initialId) return folder;
+      }
+    }
+    return folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
   }
 
   @override
@@ -108,9 +118,7 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
     ref.listen<HomeState>(homeProvider, (prev, next) {
       if (_selectedFolder != null) return;
       if (next.folders.isEmpty) return;
-      final defaultFolder =
-          next.folders.where((f) => f.isDefault).firstOrNull ??
-          next.folders.first;
+      final defaultFolder = _resolveInitialFolder(next.folders);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _selectedFolder == null) {
           setState(() => _selectedFolder = defaultFolder);

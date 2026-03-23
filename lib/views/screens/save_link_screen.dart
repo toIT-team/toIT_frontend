@@ -15,7 +15,9 @@ const double _kSectionSpacing = 10;
 
 /// 링크 저장 화면 (POST /links/preview → 편집 → POST /links)
 class SaveLinkScreen extends ConsumerStatefulWidget {
-  const SaveLinkScreen({super.key});
+  const SaveLinkScreen({super.key, this.initialFolderId});
+
+  final int? initialFolderId;
 
   @override
   ConsumerState<SaveLinkScreen> createState() => _SaveLinkScreenState();
@@ -44,10 +46,18 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
       if (!mounted) return;
       final folders = ref.read(homeProvider).folders;
       if (folders.isEmpty) return;
-      final defaultFolder =
-          folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
-      setState(() => _selectedFolder = defaultFolder);
+      setState(() => _selectedFolder = _resolveInitialFolder(folders));
     });
+  }
+
+  FolderItem _resolveInitialFolder(List<FolderItem> folders) {
+    final initialId = widget.initialFolderId;
+    if (initialId != null) {
+      for (final folder in folders) {
+        if (folder.foldersId == initialId) return folder;
+      }
+    }
+    return folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
   }
 
   void _onUrlChanged() {
@@ -180,6 +190,17 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<HomeState>(homeProvider, (prev, next) {
+      if (_selectedFolder != null) return;
+      if (next.folders.isEmpty) return;
+      final defaultFolder = _resolveInitialFolder(next.folders);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedFolder == null) {
+          setState(() => _selectedFolder = defaultFolder);
+        }
+      });
+    });
+
     return WillPopScope(
       onWillPop: _handleExitAttempt,
       child: Scaffold(

@@ -15,12 +15,18 @@ import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
+import '../widgets/common/add_popup_menu.dart';
 import '../widgets/home/add_folder_bottom_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
 import '../widgets/home/folder_memo_bottom_sheet.dart';
 import '../widgets/home/folder_options_bottom_sheet.dart';
 import 'image_detail_screen.dart';
 import 'note_detail_screen.dart';
+import 'save_file_screen.dart';
+import 'save_image_screen.dart';
+import 'save_link_screen.dart';
+import 'save_note_screen.dart';
+import 'event_form_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -47,6 +53,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _folderName = '';
+  final GlobalKey _addButtonKey = GlobalKey();
 
   @override
   void initState() {
@@ -165,6 +172,47 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           return;
         }
         Navigator.of(context).pop();
+        break;
+    }
+  }
+
+  Future<void> _onAddMenuTap() async {
+    final selected = await showAddPopupMenu(context, anchorKey: _addButtonKey);
+    if (!mounted || selected == null) return;
+
+    switch (selected) {
+      case 0:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveLinkScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 1:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveNoteScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 2:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveFileScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 3:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveImageScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 4:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const EventFormScreen()));
         break;
     }
   }
@@ -612,6 +660,32 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ],
         ),
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(right: 4, bottom: 16),
+        child: GestureDetector(
+          key: _addButtonKey,
+          onTap: _onAddMenuTap,
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.blue500,
+              borderRadius: BorderRadius.circular(99),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowNavBlue.withOpacity(0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.add, color: Colors.white, size: 28),
+            ),
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
