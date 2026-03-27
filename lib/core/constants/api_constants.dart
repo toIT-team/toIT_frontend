@@ -15,8 +15,9 @@ class ApiConstants {
   static const int connectTimeout = 10000;
   static const int receiveTimeout = 10000;
 
-  /// 개발용 고정 사용자 ID (계정 연동 전까지 사용할 예정임 TODO: 추후 삭제해야할 것)
-  static const int devUserId = 2;
+  // /// 개발용 고정 사용자 ID — 로그인 구현 완료로 비활성화
+  // /// JWT의 sub 값으로 대체됨 (authProvider.userId)
+  // static const int devUserId = 2;
 
   // ─── 엔드포인트 ───
   static const String homePageEndpoint = '/page/home';
@@ -49,4 +50,19 @@ class ApiConstants {
 
   /// 자료 파일/이미지 보관함 이동 (PATCH)
   static const String attachmentsEndpoint = '/attachments';
+
+  // ─── 인증 ───
+
+  /// 카카오 소셜 로그인 (GET → 브라우저로 열어 OAuth 진행)
+  static const String kakaoLoginEndpoint =
+      '/api/v1/auth/social/kakao/login';
+
+  /// 액세스 토큰 재발급 (POST, body: refreshToken)
+  static const String reissueEndpoint = '/api/v1/auth/reissue';
+
+  /// 앱 복귀 딥링크 스킴
+  static const String authCallbackScheme = 'toit';
+
+  /// 앱 복귀 딥링크 전체 URL
+  static const String authCallbackUrl = 'toit://auth/callback';
 }

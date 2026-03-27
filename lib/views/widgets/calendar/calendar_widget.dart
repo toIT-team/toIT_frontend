@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../controllers/auth_controller.dart';
 import '../../../controllers/calendar_controller.dart';
 import '../../../services/schedule_api_client.dart';
 import 'calendar_grid.dart';
@@ -58,9 +59,11 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
   Future<void> _showDayEventsSheet(BuildContext context, DateTime date) async {
     ref.read(calendarProvider.notifier).selectDate(date);
 
+    final userId = ref.read(currentUserIdProvider);
     final apiClient = ScheduleApiClient();
     final dayEvents = await apiClient.getSelectedDaySchedules(
       selectedDay: date,
+      userId: userId,
     );
 
     if (!context.mounted) return;

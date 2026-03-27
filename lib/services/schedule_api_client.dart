@@ -16,7 +16,7 @@ class ScheduleApiClient {
   /// 선택된 날짜의 일정 조회 (바텀시트용)
   Future<List<CalendarEvent>> getSelectedDaySchedules({
     required DateTime selectedDay,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final selectedDayStr = _formatDate(selectedDay);
 
@@ -45,7 +45,7 @@ class ScheduleApiClient {
   /// GET /page/schedules?usersId=&schedulesId=
   Future<ScheduleDetailResponse> getScheduleDetail({
     required int schedulesId,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/detail',
@@ -66,7 +66,7 @@ class ScheduleApiClient {
   Future<List<CalendarEvent>> searchSchedules({
     required DateTime startDate,
     required DateTime endDate,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final startStr = _formatDate(startDate);
     final endStr = _formatDate(endDate);
@@ -116,7 +116,7 @@ class ScheduleApiClient {
     required bool alarmState,
     int alarmOffsetMinutes = 0,
     int? foldersId,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final body = <String, dynamic>{
       'usersId': userId,
@@ -182,7 +182,7 @@ class ScheduleApiClient {
     required bool alarmState,
     int alarmOffsetMinutes = 0,
     int? foldersId,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final body = <String, dynamic>{
       'usersId': userId,
@@ -236,7 +236,7 @@ class ScheduleApiClient {
   /// 성공 시 200, 실패 시 404/500 등
   Future<void> deleteSchedule({
     required int schedulesId,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final body = {'userId': userId, 'schedulesId': schedulesId};
     // TODO: 개발 단계 - 디버그 로그. 운영 시 제거 또는 레벨 조정

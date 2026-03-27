@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/constants/api_constants.dart';
+import '../controllers/auth_controller.dart';
 import '../core/network/api_client.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/home_response_dto.dart';
@@ -12,25 +12,24 @@ import '../models/dto/page_items_response_dto.dart';
 /// - DTO → Domain 변환 수행
 class HomeRepository {
   final HomeRemoteDatasource _remoteDatasource;
+  final int _userId;
 
-  const HomeRepository(this._remoteDatasource);
+  const HomeRepository(this._remoteDatasource, this._userId);
 
   /// 홈 화면 데이터 조회
-  /// [todayDate] 오늘 날짜 (yyyy-MM-dd)
-  Future<HomeResponseDto> fetchHomeData({required String todayDate}) async {
-    // TODO: 로그인 구현 후 실제 userId 사용
-    final response = await _remoteDatasource.fetchHomeData(
-      usersId: ApiConstants.devUserId,
+  Future<HomeResponseDto> fetchHomeData({
+    required String todayDate,
+  }) async {
+    return _remoteDatasource.fetchHomeData(
+      usersId: _userId,
       todayDate: todayDate,
     );
-
-    return response;
   }
 
   /// 보관함(폴더) 삭제
   Future<void> deleteFolder({required int foldersId}) async {
     await _remoteDatasource.deleteFolder(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
     );
   }
@@ -43,7 +42,7 @@ class HomeRepository {
     required String color,
   }) async {
     await _remoteDatasource.updateFolder(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       name: name,
       memo: memo,
@@ -67,7 +66,7 @@ class HomeRepository {
     String? linksThumbnail,
   }) async {
     await _remoteDatasource.createLink(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersIdList: foldersIdList,
       linksUrl: linksUrl,
       linksName: linksName,
@@ -82,13 +81,13 @@ class HomeRepository {
     required int linksId,
   }) async {
     await _remoteDatasource.deleteLink(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       linksId: linksId,
     );
   }
 
-  /// 자료 링크 수정 (PATCH /links/update) - 제목·설명
+  /// 자료 링크 수정 (PATCH /links/update)
   Future<void> updateLink({
     required int foldersId,
     required int linksId,
@@ -96,7 +95,7 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.updateLink(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       linksId: linksId,
       linksName: linksName,
@@ -111,7 +110,7 @@ class HomeRepository {
     required int linksId,
   }) async {
     await _remoteDatasource.moveLink(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       linksId: linksId,
@@ -124,7 +123,7 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.createText(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersIdList: foldersIdList,
       textContent: textContent,
     );
@@ -137,7 +136,7 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.updateText(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       textsId: textsId,
       textContent: textContent,
@@ -150,7 +149,7 @@ class HomeRepository {
     required int textsId,
   }) async {
     await _remoteDatasource.deleteText(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       textsId: textsId,
     );
@@ -163,7 +162,7 @@ class HomeRepository {
     required int textsId,
   }) async {
     await _remoteDatasource.moveText(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       textsId: textsId,
@@ -178,7 +177,7 @@ class HomeRepository {
     required String fileName,
   }) async {
     await _remoteDatasource.createFile(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersIdList: foldersIdList,
       textContent: textContent,
       fileBytes: fileBytes,
@@ -194,7 +193,7 @@ class HomeRepository {
     required String fileName,
   }) async {
     await _remoteDatasource.createImage(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersIdList: foldersIdList,
       textContent: textContent,
       imageBytes: imageBytes,
@@ -209,7 +208,7 @@ class HomeRepository {
     required int attachmentsId,
   }) async {
     await _remoteDatasource.moveAttachment(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       attachmentsId: attachmentsId,
@@ -219,15 +218,17 @@ class HomeRepository {
   /// 자료 파일/이미지 삭제 (DELETE /attachments)
   Future<void> deleteAttachment({required int attachmentsId}) async {
     await _remoteDatasource.deleteAttachment(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       attachmentsId: attachmentsId,
     );
   }
 
   /// 보관함 내부 항목 조회 (GET /page/items)
-  Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
+  Future<PageItemsResponseDto> getPageItems({
+    required int foldersId,
+  }) async {
     return _remoteDatasource.fetchPageItems(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       foldersId: foldersId,
     );
   }
@@ -239,7 +240,7 @@ class HomeRepository {
     required String color,
   }) async {
     return _remoteDatasource.createFolder(
-      usersId: ApiConstants.devUserId,
+      usersId: _userId,
       name: name,
       memo: memo,
       color: color,
@@ -248,19 +249,22 @@ class HomeRepository {
 }
 
 /// HomeRemoteDatasource Provider
-final homeRemoteDatasourceProvider = Provider<HomeRemoteDatasource>((ref) {
+final homeRemoteDatasourceProvider =
+    Provider<HomeRemoteDatasource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return HomeRemoteDatasource(apiClient);
 });
 
-/// HomeRepository Provider
+/// HomeRepository Provider (로그인된 userId 주입)
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
   final remoteDatasource = ref.watch(homeRemoteDatasourceProvider);
-  return HomeRepository(remoteDatasource);
+  final userId = ref.watch(currentUserIdProvider);
+  return HomeRepository(remoteDatasource, userId);
 });
 
 /// 보관함 상세 항목 (GET /page/items) - foldersId별 캐시
-final pageItemsProvider = FutureProvider.family<PageItemsResponseDto, int>((
+final pageItemsProvider =
+    FutureProvider.family<PageItemsResponseDto, int>((
   ref,
   foldersId,
 ) async {

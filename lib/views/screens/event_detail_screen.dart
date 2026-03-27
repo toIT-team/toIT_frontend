@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../controllers/auth_controller.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
@@ -65,9 +66,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     });
 
     try {
+      final userId = ref.read(currentUserIdProvider);
       final apiClient = ScheduleApiClient();
       final detail = await apiClient.getScheduleDetail(
         schedulesId: widget.schedulesId,
+        userId: userId,
       );
 
       if (!mounted) return;
@@ -142,6 +145,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ? EventColorTokens.toToken(formState.appColorToken!)
           : EventColorTokens.toToken(EventColorToken.blue300);
 
+      final userId = ref.read(currentUserIdProvider);
       final apiClient = ScheduleApiClient();
       final updatedEvent = await apiClient.updateSchedule(
         schedulesId: schedulesId,
@@ -156,6 +160,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         alarmState: formState.alarmMinutes != null,
         alarmOffsetMinutes: formState.alarmMinutes ?? 0,
         foldersId: formState.foldersId,
+        userId: userId,
       );
 
       calendarController.updateEvent(updatedEvent);
@@ -546,8 +551,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
+      final userId = ref.read(currentUserIdProvider);
       final apiClient = ScheduleApiClient();
-      await apiClient.deleteSchedule(schedulesId: widget.schedulesId);
+      await apiClient.deleteSchedule(
+        schedulesId: widget.schedulesId,
+        userId: userId,
+      );
 
       if (!mounted) return;
 

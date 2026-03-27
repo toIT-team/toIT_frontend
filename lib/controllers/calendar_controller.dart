@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'auth_controller.dart';
 import '../core/utils/calendar_utils.dart';
 import '../models/calendar/calendar_event.dart';
 import '../services/schedule_api_client.dart';
@@ -148,6 +149,8 @@ class CalendarState with _$CalendarState {
 class CalendarController extends Notifier<CalendarState> {
   final _apiClient = ScheduleApiClient();
 
+  int get _userId => ref.read(currentUserIdProvider);
+
   @override
   CalendarState build() {
     final now = DateTime.now();
@@ -168,6 +171,7 @@ class CalendarController extends Notifier<CalendarState> {
       final events = await _apiClient.searchSchedules(
         startDate: startDate,
         endDate: endDate,
+        userId: _userId,
       );
       state = state.copyWith(
         focusedMonth: targetMonth,

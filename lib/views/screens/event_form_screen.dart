@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../controllers/auth_controller.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
@@ -182,6 +183,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
             ? EventColorTokens.toToken(formState.appColorToken!)
             : EventColorTokens.toToken(EventColorToken.blue300);
 
+        final userId = ref.read(currentUserIdProvider);
         final apiClient = ScheduleApiClient();
         final event = await apiClient.createSchedule(
           title: formState.title,
@@ -195,6 +197,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           alarmState: formState.alarmMinutes != null,
           alarmOffsetMinutes: formState.alarmMinutes ?? 0,
           foldersId: formState.foldersId,
+          userId: userId,
         );
 
         ref.read(calendarProvider.notifier).addEvent(event);
@@ -215,6 +218,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
             ? EventColorTokens.toToken(formState.appColorToken!)
             : EventColorTokens.toToken(EventColorToken.blue300);
 
+        final userId = ref.read(currentUserIdProvider);
         final apiClient = ScheduleApiClient();
         final event = await apiClient.updateSchedule(
           schedulesId: schedulesId,
@@ -229,6 +233,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           alarmState: formState.alarmMinutes != null,
           alarmOffsetMinutes: formState.alarmMinutes ?? 0,
           foldersId: formState.foldersId,
+          userId: userId,
         );
 
         ref.read(calendarProvider.notifier).updateEvent(event);

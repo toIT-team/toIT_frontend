@@ -33,7 +33,7 @@ class SearchApiClient {
   /// [keyword] 검색어
   Future<SearchResponseDto> search({
     required String keyword,
-    int userId = ApiConstants.devUserId,
+    required int userId,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}${ApiConstants.searchEndpoint}',
