@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/api_constants.dart';
+import '../core/network/api_client.dart';
 import '../models/dto/search_response_dto.dart';
 
 /// 통합 검색 API 클라이언트
@@ -50,3 +52,10 @@ class SearchApiClient {
     return SearchResponseDto.fromJson(response.data!);
   }
 }
+
+/// SearchApiClient Provider
+/// ApiClient의 인증 Dio를 공유하여 Bearer 토큰 자동 첨부
+final searchApiClientProvider = Provider<SearchApiClient>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SearchApiClient(dio: apiClient.dio);
+});

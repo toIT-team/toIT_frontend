@@ -55,8 +55,10 @@ class ApiConstants {
 
   /// 카카오 소셜 로그인 (GET → 브라우저로 열어 OAuth 진행)
   static const String kakaoLoginEndpoint =
-      '/api/v1/auth/social/kakao/login';
+      '/api/auth/kakao/login';
 
+  static const String appleLoginEndpoint =
+      '/api/auth/apple/login';
   /// 액세스 토큰 재발급 (POST, body: refreshToken)
   static const String reissueEndpoint = '/api/v1/auth/reissue';
 

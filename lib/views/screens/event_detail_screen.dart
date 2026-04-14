@@ -2,14 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../controllers/auth_controller.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
 import '../../models/schedule/schedule_response.dart';
-import '../../services/schedule_api_client.dart';
+import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_divider.dart';
 import '../widgets/common/bottom_bar_button.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
@@ -66,11 +65,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     });
 
     try {
-      final userId = ref.read(currentUserIdProvider);
-      final apiClient = ScheduleApiClient();
+      final apiClient = ref.read(scheduleApiClientProvider);
       final detail = await apiClient.getScheduleDetail(
         schedulesId: widget.schedulesId,
-        userId: userId,
       );
 
       if (!mounted) return;
@@ -145,8 +142,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ? EventColorTokens.toToken(formState.appColorToken!)
           : EventColorTokens.toToken(EventColorToken.blue300);
 
-      final userId = ref.read(currentUserIdProvider);
-      final apiClient = ScheduleApiClient();
+      final apiClient = ref.read(scheduleApiClientProvider);
       final updatedEvent = await apiClient.updateSchedule(
         schedulesId: schedulesId,
         title: formState.title,
@@ -160,7 +156,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         alarmState: formState.alarmMinutes != null,
         alarmOffsetMinutes: formState.alarmMinutes ?? 0,
         foldersId: formState.foldersId,
-        userId: userId,
       );
 
       calendarController.updateEvent(updatedEvent);
@@ -551,11 +546,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
 
     try {
-      final userId = ref.read(currentUserIdProvider);
-      final apiClient = ScheduleApiClient();
+      final apiClient = ref.read(scheduleApiClientProvider);
       await apiClient.deleteSchedule(
         schedulesId: widget.schedulesId,
-        userId: userId,
       );
 
       if (!mounted) return;
@@ -563,10 +556,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ref.read(calendarProvider.notifier).removeEvent(
             widget.schedulesId.toString(),
           );
-      navigator.pop(); // 다이얼로그 닫기
-      navigator.pop(); // 상세 화면 닫기
+      navigator.pop();
     } catch (e) {
-      navigator.pop(); // 다이얼로그 닫기
       // TODO: 에러 상세 표시. 후에 삭제 요망
       String message;
       if (e is DioException) {

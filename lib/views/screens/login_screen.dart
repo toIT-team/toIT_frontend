@@ -74,6 +74,11 @@ class LoginScreen extends ConsumerWidget {
                   ref: ref,
                   isLoading: authState.isLoading,
                 ),
+                const SizedBox(height: 12),
+                _buildAppleButton(
+                  ref: ref,
+                  isLoading: authState.isLoading,
+                ),
                 const SizedBox(height: 24),
                 _buildSupportRow(),
                 const SizedBox(height: 40),
@@ -155,6 +160,62 @@ class LoginScreen extends ConsumerWidget {
                     fit: BoxFit.contain,
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppleButton({
+    required WidgetRef ref,
+    required bool isLoading,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: Material(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: isLoading
+                ? null
+                : () => ref
+                    .read(authProvider.notifier)
+                    .loginWithApple(),
+            borderRadius: BorderRadius.circular(8),
+            child: Center(
+              child: isLoading
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.apple,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Apple로 계속하기',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
         ),
       ),
     );

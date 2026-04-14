@@ -2,10 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../controllers/auth_controller.dart';
 import '../../../controllers/calendar_controller.dart';
 import '../../../models/calendar/calendar_event.dart';
-import '../../../services/schedule_api_client.dart';
+import '../../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../../screens/event_form_screen.dart';
 import '../common/add_action_button.dart';
 import '../common/add_context_menu.dart';
@@ -199,11 +198,9 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
       final schedulesId = int.tryParse(event.id);
       if (schedulesId == null) return;
 
-      final userId = ref.read(currentUserIdProvider);
-      final apiClient = ScheduleApiClient();
+      final apiClient = ref.read(scheduleApiClientProvider);
       await apiClient.deleteSchedule(
         schedulesId: schedulesId,
-        userId: userId,
       );
 
       if (!mounted) return;

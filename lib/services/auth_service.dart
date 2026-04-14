@@ -11,7 +11,7 @@ import '../core/constants/api_constants.dart';
 const _kAccessToken = 'access_token';
 const _kRefreshToken = 'refresh_token';
 
-/// 카카오 소셜 로그인 콜백 결과
+/// 소셜 로그인(OAuth 콜백) 결과
 enum AuthCallbackResult { success, cancelled, failed, needsSignup }
 
 /// 콜백 파싱 결과
@@ -30,7 +30,7 @@ class AuthCallbackData {
 }
 
 /// 인증 관련 로직을 담당하는 서비스
-/// - 카카오 로그인 (flutter_web_auth_2)
+/// - 소셜 로그인 (flutter_web_auth_2, 백엔드 OAuth → toit 콜백)
 /// - 토큰 보안 저장 / 조회 / 삭제
 /// - 액세스 토큰 재발급
 class AuthService {
@@ -81,15 +81,15 @@ class AuthService {
     ]);
   }
 
-  // ─── 카카오 로그인 플로우 ───
+  // ─── 소셜 로그인 (백엔드 OAuth, 콜백 규약 동일) ───
 
-  /// 브라우저를 열어 백엔드 카카오 로그인 URL로 이동하고
-  /// toit://auth/callback 딥링크로 돌아온 결과를 파싱
-  Future<AuthCallbackData> loginWithKakao() async {
-    final loginUrl =
-        '${ApiConstants.baseUrl}${ApiConstants.kakaoLoginEndpoint}';
-
-    debugPrint('[AuthService] 카카오 로그인 시작: $loginUrl');
+  /// 브라우저로 백엔드 OAuth URL을 열고 `toit://auth/callback` 결과를 파싱
+  Future<AuthCallbackData> _loginWithBackendOAuth({
+    required String endpoint,
+    required String logLabel,
+  }) async {
+    final loginUrl = '${ApiConstants.baseUrl}$endpoint';
+    debugPrint('[AuthService] $logLabel 로그인 시작: $loginUrl');
 
     final resultUrl = await FlutterWebAuth2.authenticate(
       url: loginUrl,
@@ -99,6 +99,16 @@ class AuthService {
     debugPrint('[AuthService] 콜백 수신: $resultUrl');
     return _parseCallback(resultUrl);
   }
+
+  Future<AuthCallbackData> loginWithKakao() => _loginWithBackendOAuth(
+        endpoint: ApiConstants.kakaoLoginEndpoint,
+        logLabel: '카카오',
+      );
+
+  Future<AuthCallbackData> loginWithApple() => _loginWithBackendOAuth(
+        endpoint: ApiConstants.appleLoginEndpoint,
+        logLabel: '애플',
+      );
 
   /// 콜백 URL 파싱
   AuthCallbackData _parseCallback(String url) {

@@ -83,8 +83,16 @@ class ApiClient {
     dynamic data,
     Map<String, dynamic>? queryParameters,
   }) async {
-    return _dio.delete<T>(path, data: data, queryParameters: queryParameters);
+    return _dio.delete<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+    );
   }
+
+  /// 내부 Dio 인스턴스 (인증 인터셉터 포함)
+  /// SearchApiClient, ScheduleApiClient 등에서 공유하기 위한 getter
+  Dio get dio => _dio;
 }
 
 /// ApiClient Provider

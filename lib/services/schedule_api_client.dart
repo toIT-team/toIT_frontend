@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
-
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/api_constants.dart';
+import '../core/network/api_client.dart';
 import '../core/constants/event_color_tokens.dart';
 import '../models/calendar/calendar_event.dart';
 import '../models/schedule/schedule_response.dart';
@@ -16,14 +17,12 @@ class ScheduleApiClient {
   /// 선택된 날짜의 일정 조회 (바텀시트용)
   Future<List<CalendarEvent>> getSelectedDaySchedules({
     required DateTime selectedDay,
-    required int userId,
   }) async {
     final selectedDayStr = _formatDate(selectedDay);
 
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/selected',
       queryParameters: {
-        'usersId': userId,
         'selectedDay': selectedDayStr,
       },
     );
@@ -35,22 +34,19 @@ class ScheduleApiClient {
     return selectedResponse.schedulesResponses
         .map((item) => _toCalendarEventFromSelected(
               item,
-              selectedResponse.userId,
               selectedDayStr,
             ))
         .toList();
   }
 
   /// 일정 상세 조회
-  /// GET /page/schedules?usersId=&schedulesId=
+  /// GET /page/schedules/detail?schedulesId=
   Future<ScheduleDetailResponse> getScheduleDetail({
     required int schedulesId,
-    required int userId,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/detail',
       queryParameters: {
-        'usersId': userId,
         'schedulesId': schedulesId,
       },
     );
@@ -66,7 +62,6 @@ class ScheduleApiClient {
   Future<List<CalendarEvent>> searchSchedules({
     required DateTime startDate,
     required DateTime endDate,
-    required int userId,
   }) async {
     final startStr = _formatDate(startDate);
     final endStr = _formatDate(endDate);
@@ -74,7 +69,6 @@ class ScheduleApiClient {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/search',
       queryParameters: {
-        'usersId': userId,
         'startDate': startStr,
         'endDate': endStr,
       },
@@ -85,7 +79,7 @@ class ScheduleApiClient {
     final searchResponse =
         ScheduleSearchResponse.fromJson(response.data!);
     return searchResponse.schedulesResponses
-        .map((item) => _toCalendarEvent(item, searchResponse.userId))
+        .map(_toCalendarEvent)
         .toList();
   }
 
@@ -116,10 +110,8 @@ class ScheduleApiClient {
     required bool alarmState,
     int alarmOffsetMinutes = 0,
     int? foldersId,
-    required int userId,
   }) async {
     final body = <String, dynamic>{
-      'usersId': userId,
       'title': title,
       'appColor': appColor,
       'foldersId': foldersId,
@@ -150,13 +142,9 @@ class ScheduleApiClient {
     }
 
     final item = ScheduleItemResponse.fromJson(response.data!);
-    // 응답에 appColor가 없으면 요청 시 보낸 appColor 사용 (로컬 반영용)
     final color = EventColorTokens.fromToken(item.appColor ?? appColor);
-    // addEvent로 추가 시 CalendarEventIndex.build에서 사용. create API 응답 형식이
-    // search와 다를 수 있으므로, 우리가 보낸 startDate/endDate 사용
     return CalendarEvent(
       id: item.schedulesId.toString(),
-      usersId: userId,
       title: item.title,
       startAt: _formatDate(startDate),
       endAt: _formatDate(endDate),
@@ -182,10 +170,8 @@ class ScheduleApiClient {
     required bool alarmState,
     int alarmOffsetMinutes = 0,
     int? foldersId,
-    required int userId,
   }) async {
     final body = <String, dynamic>{
-      'usersId': userId,
       'schedulesId': schedulesId,
       'title': title,
       'appColor': appColor,
@@ -217,11 +203,9 @@ class ScheduleApiClient {
     }
 
     final item = ScheduleItemResponse.fromJson(response.data!);
-    // 응답에 appColor가 없으면 요청 시 보낸 appColor 사용 (로컬 반영용)
     final color = EventColorTokens.fromToken(item.appColor ?? appColor);
     return CalendarEvent(
       id: item.schedulesId.toString(),
-      usersId: userId,
       title: item.title,
       startAt: _formatDate(startDate),
       endAt: _formatDate(endDate),
@@ -236,9 +220,8 @@ class ScheduleApiClient {
   /// 성공 시 200, 실패 시 404/500 등
   Future<void> deleteSchedule({
     required int schedulesId,
-    required int userId,
   }) async {
-    final body = {'userId': userId, 'schedulesId': schedulesId};
+    final body = {'schedulesId': schedulesId};
     // TODO: 개발 단계 - 디버그 로그. 운영 시 제거 또는 레벨 조정
     debugPrint('[일정 삭제 API] DELETE ${ApiConstants.baseUrl}/schedules');
     debugPrint('[일정 삭제 API] Request body: $body');
@@ -251,14 +234,10 @@ class ScheduleApiClient {
     debugPrint('[일정 삭제 API] Response: ${response.statusCode} ${response.data}');
   }
 
-  CalendarEvent _toCalendarEvent(
-    ScheduleItemResponse item,
-    int userId,
-  ) {
+  CalendarEvent _toCalendarEvent(ScheduleItemResponse item) {
     final color = EventColorTokens.fromToken(item.appColor);
     return CalendarEvent(
       id: item.schedulesId.toString(),
-      usersId: userId,
       title: item.title,
       startAt: item.startDate,
       endAt: item.endDate,
@@ -279,14 +258,12 @@ class ScheduleApiClient {
 
   CalendarEvent _toCalendarEventFromSelected(
     SelectedScheduleItemResponse item,
-    int userId,
     String selectedDayStr,
   ) {
     final color = EventColorTokens.fromToken(item.appColor);
     final hasTime = item.startTime != null && item.endTime != null;
     return CalendarEvent(
       id: item.schedulesId.toString(),
-      usersId: userId,
       title: item.title,
       startAt: selectedDayStr,
       endAt: selectedDayStr,
@@ -297,3 +274,11 @@ class ScheduleApiClient {
     );
   }
 }
+
+/// ScheduleApiClient Provider
+/// ApiClient의 인증 Dio를 공유하여 Bearer 토큰 자동 첨부
+final scheduleApiClientProvider =
+    Provider<ScheduleApiClient>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return ScheduleApiClient(dio: apiClient.dio);
+});

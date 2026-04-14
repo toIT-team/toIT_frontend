@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'auth_controller.dart';
 import '../core/constants/event_color_tokens.dart';
 import '../models/calendar/calendar_event.dart';
 import '../models/schedule/schedule_response.dart';
@@ -233,7 +232,6 @@ class EventFormController extends Notifier<EventFormState> {
 
     return CalendarEvent(
       id: state.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      usersId: ref.read(currentUserIdProvider),
       title: state.title,
       startAt: formatDate(startDate),
       endAt: formatDate(endDate),

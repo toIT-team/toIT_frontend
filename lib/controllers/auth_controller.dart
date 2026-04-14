@@ -73,12 +73,23 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
-  /// 카카오 로그인 시작
+  /// 카카오 로그인 (백엔드 OAuth → 동일 콜백 규약)
   Future<void> loginWithKakao() async {
+    await _runSocialLogin(_authService.loginWithKakao);
+  }
+
+  /// 애플 로그인 (백엔드 OAuth → 동일 콜백 규약)
+  Future<void> loginWithApple() async {
+    await _runSocialLogin(_authService.loginWithApple);
+  }
+
+  Future<void> _runSocialLogin(
+    Future<AuthCallbackData> Function() login,
+  ) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final callbackData = await _authService.loginWithKakao();
+      final callbackData = await login();
 
       switch (callbackData.result) {
         case AuthCallbackResult.success:

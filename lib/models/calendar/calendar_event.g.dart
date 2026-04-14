@@ -9,7 +9,6 @@ part of 'calendar_event.dart';
 _$CalendarEventImpl _$$CalendarEventImplFromJson(Map<String, dynamic> json) =>
     _$CalendarEventImpl(
       id: json['id'] as String,
-      usersId: (json['usersId'] as num).toInt(),
       title: json['title'] as String,
       startAt: json['startAt'] as String,
       endAt: json['endAt'] as String,
@@ -23,7 +22,6 @@ _$CalendarEventImpl _$$CalendarEventImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$CalendarEventImplToJson(_$CalendarEventImpl instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'usersId': instance.usersId,
       'title': instance.title,
       'startAt': instance.startAt,
       'endAt': instance.endAt,

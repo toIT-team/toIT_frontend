@@ -7,7 +7,8 @@ import 'auth_controller.dart';
 import '../core/utils/search_utils.dart';
 import '../models/dto/search_response_dto.dart';
 import '../models/search/search_result_item.dart';
-import '../services/search_api_client.dart';
+import '../services/search_api_client.dart'
+    show SearchApiClient, searchApiClientProvider;
 
 part 'search_controller.freezed.dart';
 
@@ -186,16 +187,15 @@ List<SearchResultItem> _applyFilter(
 
 /// 검색 컨트롤러
 class SearchController extends Notifier<SearchState> {
-  SearchController({
-    SearchApiClient? apiClient,
-  }) : _apiClient = apiClient ?? SearchApiClient();
-
-  final SearchApiClient _apiClient;
+  late final SearchApiClient _apiClient;
   final _SearchResultCache _cache = _SearchResultCache();
   Timer? _debounceTimer;
 
   @override
-  SearchState build() => const SearchState();
+  SearchState build() {
+    _apiClient = ref.watch(searchApiClientProvider);
+    return const SearchState();
+  }
 
   /// 검색어 변경 (debounce 300ms)
   void onQueryChanged(String query) {
@@ -295,6 +295,6 @@ class SearchController extends Notifier<SearchState> {
 }
 
 final searchProvider =
-    NotifierProvider<SearchController, SearchState>(() {
-  return SearchController();
-});
+    NotifierProvider<SearchController, SearchState>(
+  SearchController.new,
+);

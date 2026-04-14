@@ -13,9 +13,6 @@ class CalendarEvent with _$CalendarEvent {
     /// 클라이언트 식별용 ID (백엔드 ID 또는 자동 생성)
     required String id,
 
-    /// 사용자 ID
-    required int usersId,
-
     /// 일정 제목
     required String title,
 
