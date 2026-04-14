@@ -9,11 +9,13 @@ class HomeAppBar extends StatelessWidget {
   const HomeAppBar({
     super.key,
     this.title = '마이',
+    this.onMenuPressed,
     this.onSearchPressed,
     this.onNotificationPressed,
   });
 
   final String title;
+  final VoidCallback? onMenuPressed;
   final VoidCallback? onSearchPressed;
   final VoidCallback? onNotificationPressed;
 
@@ -26,8 +28,13 @@ class HomeAppBar extends StatelessWidget {
       titleSpacing: AppSpacing.md,
       title: Row(
         children: [
-          const Icon(Icons.menu, color: AppColors.gray900),
-          const SizedBox(width: AppSpacing.sm),
+          IconButton(
+            onPressed: onMenuPressed,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+            icon: const Icon(Icons.menu, color: AppColors.gray900),
+          ),
+          const SizedBox(width: 0),
           Text(
             title,
             style: const TextStyle(

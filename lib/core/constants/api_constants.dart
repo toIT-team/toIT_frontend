@@ -23,6 +23,7 @@ class ApiConstants {
   static const String homePageEndpoint = '/page/home';
   static const String foldersEndpoint = '/folders';
   static const String pageItemsEndpoint = '/page/items';
+  static const String myPageEndpoint = '/page/my';
 
   /// 통합 검색 (GET /page/search)
   static const String searchEndpoint = '/page/search';

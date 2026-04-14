@@ -6,6 +6,7 @@ import '../../controllers/home_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_gradients.dart';
+import 'my_screen.dart';
 import '../widgets/home/home_app_bar.dart';
 import '../widgets/home/greeting_section.dart';
 import '../widgets/home/folder_section.dart';
@@ -24,7 +25,15 @@ class HomeScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(56),
-          child: HomeAppBar(),
+          child: HomeAppBar(
+            onMenuPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MyScreen(),
+                ),
+              );
+            },
+          ),
         ),
         body: homeState.isLoading
             ? const Center(child: CircularProgressIndicator())
