@@ -10,6 +10,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/my_page_response_dto.dart';
 import 'account_management_screen.dart';
+import 'customer_support_screen.dart';
 import 'profile_edit_screen.dart';
 
 /// 마이페이지 데이터 조회 Provider
@@ -220,7 +221,13 @@ class _MyContent extends StatelessWidget {
                   subtitle: '고객센터, 의견, 공지사항',
                   showChevron: true,
                   scale: scale,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SupportScreen(),
+                      ),
+                    );
+                  },
                 ),
                 Container(height: s(10), color: AppColors.neutral300),
                 _SettingTile(

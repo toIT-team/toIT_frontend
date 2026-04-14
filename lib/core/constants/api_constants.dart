@@ -53,6 +53,8 @@ class ApiConstants {
   static const String attachmentsEndpoint = '/attachments';
   static const String usersNameEndpoint = '/users/name';
   static const String usersWithdrawEndpoint = '/users/withdraw';
+  static const String feedbackEndpoint = '/api/feedback';
+  static const String myFeedbackEndpoint = '/api/feedback/my';
 
   // ─── 인증 ───
 
