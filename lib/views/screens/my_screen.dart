@@ -3,15 +3,26 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../controllers/auth_controller.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/my_page_response_dto.dart';
+import 'account_management_screen.dart';
 import 'profile_edit_screen.dart';
 
 /// 마이페이지 데이터 조회 Provider
-final myPageProvider = FutureProvider<MyPageResponseDto>((ref) async {
+final myPageProvider =
+    FutureProvider.family<MyPageResponseDto, (int, int)>((
+  ref,
+  key,
+) async {
+  final (userId, refreshTick) = key;
+  // 세션 변경 tick을 키에 포함해 사용자 전환 시 캐시 잔상 방지
+  if (refreshTick < 0) {
+    throw StateError('Invalid refresh tick: $refreshTick');
+  }
   final apiClient = ref.read(apiClientProvider);
   final response = await apiClient.get(ApiConstants.myPageEndpoint);
   return MyPageResponseDto.fromJson(response.data as Map<String, dynamic>);
@@ -23,7 +34,18 @@ class MyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final myPageAsync = ref.watch(myPageProvider);
+    final userId = ref.watch(authProvider.select((s) => s.userId));
+    if (userId == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    final refreshTick = ref.watch(authSessionRefreshTickProvider);
+    final cacheKey = (userId, refreshTick);
+    final myPageAsync = ref.watch(myPageProvider(cacheKey));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -48,14 +70,14 @@ class MyScreen extends ConsumerWidget {
                       ),
                     );
                     if (result == true) {
-                      ref.invalidate(myPageProvider);
+                      ref.invalidate(myPageProvider(cacheKey));
                     }
                   },
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _ErrorView(
                   message: '마이페이지를 불러오지 못했습니다.\n$error',
-                  onRetry: () => ref.invalidate(myPageProvider),
+                  onRetry: () => ref.invalidate(myPageProvider(cacheKey)),
                 ),
               ),
             ),
@@ -181,7 +203,16 @@ class _MyContent extends StatelessWidget {
                   subtitle: '계정 연결, 로그인',
                   showChevron: true,
                   scale: scale,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AccountManagementScreen(
+                          email: myPage.email,
+                          socialProvider: myPage.authProvider,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 _SettingTile(
                   iconPath: AppAssets.customerSupportIcon,

@@ -15,11 +15,16 @@ enum AuthStatus {
   unauthenticated,
 }
 
+/// 인증 세션 변경(로그인/로그아웃/복구) 시 캐시 갱신 트리거
+final authSessionRefreshTickProvider =
+    StateProvider<int>((ref) => 0);
+
 /// 인증 상태 + 부가 정보
 class AuthState {
   final AuthStatus status;
   final bool isLoading;
   final String? errorMessage;
+  final String? pendingRestoreToken;
 
   /// JWT에서 추출한 실제 사용자 ID
   final int? userId;
@@ -28,6 +33,7 @@ class AuthState {
     this.status = AuthStatus.unknown,
     this.isLoading = false,
     this.errorMessage,
+    this.pendingRestoreToken,
     this.userId,
   });
 
@@ -35,12 +41,14 @@ class AuthState {
     AuthStatus? status,
     bool? isLoading,
     String? errorMessage,
+    String? pendingRestoreToken,
     int? userId,
   }) {
     return AuthState(
       status: status ?? this.status,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
+      pendingRestoreToken: pendingRestoreToken,
       userId: userId ?? this.userId,
     );
   }
@@ -52,6 +60,13 @@ class AuthController extends Notifier<AuthState> {
   AuthState build() => const AuthState();
 
   AuthService get _authService => ref.read(authServiceProvider);
+
+  void _bumpSessionRefreshTick() {
+    final notifier = ref.read(
+      authSessionRefreshTickProvider.notifier,
+    );
+    notifier.state = notifier.state + 1;
+  }
 
   /// 앱 시작 시 저장된 토큰이 있으면 인증 상태 복원
   Future<void> checkAuthStatus() async {
@@ -106,6 +121,7 @@ class AuthController extends Notifier<AuthState> {
               status: AuthStatus.authenticated,
               userId: userId,
             );
+            _bumpSessionRefreshTick();
             debugPrint(
               '[AuthController] 로그인 성공, userId: $userId',
             );
@@ -134,6 +150,21 @@ class AuthController extends Notifier<AuthState> {
             errorMessage: '로그인에 실패했습니다. ($code)',
           );
           debugPrint('[AuthController] 로그인 실패: $code');
+
+        case AuthCallbackResult.deletedUser:
+          final restoreToken = callbackData.restoreToken;
+          if (restoreToken == null || restoreToken.isEmpty) {
+            state = state.copyWith(
+              isLoading: false,
+              errorMessage: '복구 토큰이 없어 로그인할 수 없습니다.',
+            );
+            return;
+          }
+          state = AuthState(
+            status: AuthStatus.unauthenticated,
+            isLoading: false,
+            pendingRestoreToken: restoreToken,
+          );
       }
     } catch (e) {
       debugPrint('[AuthController] 로그인 예외: $e');
@@ -148,6 +179,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> logout() async {
     await _authService.clearTokens();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    _bumpSessionRefreshTick();
     debugPrint('[AuthController] 로그아웃 완료');
   }
 
@@ -155,7 +187,55 @@ class AuthController extends Notifier<AuthState> {
   Future<void> forceLogout() async {
     await _authService.clearTokens();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    _bumpSessionRefreshTick();
     debugPrint('[AuthController] 토큰 만료 → 강제 로그아웃');
+  }
+
+  void clearPendingRestoreToken() {
+    state = AuthState(
+      status: state.status,
+      isLoading: state.isLoading,
+      errorMessage: state.errorMessage,
+      userId: state.userId,
+      pendingRestoreToken: null,
+    );
+  }
+
+  Future<void> restoreDeletedAccount({
+    required String restoreToken,
+  }) async {
+    state = AuthState(
+      status: AuthStatus.unauthenticated,
+      isLoading: true,
+      errorMessage: null,
+      pendingRestoreToken: restoreToken,
+    );
+    final restored = await _authService.restoreDeletedAccount(
+      restoreToken: restoreToken,
+    );
+    if (restored == null ||
+        restored.accessToken == null ||
+        restored.refreshToken == null) {
+      state = const AuthState(
+        status: AuthStatus.unauthenticated,
+        isLoading: false,
+        errorMessage: '계정 복구에 실패했습니다.',
+      );
+      return;
+    }
+
+    await _authService.saveTokens(
+      accessToken: restored.accessToken!,
+      refreshToken: restored.refreshToken!,
+    );
+    final userId = await _authService.getUserIdFromToken();
+    state = AuthState(
+      status: AuthStatus.authenticated,
+      isLoading: false,
+      userId: userId,
+    );
+    _bumpSessionRefreshTick();
+    debugPrint('[AuthController] 계정 복구 및 로그인 성공, userId: $userId');
   }
 }
 
