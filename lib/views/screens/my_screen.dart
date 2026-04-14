@@ -8,6 +8,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/my_page_response_dto.dart';
+import 'profile_edit_screen.dart';
 
 /// 마이페이지 데이터 조회 Provider
 final myPageProvider = FutureProvider<MyPageResponseDto>((ref) async {
@@ -33,7 +34,24 @@ class MyScreen extends ConsumerWidget {
             _MyHeader(onBackPressed: () => Navigator.of(context).pop()),
             Expanded(
               child: myPageAsync.when(
-                data: (myPage) => _MyContent(myPage: myPage),
+                data: (myPage) => _MyContent(
+                  myPage: myPage,
+                  onEditProfilePressed: () async {
+                    final result = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => ProfileEditScreen(
+                          initialName: myPage.nickname.isEmpty
+                              ? myPage.name
+                              : myPage.nickname,
+                          imageUrl: myPage.imageUrl,
+                        ),
+                      ),
+                    );
+                    if (result == true) {
+                      ref.invalidate(myPageProvider);
+                    }
+                  },
+                ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _ErrorView(
                   message: '마이페이지를 불러오지 못했습니다.\n$error',
@@ -94,9 +112,13 @@ class _MyHeader extends StatelessWidget {
 }
 
 class _MyContent extends StatelessWidget {
-  const _MyContent({required this.myPage});
+  const _MyContent({
+    required this.myPage,
+    required this.onEditProfilePressed,
+  });
 
   final MyPageResponseDto myPage;
+  final VoidCallback onEditProfilePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +143,7 @@ class _MyContent extends StatelessWidget {
                   child: _ProfileAvatar(
                     imageUrl: myPage.imageUrl,
                     scale: scale,
+                    onEditPressed: onEditProfilePressed,
                   ),
                 ),
                 SizedBox(height: s(12)),
@@ -188,10 +211,15 @@ class _MyContent extends StatelessWidget {
 }
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({required this.imageUrl, required this.scale});
+  const _ProfileAvatar({
+    required this.imageUrl,
+    required this.scale,
+    required this.onEditPressed,
+  });
 
   final String imageUrl;
   final double scale;
+  final VoidCallback onEditPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -229,12 +257,16 @@ class _ProfileAvatar extends StatelessWidget {
           Positioned(
             right: 0,
             bottom: 0,
-            child: SizedBox(
-              width: s(32),
-              height: s(32),
-              child: Image.asset(
-                AppAssets.editProfileIcon,
-                fit: BoxFit.contain,
+            child: GestureDetector(
+              onTap: onEditPressed,
+              behavior: HitTestBehavior.opaque,
+              child: SizedBox(
+                width: s(32),
+                height: s(32),
+                child: Image.asset(
+                  AppAssets.editProfileIcon,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
