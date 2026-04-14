@@ -12,10 +12,13 @@ import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 파일 저장 화면 (POST /attachments/files API 연동)
 class SaveFileScreen extends ConsumerStatefulWidget {
-  const SaveFileScreen({super.key});
+  const SaveFileScreen({super.key, this.initialFolderId});
+
+  final int? initialFolderId;
 
   @override
   ConsumerState<SaveFileScreen> createState() => _SaveFileScreenState();
@@ -30,6 +33,16 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
 
   bool get _fileAttached => _pickedFile != null;
 
+  bool get _hasDraft {
+    return _fileAttached || _memoController.text.trim().isNotEmpty;
+  }
+
+  Future<bool> _handleExitAttempt() async {
+    if (_isSaving) return false;
+    if (!_hasDraft) return true;
+    return showUnsavedExitDialog(context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,10 +53,18 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       if (!mounted) return;
       final folders = ref.read(homeProvider).folders;
       if (folders.isEmpty) return;
-      final defaultFolder =
-          folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
-      setState(() => _selectedFolder = defaultFolder);
+      setState(() => _selectedFolder = _resolveInitialFolder(folders));
     });
+  }
+
+  FolderItem _resolveInitialFolder(List<FolderItem> folders) {
+    final initialId = widget.initialFolderId;
+    if (initialId != null) {
+      for (final folder in folders) {
+        if (folder.foldersId == initialId) return folder;
+      }
+    }
+    return folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
   }
 
   @override
@@ -82,6 +103,7 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
         fileBytes: fileBytes,
         fileName: _pickedFile!.name,
       );
+      await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('파일이 저장되었습니다.');
@@ -167,9 +189,7 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
     ref.listen<HomeState>(homeProvider, (prev, next) {
       if (_selectedFolder != null) return;
       if (next.folders.isEmpty) return;
-      final defaultFolder =
-          next.folders.where((f) => f.isDefault).firstOrNull ??
-          next.folders.first;
+      final defaultFolder = _resolveInitialFolder(next.folders);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _selectedFolder == null) {
           setState(() => _selectedFolder = defaultFolder);
@@ -177,29 +197,40 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       });
     });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(44),
-        child: _buildAppBar(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            _buildFileSection(),
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 16),
-            _buildFolderSection(),
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 20),
-            _buildMemoSection(),
-            const SizedBox(height: 24),
-          ],
+    return WillPopScope(
+      onWillPop: _handleExitAttempt,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: _buildAppBar(),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              _buildFileSection(),
+              const SizedBox(height: 16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 16),
+              _buildFolderSection(),
+              const SizedBox(height: 16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 20),
+              _buildMemoSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -215,7 +246,11 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () async {
+                final shouldExit = await _handleExitAttempt();
+                if (!shouldExit || !mounted) return;
+                Navigator.of(context).pop();
+              },
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 24,

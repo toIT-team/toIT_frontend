@@ -15,15 +15,13 @@ class HomeRemoteDatasource {
   const HomeRemoteDatasource(this._apiClient);
 
   /// 홈 화면 데이터 조회
-  /// [usersId] 사용자 ID
   /// [todayDate] 오늘 날짜 (yyyy-MM-dd)
   Future<HomeResponseDto> fetchHomeData({
-    required int usersId,
     required String todayDate,
   }) async {
     final response = await _apiClient.get(
       ApiConstants.homePageEndpoint,
-      queryParameters: {'usersId': usersId, 'todayDate': todayDate},
+      queryParameters: {'todayDate': todayDate},
     );
 
     return HomeResponseDto.fromJson(response.data as Map<String, dynamic>);
@@ -31,14 +29,13 @@ class HomeRemoteDatasource {
 
   /// 보관함(폴더) 생성
   Future<FolderDto> createFolder({
-    required int usersId,
     required String name,
     required String memo,
     required String color,
   }) async {
     final response = await _apiClient.post(
       ApiConstants.foldersEndpoint,
-      data: {'usersId': usersId, 'name': name, 'memo': memo, 'color': color},
+      data: {'name': name, 'memo': memo, 'color': color},
     );
 
     return FolderDto.fromJson(response.data as Map<String, dynamic>);
@@ -46,12 +43,11 @@ class HomeRemoteDatasource {
 
   /// 보관함(폴더) 삭제 (Soft Delete)
   Future<void> deleteFolder({
-    required int usersId,
     required int foldersId,
   }) async {
     await _apiClient.delete(
       ApiConstants.foldersEndpoint,
-      data: {'usersId': usersId, 'foldersId': foldersId},
+      data: {'foldersId': foldersId},
     );
   }
 
@@ -73,7 +69,6 @@ class HomeRemoteDatasource {
   /// [foldersIdList] 링크를 저장할 보관함 ID 목록 (복수 선택 가능)
   /// [linksName], [textContent], [linksThumbnail] 미리보기에서 추출한 값(선택)
   Future<void> createLink({
-    required int usersId,
     required List<int> foldersIdList,
     required String linksUrl,
     String? linksName,
@@ -81,7 +76,6 @@ class HomeRemoteDatasource {
     String? linksThumbnail,
   }) async {
     final data = <String, dynamic>{
-      'usersId': usersId,
       'foldersIdList': foldersIdList,
       'linksUrl': linksUrl,
     };
@@ -97,21 +91,19 @@ class HomeRemoteDatasource {
   }
 
   /// 자료 링크 삭제 (DELETE /links)
-  /// Body: usersId, foldersId, linksId
+  /// Body: foldersId, linksId
   Future<void> deleteLink({
-    required int usersId,
     required int foldersId,
     required int linksId,
   }) async {
     await _apiClient.delete(
       ApiConstants.linksEndpoint,
-      data: {'usersId': usersId, 'foldersId': foldersId, 'linksId': linksId},
+      data: {'foldersId': foldersId, 'linksId': linksId},
     );
   }
 
   /// 자료 링크 수정 (PATCH /links/update) - 제목·설명
   Future<void> updateLink({
-    required int usersId,
     required int foldersId,
     required int linksId,
     required String linksName,
@@ -120,7 +112,6 @@ class HomeRemoteDatasource {
     await _apiClient.patch(
       ApiConstants.linksUpdateEndpoint,
       data: {
-        'usersId': usersId,
         'foldersId': foldersId,
         'linksId': linksId,
         'linksName': linksName,
@@ -131,7 +122,6 @@ class HomeRemoteDatasource {
 
   /// 자료 링크 보관함 이동 (PATCH /links) - Body: moveFoldersId
   Future<void> moveLink({
-    required int usersId,
     required int foldersId,
     required int moveFoldersId,
     required int linksId,
@@ -139,7 +129,6 @@ class HomeRemoteDatasource {
     await _apiClient.patch(
       ApiConstants.linksEndpoint,
       data: {
-        'usersId': usersId,
         'foldersId': foldersId,
         'moveFoldersId': moveFoldersId,
         'linksId': linksId,
@@ -150,14 +139,12 @@ class HomeRemoteDatasource {
   /// 자료 텍스트(노트) 추가 (POST /texts)
   /// [foldersIdList] 노트를 저장할 보관함 ID 목록
   Future<void> createText({
-    required int usersId,
     required List<int> foldersIdList,
     required String textContent,
   }) async {
     await _apiClient.post(
       ApiConstants.textsEndpoint,
       data: {
-        'usersId': usersId,
         'foldersIdList': foldersIdList,
         'textContent': textContent,
       },
@@ -166,7 +153,6 @@ class HomeRemoteDatasource {
 
   /// 자료 텍스트(노트) 수정 (PATCH /texts/update)
   Future<void> updateText({
-    required int usersId,
     required int foldersId,
     required int textsId,
     required String textContent,
@@ -174,7 +160,6 @@ class HomeRemoteDatasource {
     await _apiClient.patch(
       ApiConstants.textsUpdateEndpoint,
       data: {
-        'usersId': usersId,
         'foldersId': foldersId,
         'textsId': textsId,
         'textContent': textContent,
@@ -184,19 +169,17 @@ class HomeRemoteDatasource {
 
   /// 자료 텍스트(노트) 삭제 (DELETE /texts)
   Future<void> deleteText({
-    required int usersId,
     required int foldersId,
     required int textsId,
   }) async {
     await _apiClient.delete(
       ApiConstants.textsEndpoint,
-      data: {'usersId': usersId, 'foldersId': foldersId, 'textsId': textsId},
+      data: {'foldersId': foldersId, 'textsId': textsId},
     );
   }
 
   /// 자료 텍스트(노트) 보관함 이동 (PATCH /texts) - Body: moveFoldersId
   Future<void> moveText({
-    required int usersId,
     required int foldersId,
     required int moveFoldersId,
     required int textsId,
@@ -204,7 +187,6 @@ class HomeRemoteDatasource {
     await _apiClient.patch(
       ApiConstants.textsEndpoint,
       data: {
-        'usersId': usersId,
         'foldersId': foldersId,
         'moveFoldersId': moveFoldersId,
         'textsId': textsId,
@@ -213,9 +195,8 @@ class HomeRemoteDatasource {
   }
 
   /// 자료 파일 추가 (POST /attachments/files)
-  /// Query: usersId, foldersIdList, textContent. Body: multipart/form-data (file 파트)
+  /// Query: foldersIdList, textContent. Body: multipart/form-data (file 파트)
   Future<void> createFile({
-    required int usersId,
     required List<int> foldersIdList,
     required String textContent,
     required List<int> fileBytes,
@@ -230,7 +211,6 @@ class HomeRemoteDatasource {
     await _apiClient.post(
       ApiConstants.attachmentsFilesEndpoint,
       queryParameters: {
-        'usersId': usersId,
         'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
         'textContent': textContent,
       },
@@ -239,9 +219,8 @@ class HomeRemoteDatasource {
   }
 
   /// 자료 이미지 추가 (POST /attachments/images)
-  /// Query: usersId, foldersIdList, textContent. Body: multipart/form-data (image 파트)
+  /// Query: foldersIdList, textContent. Body: multipart/form-data (image 파트)
   Future<void> createImage({
-    required int usersId,
     required List<int> foldersIdList,
     required String textContent,
     required List<int> imageBytes,
@@ -256,7 +235,6 @@ class HomeRemoteDatasource {
     await _apiClient.post(
       ApiConstants.attachmentsImagesEndpoint,
       queryParameters: {
-        'usersId': usersId,
         'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
         'textContent': textContent,
       },
@@ -264,14 +242,39 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
+  Future<void> moveAttachment({
+    required int foldersId,
+    required int moveFoldersId,
+    required int attachmentsId,
+  }) async {
+    await _apiClient.patch(
+      ApiConstants.attachmentsEndpoint,
+      data: {
+        'foldersId': foldersId,
+        'moveFoldersId': moveFoldersId,
+        'attachmentsId': attachmentsId,
+      },
+    );
+  }
+
+  /// 자료 파일/이미지 삭제 (DELETE /attachments)
+  Future<void> deleteAttachment({
+    required int attachmentsId,
+  }) async {
+    await _apiClient.delete(
+      ApiConstants.attachmentsEndpoint,
+      queryParameters: {'attachmentsId': attachmentsId},
+    );
+  }
+
   /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
   Future<PageItemsResponseDto> fetchPageItems({
-    required int usersId,
     required int foldersId,
   }) async {
     final response = await _apiClient.get(
       ApiConstants.pageItemsEndpoint,
-      queryParameters: {'usersId': usersId, 'foldersId': foldersId},
+      queryParameters: {'foldersId': foldersId},
     );
 
     return PageItemsResponseDto.fromJson(response.data as Map<String, dynamic>);
@@ -279,7 +282,6 @@ class HomeRemoteDatasource {
 
   /// 보관함(폴더) 수정
   Future<void> updateFolder({
-    required int usersId,
     required int foldersId,
     required String name,
     required String memo,
@@ -289,7 +291,6 @@ class HomeRemoteDatasource {
     await _apiClient.patch(
       ApiConstants.foldersEndpoint,
       data: {
-        'usersId': usersId,
         'foldersId': foldersId,
         'name': name,
         'memo': memo,

@@ -7,7 +7,7 @@ import '../../core/constants/alarm_constants.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
 import '../../models/calendar/calendar_event.dart';
-import '../../services/schedule_api_client.dart';
+import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_divider.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
 import '../widgets/event/color_context_menu.dart';
@@ -182,7 +182,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
             ? EventColorTokens.toToken(formState.appColorToken!)
             : EventColorTokens.toToken(EventColorToken.blue300);
 
-        final apiClient = ScheduleApiClient();
+        final apiClient = ref.read(scheduleApiClientProvider);
         final event = await apiClient.createSchedule(
           title: formState.title,
           appColor: appColor,
@@ -215,7 +215,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
             ? EventColorTokens.toToken(formState.appColorToken!)
             : EventColorTokens.toToken(EventColorToken.blue300);
 
-        final apiClient = ScheduleApiClient();
+        final apiClient = ref.read(scheduleApiClientProvider);
         final event = await apiClient.updateSchedule(
           schedulesId: schedulesId,
           title: formState.title,

@@ -2,18 +2,31 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../models/dto/page_items_response_dto.dart';
+import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/file_kebab_sheet.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
+import '../widgets/common/add_popup_menu.dart';
+import '../widgets/home/add_folder_bottom_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
+import '../widgets/home/folder_memo_bottom_sheet.dart';
+import '../widgets/home/folder_options_bottom_sheet.dart';
+import 'image_detail_screen.dart';
 import 'note_detail_screen.dart';
+import 'save_file_screen.dart';
+import 'save_image_screen.dart';
+import 'save_link_screen.dart';
+import 'save_note_screen.dart';
+import 'event_form_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -21,15 +34,15 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
   final int foldersId;
   final String folderName;
 
-  /// 초기 탭 인덱스 ([FolderTab.order] 기준)
-  /// 만약 탭 순서 변경시 /core/constants/folder_tab_index.dart 에서 수정
-  final int initialTabIndex;
+  /// 초기 탭 ([FolderTab.order] 기준)
+  /// 탭 순서 변경 시 /core/constants/folder_tab_index.dart 의 order만 수정
+  final FolderTab initialTab;
 
   const FolderDetailScreen({
     super.key,
     required this.foldersId,
     required this.folderName,
-    this.initialTabIndex = FolderTab.indexOf(FolderTab.links),
+    this.initialTab = FolderTab.links,
   });
 
   @override
@@ -39,15 +52,19 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
 class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String _folderName = '';
+  final GlobalKey _addButtonKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+    _folderName = widget.folderName;
     final tabCount = FolderTab.order.length;
+    final initialIndex = FolderTab.indexOf(widget.initialTab);
     _tabController = TabController(
       length: tabCount,
       vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, tabCount - 1),
+      initialIndex: initialIndex.clamp(0, tabCount - 1),
     );
   }
 
@@ -88,6 +105,115 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
+  Future<void> _openFolderOptions() async {
+    final option = await showFolderOptionsBottomSheet(context);
+    if (option == null || !mounted) return;
+
+    FolderItem? currentFolder;
+    for (final folder in ref.read(homeProvider).folders) {
+      if (folder.foldersId == widget.foldersId) {
+        currentFolder = folder;
+        break;
+      }
+    }
+    final currentMemo = currentFolder?.memo ?? '';
+    final currentColorIndex = currentFolder?.colorIndex ?? 5;
+    final currentTitle = currentFolder?.title ?? _folderName;
+
+    switch (option) {
+      case FolderOption.viewMemo:
+        showFolderMemoBottomSheet(context, memo: currentMemo);
+        break;
+      case FolderOption.edit:
+        final editResult = await showAddFolderBottomSheet(
+          context,
+          initialName: currentTitle,
+          initialMemo: currentMemo,
+          initialColorIndex: currentColorIndex,
+          isEditMode: true,
+        );
+        if (editResult == null || !mounted) return;
+        final success = await ref
+            .read(homeProvider.notifier)
+            .updateFolder(
+              foldersId: widget.foldersId,
+              name: editResult['name'] as String,
+              memo: editResult['memo'] as String,
+              colorIndex: editResult['colorIndex'] as int,
+            );
+        if (!mounted) return;
+        if (!success) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('보관함 수정에 실패했습니다.')));
+          return;
+        }
+        setState(() {
+          _folderName = editResult['name'] as String;
+        });
+        break;
+      case FolderOption.delete:
+        final confirmed = await showDeleteDialog(
+          context,
+          message: '[$_folderName]을 정말 삭제하시겠습니까?',
+        );
+        if (!confirmed || !mounted) return;
+        final deleted = await ref
+            .read(homeProvider.notifier)
+            .deleteFolder(foldersId: widget.foldersId);
+        if (!mounted) return;
+        if (!deleted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('보관함 삭제에 실패했습니다.')));
+          return;
+        }
+        Navigator.of(context).pop();
+        break;
+    }
+  }
+
+  Future<void> _onAddMenuTap() async {
+    final selected = await showAddPopupMenu(context, anchorKey: _addButtonKey);
+    if (!mounted || selected == null) return;
+
+    switch (selected) {
+      case 0:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveLinkScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 1:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveNoteScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 2:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveFileScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 3:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SaveImageScreen(initialFolderId: widget.foldersId),
+          ),
+        );
+        break;
+      case 4:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const EventFormScreen()));
+        break;
     }
   }
 
@@ -142,6 +268,18 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     );
   }
 
+  void _openImageDetail(AttachmentImageDto image) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ImageDetailScreen(
+          image: image,
+          onMoreTap: (detailContext) =>
+              _showImageKebabSheet(image, contextOverride: detailContext),
+        ),
+      ),
+    );
+  }
+
   void _showNoteKebabSheet(TextDto note) {
     showNoteKebabSheet(
       context,
@@ -174,6 +312,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         moveFoldersId: moveFoldersId,
         textsId: note.textsId,
       );
+      ref.invalidate(homeProvider);
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
@@ -205,6 +344,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         moveFoldersId: moveFoldersId,
         linksId: link.linksId,
       );
+      ref.invalidate(homeProvider);
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
@@ -259,6 +399,152 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
   }
 
+  void _showFileKebabSheet(AttachmentFileDto file) {
+    showFileKebabSheet(
+      context,
+      onAction: (action) {
+        final messenger = ScaffoldMessenger.of(context);
+        switch (action) {
+          case FileKebabAction.editInfo:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('정보 수정 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.moveFolder:
+            showMoveToFolderSheet(
+              context,
+              ref,
+              currentFoldersId: widget.foldersId,
+              onSelect: (folder) =>
+                  _moveAttachmentToFolder(file.attachmentsId, folder.foldersId),
+            );
+            break;
+          case FileKebabAction.share:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.delete:
+            _confirmAndDeleteAttachment(file.attachmentsId);
+            break;
+        }
+      },
+    );
+  }
+
+  void _showImageKebabSheet(
+    AttachmentImageDto image, {
+    BuildContext? contextOverride,
+  }) {
+    final baseContext = contextOverride ?? context;
+    final shouldCloseDetailOnSuccess = contextOverride != null;
+    showFileKebabSheet(
+      baseContext,
+      onAction: (action) {
+        final messenger = ScaffoldMessenger.of(baseContext);
+        switch (action) {
+          case FileKebabAction.editInfo:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('정보 수정 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.moveFolder:
+            showMoveToFolderSheet(
+              baseContext,
+              ref,
+              currentFoldersId: widget.foldersId,
+              onSelect: (folder) => _moveAttachmentToFolder(
+                image.attachmentsId,
+                folder.foldersId,
+                detailContextToClose: shouldCloseDetailOnSuccess
+                    ? contextOverride
+                    : null,
+              ),
+            );
+            break;
+          case FileKebabAction.share:
+            messenger.showSnackBar(
+              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            );
+            break;
+          case FileKebabAction.delete:
+            _confirmAndDeleteAttachment(image.attachmentsId);
+            break;
+        }
+      },
+    );
+  }
+
+  Future<void> _moveAttachmentToFolder(
+    int attachmentsId,
+    int moveFoldersId, {
+    BuildContext? detailContextToClose,
+  }) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.moveAttachment(
+        foldersId: widget.foldersId,
+        moveFoldersId: moveFoldersId,
+        attachmentsId: attachmentsId,
+      );
+      ref.invalidate(homeProvider);
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      ref.invalidate(pageItemsProvider(moveFoldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('보관함 이동이 완료되었습니다.')));
+      if (detailContextToClose != null &&
+          Navigator.of(detailContextToClose).canPop()) {
+        Navigator.of(detailContextToClose).pop();
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '이동에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
+  Future<void> _confirmAndDeleteAttachment(int attachmentsId) async {
+    final confirmed = await showDeleteDialog(context, message: '정말 삭제하시겠습니까?');
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteAttachment(attachmentsId: attachmentsId);
+      ref.invalidate(homeProvider);
+      ref.invalidate(pageItemsProvider(widget.foldersId));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제가 완료되었습니다.')));
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'] as String
+          : '삭제에 실패했습니다. 다시 시도해 주세요.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+    }
+  }
+
   List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {
     return FolderTab.order.map((tab) {
       switch (tab) {
@@ -274,9 +560,16 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             onNoteKebabTap: _showNoteKebabSheet,
           );
         case FolderTab.files:
-          return _FileTabContent(files: data.files);
+          return _FileTabContent(
+            files: data.files,
+            onFileKebabTap: _showFileKebabSheet,
+          );
         case FolderTab.images:
-          return _ImageTabContent(images: data.images);
+          return _ImageTabContent(
+            images: data.images,
+            onImageLongPress: _showImageKebabSheet,
+            onImageTap: _openImageDetail,
+          );
       }
     }).toList();
   }
@@ -296,7 +589,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          widget.folderName,
+          _folderName,
           style: const TextStyle(
             color: AppColors.gray900,
             fontSize: 22,
@@ -312,7 +605,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
-            onPressed: () {},
+            onPressed: _openFolderOptions,
           ),
         ],
       ),
@@ -356,9 +649,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               indicatorColor: AppColors.blue500,
               indicatorWeight: 2,
               dividerColor: AppColors.neutral50,
-              tabs: FolderTab.order
-                  .map((tab) => Tab(text: tab.label))
-                  .toList(),
+              tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
             ),
             Expanded(
               child: TabBarView(
@@ -369,6 +660,32 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ],
         ),
       ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(right: 4, bottom: 16),
+        child: GestureDetector(
+          key: _addButtonKey,
+          onTap: _onAddMenuTap,
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.blue500,
+              borderRadius: BorderRadius.circular(99),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowNavBlue.withOpacity(0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.add, color: Colors.white, size: 28),
+            ),
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -786,8 +1103,9 @@ class _NoteCard extends StatelessWidget {
 // ─── 파일 탭 (API files[]) ───
 class _FileTabContent extends StatelessWidget {
   final List<AttachmentFileDto> files;
+  final void Function(AttachmentFileDto file) onFileKebabTap;
 
-  const _FileTabContent({required this.files});
+  const _FileTabContent({required this.files, required this.onFileKebabTap});
 
   @override
   Widget build(BuildContext context) {
@@ -822,7 +1140,10 @@ class _FileTabContent extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final file = files[index];
-              return _FileItemRow(file: file, onMoreTap: () {});
+              return _FileItemRow(
+                file: file,
+                onMoreTap: () => onFileKebabTap(file),
+              );
             },
           ),
         ),
@@ -912,8 +1233,14 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
 // ─── 이미지 탭 (API images[]) ───
 class _ImageTabContent extends StatelessWidget {
   final List<AttachmentImageDto> images;
+  final void Function(AttachmentImageDto image) onImageLongPress;
+  final void Function(AttachmentImageDto image) onImageTap;
 
-  const _ImageTabContent({required this.images});
+  const _ImageTabContent({
+    required this.images,
+    required this.onImageLongPress,
+    required this.onImageTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -945,13 +1272,50 @@ class _ImageTabContent extends StatelessWidget {
               runSpacing: AppSpacing.md,
               children: images
                   .map(
-                    (img) => Container(
-                      width: 161,
-                      height: 163,
-                      decoration: BoxDecoration(
-                        color: AppColors.borderLight,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusSm,
+                    (img) => GestureDetector(
+                      onTap: () => onImageTap(img),
+                      onLongPress: () => onImageLongPress(img),
+                      behavior: HitTestBehavior.opaque,
+                      child: SizedBox(
+                        width: 161,
+                        height: 163,
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusSm,
+                              ),
+                              child: SizedBox(
+                                width: 161,
+                                height: 163,
+                                child: img.presignedUrl.isNotEmpty
+                                    ? Image.network(
+                                        img.presignedUrl,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (_, child, progress) {
+                                          if (progress == null) return child;
+                                          return Container(
+                                            color: AppColors.neutral100,
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: AppColors.borderLight,
+                                        ),
+                                      )
+                                    : Container(color: AppColors.borderLight),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

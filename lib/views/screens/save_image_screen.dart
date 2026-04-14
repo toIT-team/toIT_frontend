@@ -12,10 +12,13 @@ import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 이미지 저장 화면 (POST /attachments/images API 연동)
 class SaveImageScreen extends ConsumerStatefulWidget {
-  const SaveImageScreen({super.key});
+  const SaveImageScreen({super.key, this.initialFolderId});
+
+  final int? initialFolderId;
 
   @override
   ConsumerState<SaveImageScreen> createState() => _SaveImageScreenState();
@@ -32,6 +35,16 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
   bool get _imageAttached => _pickedImages.isNotEmpty;
 
+  bool get _hasDraft {
+    return _imageAttached || _memoController.text.trim().isNotEmpty;
+  }
+
+  Future<bool> _handleExitAttempt() async {
+    if (_isSaving) return false;
+    if (!_hasDraft) return true;
+    return showUnsavedExitDialog(context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,10 +55,18 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       if (!mounted) return;
       final folders = ref.read(homeProvider).folders;
       if (folders.isEmpty) return;
-      final defaultFolder =
-          folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
-      setState(() => _selectedFolder = defaultFolder);
+      setState(() => _selectedFolder = _resolveInitialFolder(folders));
     });
+  }
+
+  FolderItem _resolveInitialFolder(List<FolderItem> folders) {
+    final initialId = widget.initialFolderId;
+    if (initialId != null) {
+      for (final folder in folders) {
+        if (folder.foldersId == initialId) return folder;
+      }
+    }
+    return folders.where((f) => f.isDefault).firstOrNull ?? folders.first;
   }
 
   @override
@@ -113,6 +134,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
     if (!mounted) return;
     if (successCount > 0) {
+      await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(folderId));
       _showSnackBar(
         successCount == _pickedImages.length
@@ -208,9 +230,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     ref.listen<HomeState>(homeProvider, (prev, next) {
       if (_selectedFolder != null) return;
       if (next.folders.isEmpty) return;
-      final defaultFolder =
-          next.folders.where((f) => f.isDefault).firstOrNull ??
-          next.folders.first;
+      final defaultFolder = _resolveInitialFolder(next.folders);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _selectedFolder == null) {
           setState(() => _selectedFolder = defaultFolder);
@@ -218,29 +238,40 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       });
     });
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(44),
-        child: _buildAppBar(),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            _buildImageSection(),
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 16),
-            _buildFolderSection(),
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 1, color: AppColors.neutral50),
-            const SizedBox(height: 20),
-            _buildMemoSection(),
-            const SizedBox(height: 24),
-          ],
+    return WillPopScope(
+      onWillPop: _handleExitAttempt,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(44),
+          child: _buildAppBar(),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              _buildImageSection(),
+              const SizedBox(height: 16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 16),
+              _buildFolderSection(),
+              const SizedBox(height: 16),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              const SizedBox(height: 20),
+              _buildMemoSection(),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -256,7 +287,11 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () async {
+                final shouldExit = await _handleExitAttempt();
+                if (!shouldExit || !mounted) return;
+                Navigator.of(context).pop();
+              },
               behavior: HitTestBehavior.opaque,
               child: const SizedBox(
                 width: 24,

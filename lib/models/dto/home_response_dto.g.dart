@@ -49,6 +49,7 @@ _$FolderDtoImpl _$$FolderDtoImplFromJson(Map<String, dynamic> json) =>
       createdAt: json['createdAt'] as String?,
       isFavorite: json['isFavorite'] as bool? ?? false,
       iconIdx: (json['iconIdx'] as num?)?.toInt() ?? 0,
+      itemsCount: (json['itemsCount'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$$FolderDtoImplToJson(_$FolderDtoImpl instance) =>
@@ -62,6 +63,7 @@ Map<String, dynamic> _$$FolderDtoImplToJson(_$FolderDtoImpl instance) =>
       'createdAt': instance.createdAt,
       'isFavorite': instance.isFavorite,
       'iconIdx': instance.iconIdx,
+      'itemsCount': instance.itemsCount,
     };
 
 _$FolderViewDtoImpl _$$FolderViewDtoImplFromJson(Map<String, dynamic> json) =>

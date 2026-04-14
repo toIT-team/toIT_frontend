@@ -24,9 +24,6 @@ mixin _$CalendarEvent {
   /// 클라이언트 식별용 ID (백엔드 ID 또는 자동 생성)
   String get id => throw _privateConstructorUsedError;
 
-  /// 사용자 ID
-  int get usersId => throw _privateConstructorUsedError;
-
   /// 일정 제목
   String get title => throw _privateConstructorUsedError;
 
@@ -77,7 +74,6 @@ abstract class $CalendarEventCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    int usersId,
     String title,
     @JsonKey(name: 'startAt') String startAt,
     @JsonKey(name: 'endAt') String endAt,
@@ -107,7 +103,6 @@ class _$CalendarEventCopyWithImpl<$Res, $Val extends CalendarEvent>
   @override
   $Res call({
     Object? id = null,
-    Object? usersId = null,
     Object? title = null,
     Object? startAt = null,
     Object? endAt = null,
@@ -124,10 +119,6 @@ class _$CalendarEventCopyWithImpl<$Res, $Val extends CalendarEvent>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
-            usersId: null == usersId
-                ? _value.usersId
-                : usersId // ignore: cast_nullable_to_non_nullable
-                      as int,
             title: null == title
                 ? _value.title
                 : title // ignore: cast_nullable_to_non_nullable
@@ -181,7 +172,6 @@ abstract class _$$CalendarEventImplCopyWith<$Res>
   @useResult
   $Res call({
     String id,
-    int usersId,
     String title,
     @JsonKey(name: 'startAt') String startAt,
     @JsonKey(name: 'endAt') String endAt,
@@ -210,7 +200,6 @@ class __$$CalendarEventImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? usersId = null,
     Object? title = null,
     Object? startAt = null,
     Object? endAt = null,
@@ -227,10 +216,6 @@ class __$$CalendarEventImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
-        usersId: null == usersId
-            ? _value.usersId
-            : usersId // ignore: cast_nullable_to_non_nullable
-                  as int,
         title: null == title
             ? _value.title
             : title // ignore: cast_nullable_to_non_nullable
@@ -277,7 +262,6 @@ class __$$CalendarEventImplCopyWithImpl<$Res>
 class _$CalendarEventImpl extends _CalendarEvent {
   const _$CalendarEventImpl({
     required this.id,
-    required this.usersId,
     required this.title,
     @JsonKey(name: 'startAt') required this.startAt,
     @JsonKey(name: 'endAt') required this.endAt,
@@ -297,10 +281,6 @@ class _$CalendarEventImpl extends _CalendarEvent {
   /// 클라이언트 식별용 ID (백엔드 ID 또는 자동 생성)
   @override
   final String id;
-
-  /// 사용자 ID
-  @override
-  final int usersId;
 
   /// 일정 제목
   @override
@@ -345,7 +325,7 @@ class _$CalendarEventImpl extends _CalendarEvent {
 
   @override
   String toString() {
-    return 'CalendarEvent(id: $id, usersId: $usersId, title: $title, startAt: $startAt, endAt: $endAt, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, folderName: $folderName, createdAt: $createdAt, color: $color)';
+    return 'CalendarEvent(id: $id, title: $title, startAt: $startAt, endAt: $endAt, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, folderName: $folderName, createdAt: $createdAt, color: $color)';
   }
 
   @override
@@ -354,7 +334,6 @@ class _$CalendarEventImpl extends _CalendarEvent {
         (other.runtimeType == runtimeType &&
             other is _$CalendarEventImpl &&
             (identical(other.id, id) || other.id == id) &&
-            (identical(other.usersId, usersId) || other.usersId == usersId) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.startAt, startAt) || other.startAt == startAt) &&
             (identical(other.endAt, endAt) || other.endAt == endAt) &&
@@ -375,7 +354,6 @@ class _$CalendarEventImpl extends _CalendarEvent {
   int get hashCode => Object.hash(
     runtimeType,
     id,
-    usersId,
     title,
     startAt,
     endAt,
@@ -404,7 +382,6 @@ class _$CalendarEventImpl extends _CalendarEvent {
 abstract class _CalendarEvent extends CalendarEvent {
   const factory _CalendarEvent({
     required final String id,
-    required final int usersId,
     required final String title,
     @JsonKey(name: 'startAt') required final String startAt,
     @JsonKey(name: 'endAt') required final String endAt,
@@ -424,10 +401,6 @@ abstract class _CalendarEvent extends CalendarEvent {
   /// 클라이언트 식별용 ID (백엔드 ID 또는 자동 생성)
   @override
   String get id;
-
-  /// 사용자 ID
-  @override
-  int get usersId;
 
   /// 일정 제목
   @override

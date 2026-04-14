@@ -279,7 +279,7 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
                 foldersId: folder.foldersId,
                 title: folder.title,
                 memo: folder.memo,
-                countText: folder.countText.isEmpty ? '0개' : folder.countText,
+                countText: folder.countText,
                 accentColor: folder.accentColor,
                 colorIndex: folder.colorIndex,
                 onTap: folder.foldersId == widget.currentFoldersId

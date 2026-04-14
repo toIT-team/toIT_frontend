@@ -146,10 +146,11 @@ class CalendarState with _$CalendarState {
 
 /// 캘린더 컨트롤러 (Notifier)
 class CalendarController extends Notifier<CalendarState> {
-  final _apiClient = ScheduleApiClient();
+  late final ScheduleApiClient _apiClient;
 
   @override
   CalendarState build() {
+    _apiClient = ref.watch(scheduleApiClientProvider);
     final now = DateTime.now();
     return CalendarState(
       focusedMonth: DateTime(now.year, now.month, 1),
