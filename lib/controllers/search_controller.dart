@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'auth_controller.dart';
 import '../core/utils/search_utils.dart';
 import '../models/dto/search_response_dto.dart';
 import '../models/search/search_result_item.dart';
@@ -233,10 +232,8 @@ class SearchController extends Notifier<SearchState> {
     );
 
     try {
-      final userId = ref.read(currentUserIdProvider);
       final dto = await _apiClient.search(
         keyword: query,
-        userId: userId,
       );
       final items = _toSearchResultItems(dto);
       _cache.put(query, items);

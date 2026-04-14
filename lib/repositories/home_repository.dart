@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../controllers/auth_controller.dart';
 import '../core/network/api_client.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/home_response_dto.dart';
@@ -12,16 +11,14 @@ import '../models/dto/page_items_response_dto.dart';
 /// - DTO → Domain 변환 수행
 class HomeRepository {
   final HomeRemoteDatasource _remoteDatasource;
-  final int _userId;
 
-  const HomeRepository(this._remoteDatasource, this._userId);
+  const HomeRepository(this._remoteDatasource);
 
   /// 홈 화면 데이터 조회
   Future<HomeResponseDto> fetchHomeData({
     required String todayDate,
   }) async {
     return _remoteDatasource.fetchHomeData(
-      usersId: _userId,
       todayDate: todayDate,
     );
   }
@@ -29,7 +26,6 @@ class HomeRepository {
   /// 보관함(폴더) 삭제
   Future<void> deleteFolder({required int foldersId}) async {
     await _remoteDatasource.deleteFolder(
-      usersId: _userId,
       foldersId: foldersId,
     );
   }
@@ -42,7 +38,6 @@ class HomeRepository {
     required String color,
   }) async {
     await _remoteDatasource.updateFolder(
-      usersId: _userId,
       foldersId: foldersId,
       name: name,
       memo: memo,
@@ -66,7 +61,6 @@ class HomeRepository {
     String? linksThumbnail,
   }) async {
     await _remoteDatasource.createLink(
-      usersId: _userId,
       foldersIdList: foldersIdList,
       linksUrl: linksUrl,
       linksName: linksName,
@@ -81,7 +75,6 @@ class HomeRepository {
     required int linksId,
   }) async {
     await _remoteDatasource.deleteLink(
-      usersId: _userId,
       foldersId: foldersId,
       linksId: linksId,
     );
@@ -95,7 +88,6 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.updateLink(
-      usersId: _userId,
       foldersId: foldersId,
       linksId: linksId,
       linksName: linksName,
@@ -110,7 +102,6 @@ class HomeRepository {
     required int linksId,
   }) async {
     await _remoteDatasource.moveLink(
-      usersId: _userId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       linksId: linksId,
@@ -123,7 +114,6 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.createText(
-      usersId: _userId,
       foldersIdList: foldersIdList,
       textContent: textContent,
     );
@@ -136,7 +126,6 @@ class HomeRepository {
     required String textContent,
   }) async {
     await _remoteDatasource.updateText(
-      usersId: _userId,
       foldersId: foldersId,
       textsId: textsId,
       textContent: textContent,
@@ -149,7 +138,6 @@ class HomeRepository {
     required int textsId,
   }) async {
     await _remoteDatasource.deleteText(
-      usersId: _userId,
       foldersId: foldersId,
       textsId: textsId,
     );
@@ -162,7 +150,6 @@ class HomeRepository {
     required int textsId,
   }) async {
     await _remoteDatasource.moveText(
-      usersId: _userId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       textsId: textsId,
@@ -177,7 +164,6 @@ class HomeRepository {
     required String fileName,
   }) async {
     await _remoteDatasource.createFile(
-      usersId: _userId,
       foldersIdList: foldersIdList,
       textContent: textContent,
       fileBytes: fileBytes,
@@ -193,7 +179,6 @@ class HomeRepository {
     required String fileName,
   }) async {
     await _remoteDatasource.createImage(
-      usersId: _userId,
       foldersIdList: foldersIdList,
       textContent: textContent,
       imageBytes: imageBytes,
@@ -208,7 +193,6 @@ class HomeRepository {
     required int attachmentsId,
   }) async {
     await _remoteDatasource.moveAttachment(
-      usersId: _userId,
       foldersId: foldersId,
       moveFoldersId: moveFoldersId,
       attachmentsId: attachmentsId,
@@ -218,7 +202,6 @@ class HomeRepository {
   /// 자료 파일/이미지 삭제 (DELETE /attachments)
   Future<void> deleteAttachment({required int attachmentsId}) async {
     await _remoteDatasource.deleteAttachment(
-      usersId: _userId,
       attachmentsId: attachmentsId,
     );
   }
@@ -228,7 +211,6 @@ class HomeRepository {
     required int foldersId,
   }) async {
     return _remoteDatasource.fetchPageItems(
-      usersId: _userId,
       foldersId: foldersId,
     );
   }
@@ -240,7 +222,6 @@ class HomeRepository {
     required String color,
   }) async {
     return _remoteDatasource.createFolder(
-      usersId: _userId,
       name: name,
       memo: memo,
       color: color,
@@ -258,8 +239,7 @@ final homeRemoteDatasourceProvider =
 /// HomeRepository Provider (로그인된 userId 주입)
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
   final remoteDatasource = ref.watch(homeRemoteDatasourceProvider);
-  final userId = ref.watch(currentUserIdProvider);
-  return HomeRepository(remoteDatasource, userId);
+  return HomeRepository(remoteDatasource);
 });
 
 /// 보관함 상세 항목 (GET /page/items) - foldersId별 캐시

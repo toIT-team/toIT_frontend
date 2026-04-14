@@ -25,7 +25,7 @@ import '../models/dto/search_response_dto.dart';
 ///    - UX 최고, 구현 복잡
 ///
 /// 현재는 1번으로 구현. 필요 시 SearchController에 Map 캐시 레이어 추가.
-/// GET /page/search - usersId, keyword 파라미터
+/// GET /page/search - keyword 파라미터
 class SearchApiClient {
   SearchApiClient({Dio? dio}) : _dio = dio ?? Dio();
 
@@ -35,12 +35,10 @@ class SearchApiClient {
   /// [keyword] 검색어
   Future<SearchResponseDto> search({
     required String keyword,
-    required int userId,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}${ApiConstants.searchEndpoint}',
       queryParameters: {
-        'usersId': userId,
         'keyword': keyword,
       },
     );
