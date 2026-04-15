@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
@@ -39,6 +41,10 @@ class AuthService {
   final FlutterSecureStorage _storage;
   final Dio _dio;
 
+  static const _tokenChannel = MethodChannel(
+    'com.example.pojTodo/token',
+  );
+
   AuthService({FlutterSecureStorage? storage, Dio? dio})
     : _storage = storage ?? const FlutterSecureStorage(),
       _dio =
@@ -65,6 +71,7 @@ class AuthService {
       _storage.write(key: _kAccessToken, value: accessToken),
       _storage.write(key: _kRefreshToken, value: refreshToken),
     ]);
+    await _syncTokenToAppGroup(accessToken);
   }
 
   Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
@@ -76,11 +83,61 @@ class AuthService {
     return token != null && token.isNotEmpty;
   }
 
+  /// 앱 시작 시 기존 토큰을 App Group에 1회 동기화
+  Future<void> syncExistingTokenToAppGroup() async {
+    final token = await getAccessToken();
+    if (token != null && token.isNotEmpty) {
+      await _syncTokenToAppGroup(token);
+    }
+  }
+
   Future<void> clearTokens() async {
     await Future.wait([
       _storage.delete(key: _kAccessToken),
       _storage.delete(key: _kRefreshToken),
     ]);
+    await _clearTokenFromAppGroup();
+  }
+
+  // ─── iOS App Group 토큰 동기화 (Share Extension용) ───
+
+  Future<void> _syncTokenToAppGroup(String accessToken) async {
+    if (!Platform.isIOS) return;
+    try {
+      final userId = await getUserIdFromToken();
+      debugPrint(
+        '[AuthService] App Group 동기화 시도 - '
+        'token: ${accessToken.substring(0, 10)}..., '
+        'userId: $userId, '
+        'baseUrl: ${ApiConstants.baseUrl}',
+      );
+      final result = await _tokenChannel.invokeMethod(
+        'syncToken',
+        {
+          'accessToken': accessToken,
+          'userId': userId ?? 0,
+          'baseUrl': ApiConstants.baseUrl,
+        },
+      );
+      debugPrint(
+        '[AuthService] App Group 동기화 결과: $result',
+      );
+    } catch (e) {
+      debugPrint(
+        '[AuthService] App Group 토큰 동기화 실패: $e',
+      );
+    }
+  }
+
+  Future<void> _clearTokenFromAppGroup() async {
+    if (!Platform.isIOS) return;
+    try {
+      await _tokenChannel.invokeMethod('clearToken');
+    } catch (e) {
+      debugPrint(
+        '[AuthService] App Group 토큰 삭제 실패: $e',
+      );
+    }
   }
 
   // ─── 소셜 로그인 (백엔드 OAuth, 콜백 규약 동일) ───
@@ -249,6 +306,7 @@ class AuthService {
       }
 
       await _storage.write(key: _kAccessToken, value: newAccessToken);
+      await _syncTokenToAppGroup(newAccessToken);
       debugPrint('[AuthService] 액세스 토큰 재발급 성공');
       return newAccessToken;
     } on DioException catch (e) {

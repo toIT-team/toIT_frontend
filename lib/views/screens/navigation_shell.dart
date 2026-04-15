@@ -1,8 +1,19 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
+import '../../core/constants/folder_tab_index.dart';
+import '../../models/home/folder_item.dart';
+import '../../repositories/home_repository.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
+import '../widgets/common/share_save_bottom_sheet.dart';
+import 'folder_detail_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'save_link_screen.dart';
@@ -15,11 +26,230 @@ import 'event_form_screen.dart';
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
 
 /// 네비게이션 쉘 (하단 네비바 + 화면 전환 관리)
-class NavigationShell extends ConsumerWidget {
+class NavigationShell extends ConsumerStatefulWidget {
   const NavigationShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NavigationShell> createState() => _NavigationShellState();
+}
+
+class _NavigationShellState extends ConsumerState<NavigationShell> {
+  static const _deepLinkChannel = MethodChannel(
+    'com.example.pojTodo/deeplink',
+  );
+
+  StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
+  bool _isShareSheetVisible = false;
+  bool _isInitialShareChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _deepLinkChannel.setMethodCallHandler(_handleDeepLink);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _bindShareReceiver();
+    });
+  }
+
+  @override
+  void dispose() {
+    _deepLinkChannel.setMethodCallHandler(null);
+    _shareMediaSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<dynamic> _handleDeepLink(MethodCall call) async {
+    if (call.method != 'onDeepLink') return;
+    final urlString = call.arguments as String?;
+    if (urlString == null) return;
+
+    final uri = Uri.tryParse(urlString);
+    if (uri == null || uri.host != 'folder') return;
+
+    final folderId = int.tryParse(
+      uri.queryParameters['id'] ?? '',
+    );
+    final folderName = uri.queryParameters['name'] ?? '보관함';
+    final tabName = uri.queryParameters['tab'] ?? 'links';
+
+    if (folderId == null) return;
+
+    final initialTab = switch (tabName) {
+      'images' => FolderTab.images,
+      'files' => FolderTab.files,
+      'notes' => FolderTab.notes,
+      _ => FolderTab.links,
+    };
+
+    if (!mounted) return;
+
+    await ref.read(homeProvider.notifier).refresh();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FolderDetailScreen(
+          foldersId: folderId,
+          folderName: folderName,
+          initialTab: initialTab,
+        ),
+      ),
+    );
+  }
+
+  void _bindShareReceiver() {
+    _shareMediaSubscription = ReceiveSharingIntent.instance
+        .getMediaStream()
+        .listen(
+          (mediaFiles) => _handleSharedMedia(mediaFiles),
+          onError: (_) {},
+        );
+    _checkInitialSharedMedia();
+  }
+
+  Future<void> _checkInitialSharedMedia() async {
+    if (_isInitialShareChecked) return;
+    _isInitialShareChecked = true;
+    final mediaFiles = await ReceiveSharingIntent.instance.getInitialMedia();
+    await _handleSharedMedia(mediaFiles);
+  }
+
+  Future<void> _handleSharedMedia(List<SharedMediaFile> mediaFiles) async {
+    if (!mounted || _isShareSheetVisible || mediaFiles.isEmpty) return;
+
+    final sharedImagePaths = mediaFiles
+        .map((file) => _normalizeFilePath(file.path))
+        .where(_isImagePath)
+        .toList();
+
+    if (sharedImagePaths.isEmpty) return;
+
+    _isShareSheetVisible = true;
+    try {
+      final folders = await _ensureFolderList();
+      if (!mounted) return;
+
+      if (folders.isEmpty) {
+        _showSnackBar('보관함이 없어 공유 이미지를 저장할 수 없습니다.');
+        return;
+      }
+
+      await showShareSaveBottomSheet(
+        context,
+        folders: folders,
+        initialSelectedFolder: folders.where((f) => f.isDefault).firstOrNull,
+        onSave: (selectedFolder, memo) async {
+          await _saveSharedImages(
+            imagePaths: sharedImagePaths,
+            selectedFolder: selectedFolder,
+            memo: memo,
+          );
+        },
+      );
+    } finally {
+      _isShareSheetVisible = false;
+      ReceiveSharingIntent.instance.reset();
+    }
+  }
+
+  Future<List<FolderItem>> _ensureFolderList() async {
+    var state = ref.read(homeProvider);
+    if (state.folders.isNotEmpty) return state.folders;
+
+    await ref.read(homeProvider.notifier).refresh();
+    state = ref.read(homeProvider);
+    return state.folders;
+  }
+
+  Future<void> _saveSharedImages({
+    required List<String> imagePaths,
+    required FolderItem selectedFolder,
+    required String memo,
+  }) async {
+    final repository = ref.read(homeRepositoryProvider);
+    int savedCount = 0;
+    String? failReason;
+
+    for (final imagePath in imagePaths) {
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        failReason = '이미지 파일을 찾을 수 없습니다.';
+        continue;
+      }
+
+      List<int> imageBytes;
+      try {
+        imageBytes = await file.readAsBytes();
+      } catch (_) {
+        failReason = '이미지 파일을 읽을 수 없습니다.';
+        continue;
+      }
+      if (imageBytes.isEmpty) {
+        failReason = '이미지 파일을 읽을 수 없습니다.';
+        continue;
+      }
+
+      try {
+        await repository.createImage(
+          foldersIdList: [selectedFolder.foldersId],
+          textContent: memo,
+          imageBytes: imageBytes,
+          fileName: _extractFileName(imagePath),
+        );
+        savedCount++;
+      } on DioException catch (_) {
+        failReason = '이미지 저장 중 오류가 발생했습니다.';
+      } catch (_) {
+        failReason = '이미지 저장에 실패했습니다.';
+      }
+    }
+
+    if (savedCount <= 0) {
+      _showSnackBar(failReason ?? '공유 이미지 저장에 실패했습니다.');
+      throw Exception('Failed to save shared images.');
+    }
+
+    await ref.read(homeProvider.notifier).refresh();
+    ref.invalidate(pageItemsProvider(selectedFolder.foldersId));
+    _showSnackBar(
+      savedCount == imagePaths.length
+          ? '공유 이미지가 저장되었습니다.'
+          : '$savedCount장 저장됨. 일부 실패.',
+    );
+  }
+
+  String _normalizeFilePath(String rawPath) {
+    if (rawPath.startsWith('file://')) {
+      return Uri.parse(rawPath).toFilePath();
+    }
+    return rawPath;
+  }
+
+  bool _isImagePath(String path) {
+    final lowerPath = path.toLowerCase();
+    return lowerPath.endsWith('.jpg') ||
+        lowerPath.endsWith('.jpeg') ||
+        lowerPath.endsWith('.png') ||
+        lowerPath.endsWith('.webp') ||
+        lowerPath.endsWith('.gif') ||
+        lowerPath.endsWith('.heic') ||
+        lowerPath.endsWith('.heif');
+  }
+
+  String _extractFileName(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    return parts.isEmpty ? 'shared_image.jpg' : parts.last;
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(currentTabIndexProvider);
 
     return Scaffold(
@@ -38,19 +268,19 @@ class NavigationShell extends ConsumerWidget {
         onAddMenuTap: (menuIndex) {
           switch (menuIndex) {
             case 0:
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SaveLinkScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SaveLinkScreen()));
               break;
             case 1:
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SaveNoteScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SaveNoteScreen()));
               break;
             case 2:
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SaveFileScreen()),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SaveFileScreen()));
               break;
             case 3:
               Navigator.of(context).push(
@@ -60,15 +290,13 @@ class NavigationShell extends ConsumerWidget {
             case 4:
               Navigator.of(context)
                   .push(
-                    MaterialPageRoute(
-                      builder: (_) => const EventFormScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const EventFormScreen()),
                   )
                   .then((result) {
-                if (result != null) {
-                  ref.read(currentTabIndexProvider.notifier).state = 1;
-                }
-              });
+                    if (result != null) {
+                      ref.read(currentTabIndexProvider.notifier).state = 1;
+                    }
+                  });
               break;
           }
         },
