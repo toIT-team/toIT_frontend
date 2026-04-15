@@ -88,7 +88,30 @@ String _buildScheduleTimeLeftText({
   if (hour == null || minute == null) return '';
 
   final now = DateTime.now();
-  final deadlineDateTime = DateTime(now.year, now.month, now.day, hour, minute);
+  var deadlineDateTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+  // 시작/종료 시간이 모두 있고 종료 시간이 시작 시간보다 이르면
+  // 자정을 넘기는 일정으로 보고 마감 시점을 다음 날로 보정한다.
+  if (startTime != null && startTime.isNotEmpty && endTime != null && endTime.isNotEmpty) {
+    final startParts = startTime.split(':');
+    if (startParts.length >= 2) {
+      final startHour = int.tryParse(startParts[0]);
+      final startMinute = int.tryParse(startParts[1]);
+      if (startHour != null && startMinute != null) {
+        final startDateTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          startHour,
+          startMinute,
+        );
+        if (deadlineDateTime.isBefore(startDateTime)) {
+          deadlineDateTime = deadlineDateTime.add(const Duration(days: 1));
+        }
+      }
+    }
+  }
+
   final diff = deadlineDateTime.difference(now);
   if (diff.inMinutes <= 0) return '마감됨';
 
