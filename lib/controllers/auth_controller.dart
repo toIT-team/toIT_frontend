@@ -77,6 +77,7 @@ class AuthController extends Notifier<AuthState> {
         status: AuthStatus.authenticated,
         userId: userId,
       );
+      await _authService.syncExistingTokenToAppGroup();
     } else {
       state = const AuthState(
         status: AuthStatus.unauthenticated,
