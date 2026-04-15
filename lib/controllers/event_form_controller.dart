@@ -206,6 +206,14 @@ class EventFormController extends Notifier<EventFormState> {
     state = state.copyWith(foldersId: value);
   }
 
+  /// 보관함 선택 시 이름과 [foldersId]를 한 번에 반영한다.
+  void selectFolder({required int foldersId, required String folderName}) {
+    state = state.copyWith(
+      foldersId: foldersId,
+      folderName: folderName,
+    );
+  }
+
   /// 일정 색상 토큰 업데이트
   void updateAppColorToken(EventColorToken? token) {
     state = state.copyWith(appColorToken: token);

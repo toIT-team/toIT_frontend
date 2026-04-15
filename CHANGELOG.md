@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Added
+- 일정 추가/수정에서 보관함 링크: (+) 탭 시 `showScheduleFolderSearchSheet`로
+  `GET /page/search` 기반 보관함 검색·선택 (`ScheduleFolderSearchSheet`,
+  `search_folder_mapper.dart`)
+- FCM 알림 탭 시 `toit://schedule?id={schedulesId}` 딥링크로 일정 상세(`EventDetailScreen`) 이동
+  - 백엔드 `data` 권장 키: `url` 또는 `link` (동일 문자열)
+  - `ToitDeepLink`, `pendingDeepLinkUrlProvider`로 인증 전 수신·로그인 후 소비
 - 일정 삭제 API (`DELETE /schedules`)
   - `ScheduleApiClient.deleteSchedule()`: usersId, schedulesId 요청 바디
 - 선택된 날짜 일정 조회 API (`GET /page/schedules/selected`)
@@ -39,6 +45,8 @@
 ### Removed
 
 ### Changed
+- `EventDetailScreen`: 일정 상세에서 연결된 보관함 행 탭 시 `FolderDetailScreen`으로 이동
+- `ScheduleFolderSearchSheet`: 시트 높이 90%·키보드 `viewInsets` 패딩, 검색바 `Row` 정렬
 - `EventDetailScreen`: 분리된 위젯 사용하도록 리팩토링
 - 위젯들에 `isEditable` 속성 추가로 상세/폼 화면 공유 가능
 - `EventDetailScreen`: 인라인 편집 모드 구현

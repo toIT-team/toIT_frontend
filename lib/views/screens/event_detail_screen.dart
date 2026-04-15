@@ -10,6 +10,7 @@ import '../../core/constants/setting_layout_tokens.dart';
 import '../../models/schedule/schedule_response.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_divider.dart';
+import '../widgets/common/schedule_folder_search_sheet.dart';
 import '../widgets/common/bottom_bar_button.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
 import '../widgets/common/confirm_dialog.dart';
@@ -18,6 +19,7 @@ import '../widgets/event/event_folder_section.dart';
 import '../widgets/event/event_memo_section.dart';
 import '../widgets/event/event_section.dart';
 import '../widgets/event/event_time_section.dart';
+import 'folder_detail_screen.dart';
 
 /// 알림 분 단위를 표시 텍스트로 변환
 String _alarmOffsetToText(int minutes) {
@@ -299,6 +301,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
+  /// 연결된 보관함이 있을 때만 탭으로 [FolderDetailScreen] 이동.
+  VoidCallback? _folderNavigateTap(ScheduleDetailResponse detail) {
+    if (detail.foldersId <= 0 || detail.foldersTitle.isEmpty) {
+      return null;
+    }
+    return () {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => FolderDetailScreen(
+            foldersId: detail.foldersId,
+            folderName: detail.foldersTitle,
+          ),
+        ),
+      );
+    };
+  }
+
   List<EventSectionItem> _buildSections(ScheduleDetailResponse detail) {
     final alarmText = detail.alarmState
         ? _alarmOffsetToText(detail.alarmOffsetMinutes)
@@ -311,9 +330,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         child: EventFolderSection(
           folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
           isEditable: false,
-          onTap: () {
-            // TODO: 보관함으로 이동
-          },
+          onTap: _folderNavigateTap(detail),
         ),
       ),
       EventSectionItem(
@@ -472,8 +489,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
-  void _handleFolderTap() {
-    // TODO: 폴더 선택 화면으로 이동
+  Future<void> _handleFolderTap() async {
+    await showScheduleFolderSearchSheet(
+      context,
+      ref,
+      onSelected: (folder) {
+        ref.read(eventFormProvider.notifier).selectFolder(
+              foldersId: folder.foldersId,
+              folderName: folder.title,
+            );
+      },
+    );
   }
 
   void _handleAlarmTap() {

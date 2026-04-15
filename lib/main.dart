@@ -5,12 +5,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'controllers/auth_controller.dart';
+import 'core/deep_link/toit_deep_link.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'views/screens/login_screen.dart';
-import 'views/screens/navigation_shell.dart';
+import 'views/screens/navigation_shell.dart'
+    show NavigationShell, pendingDeepLinkUrlProvider;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +54,22 @@ class _MyAppState extends ConsumerState<MyApp> {
   void initState() {
     super.initState();
     _initAuth();
+    _bindFcmDeepLinks();
+  }
+
+  void _bindFcmDeepLinks() {
+    FirebaseMessaging.onMessageOpenedApp.listen(_onFcmMessageOpened);
+    FirebaseMessaging.instance
+        .getInitialMessage()
+        .then((RemoteMessage? message) {
+      if (message != null) _onFcmMessageOpened(message);
+    });
+  }
+
+  void _onFcmMessageOpened(RemoteMessage message) {
+    final url = ToitDeepLink.extractUrlFromFcmData(message.data);
+    if (url == null) return;
+    ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
   }
 
   Future<void> _initAuth() async {

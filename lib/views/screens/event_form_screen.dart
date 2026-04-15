@@ -9,6 +9,7 @@ import '../../core/constants/setting_layout_tokens.dart';
 import '../../models/calendar/calendar_event.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_divider.dart';
+import '../widgets/common/schedule_folder_search_sheet.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
 import '../widgets/event/color_context_menu.dart';
 import '../widgets/event/event_alarm_section.dart';
@@ -304,8 +305,17 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
     }
   }
 
-  void _handleFolderTap() {
-    // TODO: 폴더 선택 화면으로 이동
+  Future<void> _handleFolderTap() async {
+    await showScheduleFolderSearchSheet(
+      context,
+      ref,
+      onSelected: (folder) {
+        ref.read(eventFormProvider.notifier).selectFolder(
+              foldersId: folder.foldersId,
+              folderName: folder.title,
+            );
+      },
+    );
   }
 
   void _handleAlarmTap() {
