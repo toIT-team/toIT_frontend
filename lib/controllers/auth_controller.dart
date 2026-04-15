@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
+import '../services/fcm_registration_service.dart';
 
 /// 인증 상태
 enum AuthStatus {
@@ -78,6 +81,11 @@ class AuthController extends Notifier<AuthState> {
         userId: userId,
       );
       await _authService.syncExistingTokenToAppGroup();
+      unawaited(
+        ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+              promptForPermission: true,
+            ),
+      );
     } else {
       state = const AuthState(
         status: AuthStatus.unauthenticated,
@@ -123,6 +131,11 @@ class AuthController extends Notifier<AuthState> {
               userId: userId,
             );
             _bumpSessionRefreshTick();
+            unawaited(
+              ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+                    promptForPermission: true,
+                  ),
+            );
             debugPrint(
               '[AuthController] 로그인 성공, userId: $userId',
             );
@@ -236,6 +249,11 @@ class AuthController extends Notifier<AuthState> {
       userId: userId,
     );
     _bumpSessionRefreshTick();
+    unawaited(
+      ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+            promptForPermission: true,
+          ),
+    );
     debugPrint('[AuthController] 계정 복구 및 로그인 성공, userId: $userId');
   }
 }

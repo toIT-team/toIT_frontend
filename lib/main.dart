@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer' show log;
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +13,7 @@ import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
+import 'services/fcm_registration_service.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/navigation_shell.dart'
     show NavigationShell, pendingDeepLinkUrlProvider;
@@ -30,15 +34,16 @@ Future<void> main() async {
   );
 }
 
-/// FCM 초기화를 비동기로 처리하여 앱 실행을 막지 않도록 함
+/// FCM 초기화(비동기). OS 알림 권한 요청은 로그인 후
+/// [FcmRegistrationService.syncServerRegistration]에서 수행한다.
 Future<void> _initFcm() async {
   try {
-    final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission();
-    final token = await messaging.getToken();
-    debugPrint('FCM Token: $token');
-  } catch (e) {
-    debugPrint('FCM 초기화 실패: $e');
+    final token = await FirebaseMessaging.instance.getToken();
+    logFcmTokenSnapshot('main 선조회(getToken)', token);
+  } catch (e, st) {
+    final text = '[FCM] main 선조회 실패(무시 가능): $e';
+    debugPrint('$text\n$st');
+    log(text, name: 'FCM', error: e, stackTrace: st);
   }
 }
 
@@ -49,12 +54,54 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp>
+    with WidgetsBindingObserver {
+  StreamSubscription<String>? _fcmTokenRefreshSub;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initAuth();
     _bindFcmDeepLinks();
+    _bindFcmTokenRefresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _fcmTokenRefreshSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+    final auth = ref.read(authProvider);
+    if (auth.status != AuthStatus.authenticated) return;
+    unawaited(
+      ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+            promptForPermission: false,
+          ),
+    );
+  }
+
+  /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
+  void _bindFcmTokenRefresh() {
+    _fcmTokenRefreshSub =
+        FirebaseMessaging.instance.onTokenRefresh.listen(
+      (String newToken) {
+        final auth = ref.read(authProvider);
+        if (auth.status != AuthStatus.authenticated) return;
+        unawaited(
+          ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+                promptForPermission: false,
+                fcmToken: newToken,
+              ),
+        );
+      },
+    );
   }
 
   void _bindFcmDeepLinks() {
