@@ -22,20 +22,14 @@ class ScheduleApiClient {
 
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/selected',
-      queryParameters: {
-        'selectedDay': selectedDayStr,
-      },
+      queryParameters: {'selectedDay': selectedDayStr},
     );
 
     if (response.data == null) return [];
 
-    final selectedResponse =
-        SelectedSchedulesResponse.fromJson(response.data!);
+    final selectedResponse = SelectedSchedulesResponse.fromJson(response.data!);
     return selectedResponse.schedulesResponses
-        .map((item) => _toCalendarEventFromSelected(
-              item,
-              selectedDayStr,
-            ))
+        .map((item) => _toCalendarEventFromSelected(item, selectedDayStr))
         .toList();
   }
 
@@ -46,9 +40,7 @@ class ScheduleApiClient {
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/detail',
-      queryParameters: {
-        'schedulesId': schedulesId,
-      },
+      queryParameters: {'schedulesId': schedulesId},
     );
 
     if (response.data == null) {
@@ -68,19 +60,13 @@ class ScheduleApiClient {
 
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/page/schedules/search',
-      queryParameters: {
-        'startDate': startStr,
-        'endDate': endStr,
-      },
+      queryParameters: {'startDate': startStr, 'endDate': endStr},
     );
 
     if (response.data == null) return [];
 
-    final searchResponse =
-        ScheduleSearchResponse.fromJson(response.data!);
-    return searchResponse.schedulesResponses
-        .map(_toCalendarEvent)
-        .toList();
+    final searchResponse = ScheduleSearchResponse.fromJson(response.data!);
+    return searchResponse.schedulesResponses.map(_toCalendarEvent).toList();
   }
 
   String _formatDate(DateTime date) =>
@@ -218,9 +204,7 @@ class ScheduleApiClient {
 
   /// 일정 삭제
   /// 성공 시 200, 실패 시 404/500 등
-  Future<void> deleteSchedule({
-    required int schedulesId,
-  }) async {
+  Future<void> deleteSchedule({required int schedulesId}) async {
     final body = {'schedulesId': schedulesId};
     // TODO: 개발 단계 - 디버그 로그. 운영 시 제거 또는 레벨 조정
     debugPrint('[일정 삭제 API] DELETE ${ApiConstants.baseUrl}/schedules');
@@ -277,8 +261,7 @@ class ScheduleApiClient {
 
 /// ScheduleApiClient Provider
 /// ApiClient의 인증 Dio를 공유하여 Bearer 토큰 자동 첨부
-final scheduleApiClientProvider =
-    Provider<ScheduleApiClient>((ref) {
+final scheduleApiClientProvider = Provider<ScheduleApiClient>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return ScheduleApiClient(dio: apiClient.dio);
 });

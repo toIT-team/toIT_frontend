@@ -33,14 +33,10 @@ class SearchApiClient {
 
   /// 통합 검색
   /// [keyword] 검색어
-  Future<SearchResponseDto> search({
-    required String keyword,
-  }) async {
+  Future<SearchResponseDto> search({required String keyword}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}${ApiConstants.searchEndpoint}',
-      queryParameters: {
-        'keyword': keyword,
-      },
+      queryParameters: {'keyword': keyword},
     );
 
     if (response.data == null) {

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'auth_controller.dart';
+import '../services/auth_service.dart';
 import '../core/constants/app_colors.dart';
+import '../core/constants/event_color_tokens.dart';
 import '../models/dto/home_response_dto.dart';
 import '../models/home/folder_item.dart';
 import '../models/home/schedule.dart';
@@ -58,27 +60,60 @@ String _formatTime(String? timeStr) {
 
 /// 일정 색상 매핑
 Color _mapScheduleColor(String colorStr, int index) {
-  const colors = [
-    AppColors.yellow200,
-    AppColors.secondary,
-    AppColors.green200,
-    AppColors.pink100,
-  ];
-  return colors[index % colors.length];
+  // 서버 appColor 토큰(또는 hex)을 우선 사용
+  // 예: blue300, yellow200, #FEEC88, blue_300
+  final resolvedColor = EventColorTokens.fromToken(colorStr);
+  return resolvedColor;
+}
+
+bool _isAllDaySchedule(ScheduleDto dto) {
+  return (dto.startTime == null || dto.startTime!.isEmpty) &&
+      (dto.endTime == null || dto.endTime!.isEmpty);
+}
+
+String _buildScheduleTimeLeftText({
+  required String? endTime,
+  required String? startTime,
+}) {
+  final targetTime = (endTime != null && endTime.isNotEmpty)
+      ? endTime
+      : startTime;
+  if (targetTime == null || targetTime.isEmpty) return '';
+
+  final parts = targetTime.split(':');
+  if (parts.length < 2) return '';
+
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return '';
+
+  final now = DateTime.now();
+  final deadlineDateTime = DateTime(now.year, now.month, now.day, hour, minute);
+  final diff = deadlineDateTime.difference(now);
+  if (diff.inMinutes <= 0) return '마감됨';
+
+  if (diff.inHours >= 1) {
+    return '${diff.inHours}시간 전';
+  }
+  return '${diff.inMinutes}분 전';
 }
 
 /// DTO → Domain 변환: ScheduleDto → Schedule
 Schedule _mapSchedule(ScheduleDto dto, int index) {
   final startFormatted = _formatTime(dto.startTime);
   final endFormatted = _formatTime(dto.endTime);
-  final timeRange = startFormatted.isNotEmpty && endFormatted.isNotEmpty
-      ? '$startFormatted - $endFormatted'
-      : '하루종일';
+  final isAllDay = _isAllDaySchedule(dto);
+  final timeRange = isAllDay ? '하루종일' : '$startFormatted - $endFormatted';
 
   return Schedule(
     title: dto.title,
     timeRangeText: timeRange,
-    scheduleTime: '', // TODO: 서버에서 남은시간 계산 또는 클라에서 계산
+    scheduleTime: isAllDay
+        ? '오늘 마감'
+        : _buildScheduleTimeLeftText(
+            endTime: dto.endTime,
+            startTime: dto.startTime,
+          ),
     accentColor: _mapScheduleColor(dto.appColor, index),
   );
 }
@@ -125,10 +160,16 @@ class HomeController extends Notifier<HomeState> {
   Future<void> _loadHomeData() async {
     try {
       final repository = ref.read(homeRepositoryProvider);
+      final authService = ref.read(authServiceProvider);
       final now = DateTime.now();
       final today =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       final dto = await repository.fetchHomeData(todayDate: today);
+      final tokenNickname = await authService.getNicknameFromToken();
+      final resolvedUserName =
+          (tokenNickname != null && tokenNickname.trim().isNotEmpty)
+          ? tokenNickname.trim()
+          : '사용자';
 
       // DTO → Domain 변환
       final schedules = dto.schedules
@@ -142,7 +183,7 @@ class HomeController extends Notifier<HomeState> {
       }).toList();
 
       state = state.copyWith(
-        userName: '사용자',
+        userName: resolvedUserName,
         todayScheduleCount: schedules.length,
         schedules: schedules,
         folders: folders,

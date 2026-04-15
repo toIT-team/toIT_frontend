@@ -16,9 +16,7 @@ class HomeRemoteDatasource {
 
   /// 홈 화면 데이터 조회
   /// [todayDate] 오늘 날짜 (yyyy-MM-dd)
-  Future<HomeResponseDto> fetchHomeData({
-    required String todayDate,
-  }) async {
+  Future<HomeResponseDto> fetchHomeData({required String todayDate}) async {
     final response = await _apiClient.get(
       ApiConstants.homePageEndpoint,
       queryParameters: {'todayDate': todayDate},
@@ -42,9 +40,7 @@ class HomeRemoteDatasource {
   }
 
   /// 보관함(폴더) 삭제 (Soft Delete)
-  Future<void> deleteFolder({
-    required int foldersId,
-  }) async {
+  Future<void> deleteFolder({required int foldersId}) async {
     await _apiClient.delete(
       ApiConstants.foldersEndpoint,
       data: {'foldersId': foldersId},
@@ -144,10 +140,7 @@ class HomeRemoteDatasource {
   }) async {
     await _apiClient.post(
       ApiConstants.textsEndpoint,
-      data: {
-        'foldersIdList': foldersIdList,
-        'textContent': textContent,
-      },
+      data: {'foldersIdList': foldersIdList, 'textContent': textContent},
     );
   }
 
@@ -259,9 +252,7 @@ class HomeRemoteDatasource {
   }
 
   /// 자료 파일/이미지 삭제 (DELETE /attachments)
-  Future<void> deleteAttachment({
-    required int attachmentsId,
-  }) async {
+  Future<void> deleteAttachment({required int attachmentsId}) async {
     await _apiClient.delete(
       ApiConstants.attachmentsEndpoint,
       queryParameters: {'attachmentsId': attachmentsId},
@@ -269,9 +260,7 @@ class HomeRemoteDatasource {
   }
 
   /// 보관함 내부 항목 조회 (링크/노트/파일/이미지)
-  Future<PageItemsResponseDto> fetchPageItems({
-    required int foldersId,
-  }) async {
+  Future<PageItemsResponseDto> fetchPageItems({required int foldersId}) async {
     final response = await _apiClient.get(
       ApiConstants.pageItemsEndpoint,
       queryParameters: {'foldersId': foldersId},
