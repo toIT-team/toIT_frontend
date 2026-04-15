@@ -18,6 +18,15 @@ class LoginScreen extends ConsumerWidget {
           SnackBar(content: Text(next.errorMessage!)),
         );
       }
+      final previousToken = prev?.pendingRestoreToken;
+      final nextToken = next.pendingRestoreToken;
+      if (nextToken != null && nextToken != previousToken) {
+        _showRestoreDialog(
+          context: context,
+          ref: ref,
+          restoreToken: nextToken,
+        );
+      }
     });
 
     return Scaffold(
@@ -248,5 +257,138 @@ class LoginScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _showRestoreDialog({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String restoreToken,
+  }) async {
+    final shouldRestore = await showGeneralDialog<bool>(
+      context: context,
+      barrierLabel: 'restore',
+      barrierDismissible: true,
+      barrierColor: const Color(0x33222222),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, _, __) {
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 335,
+                  height: 165,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.neutral50,
+                      width: 1,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0F000D43),
+                        offset: Offset(0, 2),
+                        blurRadius: 16,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+                        child: Text(
+                          '탈퇴한 계정입니다',
+                          style: TextStyle(
+                            color: AppColors.gray900,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.45,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+                        child: Text(
+                          '복구하시겠습니까?',
+                          style: TextStyle(
+                            color: AppColors.gray600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.4,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop(false);
+                              },
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(0, 44),
+                                shape: const RoundedRectangleBorder(),
+                              ),
+                              child: const Text(
+                                '취소',
+                                style: TextStyle(
+                                  color: AppColors.blue500,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.45,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.of(dialogContext).pop(true);
+                              },
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(0, 44),
+                                shape: const RoundedRectangleBorder(),
+                              ),
+                              child: const Text(
+                                '복구',
+                                style: TextStyle(
+                                  color: AppColors.blue500,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.45,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!context.mounted) return;
+    if (shouldRestore == true) {
+      await ref.read(authProvider.notifier).restoreDeletedAccount(
+            restoreToken: restoreToken,
+          );
+      return;
+    }
+    ref.read(authProvider.notifier).clearPendingRestoreToken();
   }
 }

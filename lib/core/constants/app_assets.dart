@@ -18,6 +18,12 @@ class AppAssets {
   static const String shareIcon = 'assets/icons/ShareIcon.png';
   static const String bottomSheetDeleteIcon =
       'assets/icons/bottomSeatDeleteIcon.png';
+  static const String editProfileIcon = 'assets/icons/EditProfileIcon.png';
+  static const String accountManagementIcon =
+      'assets/icons/AccountManagementIcon.png';
+  static const String customerSupportIcon =
+      'assets/icons/CustomerSupportIcon.png';
+  static const String versionIcon = 'assets/icons/VersionIcon.png';
 
   // SVG Icons (팝업 메뉴용)
   static const String linkIcon = 'assets/icons/LinkIcon.svg';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'search_screen.dart';
+import 'my_screen.dart';
 import '../widgets/calendar/calendar_widget.dart';
 import '../widgets/home/home_app_bar.dart';
 
@@ -17,6 +18,13 @@ class CalendarScreen extends ConsumerWidget {
         preferredSize: const Size.fromHeight(56),
         child: HomeAppBar(
           title: '캘린더',
+          onMenuPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const MyScreen(),
+              ),
+            );
+          },
           onSearchPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute<void>(

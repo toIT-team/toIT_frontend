@@ -12,7 +12,13 @@ const _kAccessToken = 'access_token';
 const _kRefreshToken = 'refresh_token';
 
 /// 소셜 로그인(OAuth 콜백) 결과
-enum AuthCallbackResult { success, cancelled, failed, needsSignup }
+enum AuthCallbackResult {
+  success,
+  cancelled,
+  failed,
+  needsSignup,
+  deletedUser,
+}
 
 /// 콜백 파싱 결과
 class AuthCallbackData {
@@ -20,12 +26,14 @@ class AuthCallbackData {
   final String? accessToken;
   final String? refreshToken;
   final String? errorCode;
+  final String? restoreToken;
 
   const AuthCallbackData({
     required this.result,
     this.accessToken,
     this.refreshToken,
     this.errorCode,
+    this.restoreToken,
   });
 }
 
@@ -117,6 +125,7 @@ class AuthService {
     final accessToken = uri.queryParameters['accessToken'];
     final refreshToken = uri.queryParameters['refreshToken'];
     final errorCode = uri.queryParameters['errorCode'];
+    final restoreToken = uri.queryParameters['restoreToken'];
 
     debugPrint('[AuthService] 콜백 파싱 결과:');
     debugPrint('  result: $resultStr');
@@ -127,6 +136,9 @@ class AuthService {
       '  refreshToken: ${refreshToken != null ? '${refreshToken.substring(0, 20)}...' : 'null'}',
     );
     debugPrint('  errorCode: $errorCode');
+    debugPrint(
+      '  restoreToken: ${restoreToken != null ? '${restoreToken.substring(0, restoreToken.length > 12 ? 12 : restoreToken.length)}...' : 'null'}',
+    );
     debugPrint('  전체 쿼리: ${uri.queryParameters}');
     if (accessToken != null && accessToken.isNotEmpty) {
       final payload = _tryDecodeJwtPayload(accessToken);
@@ -137,6 +149,7 @@ class AuthService {
       'success' => AuthCallbackResult.success,
       'cancelled' => AuthCallbackResult.cancelled,
       'needs_signup' => AuthCallbackResult.needsSignup,
+      'deleted_user' => AuthCallbackResult.deletedUser,
       _ => AuthCallbackResult.failed,
     };
 
@@ -145,6 +158,7 @@ class AuthService {
       accessToken: accessToken,
       refreshToken: refreshToken,
       errorCode: errorCode,
+      restoreToken: restoreToken,
     );
   }
 
@@ -208,6 +222,37 @@ class AuthService {
       return newAccessToken;
     } on DioException catch (e) {
       debugPrint('[AuthService] 토큰 재발급 실패: ${e.message}');
+      return null;
+    }
+  }
+
+  /// 탈퇴 사용자 계정 복구
+  /// restoreToken으로 복구 후 access/refresh 토큰을 반환
+  Future<AuthCallbackData?> restoreDeletedAccount({
+    required String restoreToken,
+  }) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.restoreAccountEndpoint,
+        queryParameters: {'restoreToken': restoreToken},
+      );
+
+      final accessToken = response.data['accessToken'] as String?;
+      final refreshToken = response.data['refreshToken'] as String?;
+      if (accessToken == null ||
+          accessToken.isEmpty ||
+          refreshToken == null ||
+          refreshToken.isEmpty) {
+        return null;
+      }
+
+      return AuthCallbackData(
+        result: AuthCallbackResult.success,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
+    } on DioException catch (e) {
+      debugPrint('[AuthService] 계정 복구 실패: ${e.message}');
       return null;
     }
   }

@@ -23,6 +23,7 @@ class ApiConstants {
   static const String homePageEndpoint = '/page/home';
   static const String foldersEndpoint = '/folders';
   static const String pageItemsEndpoint = '/page/items';
+  static const String myPageEndpoint = '/page/my';
 
   /// 통합 검색 (GET /page/search)
   static const String searchEndpoint = '/page/search';
@@ -50,6 +51,10 @@ class ApiConstants {
 
   /// 자료 파일/이미지 보관함 이동 (PATCH)
   static const String attachmentsEndpoint = '/attachments';
+  static const String usersNameEndpoint = '/users/name';
+  static const String usersWithdrawEndpoint = '/users/withdraw';
+  static const String feedbackEndpoint = '/api/feedback';
+  static const String myFeedbackEndpoint = '/api/feedback/my';
 
   // ─── 인증 ───
 
@@ -59,6 +64,7 @@ class ApiConstants {
 
   static const String appleLoginEndpoint =
       '/api/auth/apple/login';
+  static const String restoreAccountEndpoint = '/api/auth/restore';
   /// 액세스 토큰 재발급 (POST, body: refreshToken)
   static const String reissueEndpoint = '/api/v1/auth/reissue';
 

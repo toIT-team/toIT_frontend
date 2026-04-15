@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'auth_controller.dart';
 import '../core/constants/app_colors.dart';
 import '../models/dto/home_response_dto.dart';
 import '../models/home/folder_item.dart';
@@ -113,6 +114,8 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
 class HomeController extends Notifier<HomeState> {
   @override
   HomeState build() {
+    // 사용자 세션(로그인/로그아웃/복구) 변경 시 홈 상태 캐시를 재생성
+    ref.watch(authSessionRefreshTickProvider);
     // 초기 데이터 로드 시작
     _loadHomeData();
     return const HomeState(isLoading: true);
