@@ -30,10 +30,11 @@ class HomeRemoteDatasource {
     required String name,
     required String memo,
     required String color,
+    required int iconIdx,
   }) async {
     final response = await _apiClient.post(
       ApiConstants.foldersEndpoint,
-      data: {'name': name, 'memo': memo, 'color': color},
+      data: {'name': name, 'memo': memo, 'color': color, 'iconIdx': iconIdx},
     );
 
     return FolderDto.fromJson(response.data as Map<String, dynamic>);
@@ -275,7 +276,7 @@ class HomeRemoteDatasource {
     required String name,
     required String memo,
     required String color,
-    int iconIdx = 0,
+    required int iconIdx,
   }) async {
     await _apiClient.patch(
       ApiConstants.foldersEndpoint,

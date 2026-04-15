@@ -67,8 +67,6 @@ class FolderSection extends ConsumerWidget {
                     Image.asset(AppAssets.downArrowIcon, width: 18, height: 18),
                   ],
                 ),
-                const SizedBox(width: 12),
-                Image.asset(AppAssets.sortingIcon, width: 24, height: 24),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () async {
@@ -80,6 +78,7 @@ class FolderSection extends ConsumerWidget {
                             name: result['name'] as String,
                             memo: result['memo'] as String,
                             colorIndex: result['colorIndex'] as int,
+                            iconIndex: result['iconIndex'] as int,
                           );
                       if (!success && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,6 +116,7 @@ class FolderSection extends ConsumerWidget {
                 countText: f.countText,
                 accentColor: f.accentColor,
                 colorIndex: f.colorIndex,
+                iconIndex: f.iconIndex,
               ),
           ],
         ),

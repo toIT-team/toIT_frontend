@@ -8,6 +8,7 @@ Future<Map<String, dynamic>?> showAddFolderBottomSheet(
   String? initialName,
   String? initialMemo,
   int? initialColorIndex,
+  int? initialIconIndex,
   bool isEditMode = false,
 }) {
   return showModalBottomSheet<Map<String, dynamic>>(
@@ -19,6 +20,7 @@ Future<Map<String, dynamic>?> showAddFolderBottomSheet(
       initialName: initialName,
       initialMemo: initialMemo,
       initialColorIndex: initialColorIndex,
+      initialIconIndex: initialIconIndex,
       isEditMode: isEditMode,
     ),
   );
@@ -28,12 +30,14 @@ class _AddFolderSheet extends StatefulWidget {
   final String? initialName;
   final String? initialMemo;
   final int? initialColorIndex;
+  final int? initialIconIndex;
   final bool isEditMode;
 
   const _AddFolderSheet({
     this.initialName,
     this.initialMemo,
     this.initialColorIndex,
+    this.initialIconIndex,
     this.isEditMode = false,
   });
 
@@ -45,7 +49,13 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _memoController;
   late int _selectedColorIndex;
+  late int _selectedIconIndex;
+  bool _isIconModalVisible = false;
+  double _iconModalTop = 0;
   int _memoLength = 0;
+  final GlobalKey _contentStackKey = GlobalKey();
+  final GlobalKey _iconButtonKey = GlobalKey();
+  final GlobalKey _memoInputBoxKey = GlobalKey();
 
   @override
   void initState() {
@@ -53,6 +63,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
     _nameController = TextEditingController(text: widget.initialName ?? '');
     _memoController = TextEditingController(text: widget.initialMemo ?? '');
     _selectedColorIndex = widget.initialColorIndex ?? 5;
+    _selectedIconIndex = widget.initialIconIndex ?? 0;
     _memoLength = _memoController.text.length;
     _memoController.addListener(() {
       setState(() => _memoLength = _memoController.text.length);
@@ -74,6 +85,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
       'name': name,
       'memo': _memoController.text.trim(),
       'colorIndex': _selectedColorIndex,
+      'iconIndex': _selectedIconIndex,
       'color': AppColors.folderColors[_selectedColorIndex],
     });
   }
@@ -99,21 +111,48 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
+            key: _contentStackKey,
+            clipBehavior: Clip.none,
             children: [
-              const SizedBox(height: 10),
-              _buildDragHandle(),
-              const SizedBox(height: 20),
-              _buildHeader(),
-              const SizedBox(height: 13),
-              _buildNameInput(),
-              const SizedBox(height: 20),
-              _buildMemoSection(),
-              const SizedBox(height: 20),
-              _buildColorSection(),
-              const SizedBox(height: 24),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  _buildDragHandle(),
+                  const SizedBox(height: 20),
+                  _buildHeader(),
+                  const SizedBox(height: 13),
+                  _buildNameInput(),
+                  const SizedBox(height: 20),
+                  _buildMemoSection(),
+                  const SizedBox(height: 20),
+                  _buildColorSection(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+              if (_isIconModalVisible)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () {
+                      setState(() {
+                        _isIconModalVisible = false;
+                      });
+                    },
+                  ),
+                ),
+              if (_isIconModalVisible)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: _iconModalTop,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: _buildIconModal(),
+                  ),
+                ),
             ],
           ),
         ),
@@ -181,6 +220,13 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 13),
             child: TextField(
               controller: _nameController,
+              onTap: () {
+                if (_isIconModalVisible) {
+                  setState(() {
+                    _isIconModalVisible = false;
+                  });
+                }
+              },
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
@@ -202,25 +248,177 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
           ),
         ),
         const SizedBox(width: 16),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.neutral50),
-          ),
-          child: Center(
-            child: Container(
-              width: 24,
-              height: 22,
-              decoration: BoxDecoration(
-                color: AppColors.folderColors[_selectedColorIndex],
-                borderRadius: BorderRadius.circular(4),
+        GestureDetector(
+          key: _iconButtonKey,
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (_isIconModalVisible) {
+              setState(() {
+                _isIconModalVisible = false;
+              });
+              return;
+            }
+            _updateIconModalPosition();
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _isIconModalVisible
+                    ? AppColors.blue500
+                    : AppColors.neutral50,
               ),
+            ),
+            child: Center(
+              child: _buildFolderIconImage(_selectedIconIndex, size: 44),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _updateIconModalPosition() {
+    if (!mounted) return;
+    final stackContext = _contentStackKey.currentContext;
+    final iconContext = _iconButtonKey.currentContext;
+    final memoContext = _memoInputBoxKey.currentContext;
+
+    if (stackContext == null) {
+      setState(() {
+        _iconModalTop = 140;
+        _isIconModalVisible = true;
+      });
+      return;
+    }
+
+    final stackBox = stackContext.findRenderObject() as RenderBox?;
+    final iconBox = iconContext?.findRenderObject() as RenderBox?;
+    final memoBox = memoContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null) {
+      setState(() {
+        _iconModalTop = 140;
+        _isIconModalVisible = true;
+      });
+      return;
+    }
+
+    double alignedTop = _iconModalTop;
+
+    if (memoBox != null) {
+      final stackGlobalOffset = stackBox.localToGlobal(Offset.zero);
+      final memoGlobalOffset = memoBox.localToGlobal(Offset.zero);
+      alignedTop = memoGlobalOffset.dy - stackGlobalOffset.dy;
+    } else if (iconBox != null) {
+      final iconOffset = iconBox.localToGlobal(Offset.zero, ancestor: stackBox);
+      alignedTop = iconOffset.dy + iconBox.size.height + 12;
+    } else {
+      alignedTop = 140;
+    }
+
+    setState(() {
+      _iconModalTop = alignedTop;
+      _isIconModalVisible = true;
+    });
+  }
+
+  Widget _buildIconModal() {
+    return Container(
+      width: 335,
+      height: 153,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.neutral50),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(0, 13, 67, 0.06),
+            blurRadius: 16,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '아이콘',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppColors.gray600,
+              letterSpacing: -0.025 * 16,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: GridView.builder(
+              itemCount: 12,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1,
+              ),
+              itemBuilder: (context, index) {
+                final isSelected = _selectedIconIndex == index;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedIconIndex = index;
+                      _isIconModalVisible = false;
+                    });
+                  },
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: isSelected
+                          ? Border.all(color: AppColors.blue500)
+                          : null,
+                    ),
+                    child: Center(
+                      child: _buildFolderIconImage(index, size: 44),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _folderIconPath(int index) {
+    final normalizedIndex = index.clamp(0, 11);
+    return 'assets/icons/FolderIcon/$normalizedIndex.png';
+  }
+
+  Widget _buildFolderIconImage(int index, {required double size}) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRect(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: 120,
+            height: 120,
+            child: Image.asset(
+              _folderIconPath(index),
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -251,6 +449,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
         ),
         const SizedBox(height: 13),
         Container(
+          key: _memoInputBoxKey,
           height: 120,
           decoration: BoxDecoration(
             color: AppColors.neutral300,

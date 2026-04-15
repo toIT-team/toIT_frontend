@@ -23,6 +23,7 @@ class FolderTile extends ConsumerWidget {
   final String countText;
   final Color accentColor;
   final int colorIndex;
+  final int iconIndex;
   final VoidCallback? onTap;
 
   const FolderTile({
@@ -33,6 +34,7 @@ class FolderTile extends ConsumerWidget {
     required this.countText,
     required this.accentColor,
     this.colorIndex = 5,
+    this.iconIndex = 0,
     this.onTap,
   });
 
@@ -108,12 +110,12 @@ class FolderTile extends ConsumerWidget {
                   ),
                   // 폴더 아이콘
                   Positioned(
-                    left: 14,
-                    top: 12,
-                    child: Image.asset(
-                      AppAssets.folderIcon,
-                      width: 22,
-                      height: 22,
+                    left: 4,
+                    top: 6,
+                    child: _buildFolderIconImage(
+                      'assets/icons/FolderIcon/${iconIndex.clamp(0, 11)}.png',
+                      width: 44,
+                      height: 44,
                     ),
                   ),
                   // 내용
@@ -179,6 +181,7 @@ class FolderTile extends ConsumerWidget {
                                             initialName: title,
                                             initialMemo: memo,
                                             initialColorIndex: colorIndex,
+                                            initialIconIndex: iconIndex,
                                             isEditMode: true,
                                           );
                                       if (editResult != null) {
@@ -192,6 +195,9 @@ class FolderTile extends ConsumerWidget {
                                                   editResult['memo'] as String,
                                               colorIndex:
                                                   editResult['colorIndex']
+                                                      as int,
+                                              iconIndex:
+                                                  editResult['iconIndex']
                                                       as int,
                                             );
                                         if (!success && context.mounted) {
@@ -242,6 +248,36 @@ class FolderTile extends ConsumerWidget {
                 ],
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFolderIconImage(
+    String imagePath, {
+    required double width,
+    required double height,
+  }) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ClipRect(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: 120,
+            height: 120,
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, _, _) => Image.asset(
+                AppAssets.folderIcon,
+                width: width,
+                height: height,
+              ),
+            ),
           ),
         ),
       ),

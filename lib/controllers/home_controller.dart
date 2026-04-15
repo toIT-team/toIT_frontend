@@ -184,6 +184,7 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
     memo: dto.memo,
     countText: countText,
     colorIndex: ci,
+    iconIndex: dto.iconIdx,
     isDefault: dto.isDefault,
     accentColor: AppColors.folderColors[ci],
   );
@@ -268,6 +269,7 @@ class HomeController extends Notifier<HomeState> {
     required String name,
     required String memo,
     required int colorIndex,
+    required int iconIndex,
   }) async {
     try {
       final repository = ref.read(homeRepositoryProvider);
@@ -278,6 +280,7 @@ class HomeController extends Notifier<HomeState> {
         name: name,
         memo: memo,
         color: colorToken,
+        iconIdx: iconIndex,
       );
 
       await refresh();
@@ -293,12 +296,18 @@ class HomeController extends Notifier<HomeState> {
     required String name,
     required String memo,
     required int colorIndex,
+    required int iconIndex,
   }) async {
     try {
       final repository = ref.read(homeRepositoryProvider);
       final colorToken = AppColors.folderColorTokens[colorIndex];
 
-      await repository.createFolder(name: name, memo: memo, color: colorToken);
+      await repository.createFolder(
+        name: name,
+        memo: memo,
+        color: colorToken,
+        iconIdx: iconIndex,
+      );
 
       await refresh();
       return true;

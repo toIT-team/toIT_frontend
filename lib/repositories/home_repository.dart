@@ -15,19 +15,13 @@ class HomeRepository {
   const HomeRepository(this._remoteDatasource);
 
   /// 홈 화면 데이터 조회
-  Future<HomeResponseDto> fetchHomeData({
-    required String todayDate,
-  }) async {
-    return _remoteDatasource.fetchHomeData(
-      todayDate: todayDate,
-    );
+  Future<HomeResponseDto> fetchHomeData({required String todayDate}) async {
+    return _remoteDatasource.fetchHomeData(todayDate: todayDate);
   }
 
   /// 보관함(폴더) 삭제
   Future<void> deleteFolder({required int foldersId}) async {
-    await _remoteDatasource.deleteFolder(
-      foldersId: foldersId,
-    );
+    await _remoteDatasource.deleteFolder(foldersId: foldersId);
   }
 
   /// 보관함(폴더) 수정
@@ -36,12 +30,14 @@ class HomeRepository {
     required String name,
     required String memo,
     required String color,
+    required int iconIdx,
   }) async {
     await _remoteDatasource.updateFolder(
       foldersId: foldersId,
       name: name,
       memo: memo,
       color: color,
+      iconIdx: iconIdx,
     );
   }
 
@@ -74,10 +70,7 @@ class HomeRepository {
     required int foldersId,
     required int linksId,
   }) async {
-    await _remoteDatasource.deleteLink(
-      foldersId: foldersId,
-      linksId: linksId,
-    );
+    await _remoteDatasource.deleteLink(foldersId: foldersId, linksId: linksId);
   }
 
   /// 자료 링크 수정 (PATCH /links/update)
@@ -137,10 +130,7 @@ class HomeRepository {
     required int foldersId,
     required int textsId,
   }) async {
-    await _remoteDatasource.deleteText(
-      foldersId: foldersId,
-      textsId: textsId,
-    );
+    await _remoteDatasource.deleteText(foldersId: foldersId, textsId: textsId);
   }
 
   /// 자료 텍스트(노트) 보관함 이동 (PATCH /texts)
@@ -201,18 +191,12 @@ class HomeRepository {
 
   /// 자료 파일/이미지 삭제 (DELETE /attachments)
   Future<void> deleteAttachment({required int attachmentsId}) async {
-    await _remoteDatasource.deleteAttachment(
-      attachmentsId: attachmentsId,
-    );
+    await _remoteDatasource.deleteAttachment(attachmentsId: attachmentsId);
   }
 
   /// 보관함 내부 항목 조회 (GET /page/items)
-  Future<PageItemsResponseDto> getPageItems({
-    required int foldersId,
-  }) async {
-    return _remoteDatasource.fetchPageItems(
-      foldersId: foldersId,
-    );
+  Future<PageItemsResponseDto> getPageItems({required int foldersId}) async {
+    return _remoteDatasource.fetchPageItems(foldersId: foldersId);
   }
 
   /// 보관함(폴더) 생성
@@ -220,18 +204,19 @@ class HomeRepository {
     required String name,
     required String memo,
     required String color,
+    required int iconIdx,
   }) async {
     return _remoteDatasource.createFolder(
       name: name,
       memo: memo,
       color: color,
+      iconIdx: iconIdx,
     );
   }
 }
 
 /// HomeRemoteDatasource Provider
-final homeRemoteDatasourceProvider =
-    Provider<HomeRemoteDatasource>((ref) {
+final homeRemoteDatasourceProvider = Provider<HomeRemoteDatasource>((ref) {
   final apiClient = ref.watch(apiClientProvider);
   return HomeRemoteDatasource(apiClient);
 });
@@ -243,8 +228,7 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
 });
 
 /// 보관함 상세 항목 (GET /page/items) - foldersId별 캐시
-final pageItemsProvider =
-    FutureProvider.family<PageItemsResponseDto, int>((
+final pageItemsProvider = FutureProvider.family<PageItemsResponseDto, int>((
   ref,
   foldersId,
 ) async {
