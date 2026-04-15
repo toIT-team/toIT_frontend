@@ -21,8 +21,8 @@ String _stringFromJson(dynamic value) {
 @freezed
 class ScheduleSearchResponse with _$ScheduleSearchResponse {
   const factory ScheduleSearchResponse({
-    required int userId,
-    required List<ScheduleItemResponse> schedulesResponses,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int userId,
+    @Default([]) List<ScheduleItemResponse> schedulesResponses,
   }) = _ScheduleSearchResponse;
 
   factory ScheduleSearchResponse.fromJson(Map<String, dynamic> json) =>
@@ -48,8 +48,8 @@ class ScheduleItemResponse with _$ScheduleItemResponse {
 @freezed
 class SelectedSchedulesResponse with _$SelectedSchedulesResponse {
   const factory SelectedSchedulesResponse({
-    required int userId,
-    required List<SelectedScheduleItemResponse> schedulesResponses,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int userId,
+    @Default([]) List<SelectedScheduleItemResponse> schedulesResponses,
   }) = _SelectedSchedulesResponse;
 
   factory SelectedSchedulesResponse.fromJson(Map<String, dynamic> json) =>
@@ -75,7 +75,7 @@ class SelectedScheduleItemResponse with _$SelectedScheduleItemResponse {
 @freezed
 class ScheduleDetailResponse with _$ScheduleDetailResponse {
   const factory ScheduleDetailResponse({
-    @JsonKey(fromJson: _intFromJson) required int userId,
+    @Default(0) int userId,
     @JsonKey(fromJson: _intFromJson) required int schedulesId,
     @JsonKey(fromJson: _stringFromJson) required String title,
     @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,

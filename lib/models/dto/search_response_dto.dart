@@ -12,6 +12,14 @@ bool _boolFromJson(dynamic value) {
   return false;
 }
 
+/// JSON에서 int 파싱 (null, num, String 지원)
+int _intFromJson(dynamic value) {
+  if (value == null) return 0;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
 /// 통합 검색 API 응답 (GET /page/search)
 @freezed
 class SearchResponseDto with _$SearchResponseDto {
@@ -31,8 +39,8 @@ class SearchResponseDto with _$SearchResponseDto {
 @freezed
 class SearchFolderItemDto with _$SearchFolderItemDto {
   const factory SearchFolderItemDto({
-    required int foldersId,
-    required int usersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int usersId,
     @Default('') String name,
     @Default('') String memo,
     @JsonKey(fromJson: _boolFromJson) @Default(false) bool isDefault,
@@ -50,8 +58,8 @@ class SearchFolderItemDto with _$SearchFolderItemDto {
 @freezed
 class SearchScheduleItemDto with _$SearchScheduleItemDto {
   const factory SearchScheduleItemDto({
-    required int usersId,
-    required int schedulesId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int usersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int schedulesId,
     @Default('') String title,
     @Default(0) int foldersId,
     @Default('') String foldersTitle,
@@ -73,9 +81,9 @@ class SearchScheduleItemDto with _$SearchScheduleItemDto {
 @freezed
 class SearchLinkItemDto with _$SearchLinkItemDto {
   const factory SearchLinkItemDto({
-    required int linksId,
-    required int foldersId,
-    required int usersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int linksId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int usersId,
     @Default('') String linksName,
     @Default('') String linksUrl,
     @Default('') String linksThumbnail,
@@ -91,9 +99,9 @@ class SearchLinkItemDto with _$SearchLinkItemDto {
 @freezed
 class SearchTextItemDto with _$SearchTextItemDto {
   const factory SearchTextItemDto({
-    required int textsId,
-    required int usersId,
-    required int foldersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int textsId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int usersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,
     @Default('') String textContent,
     String? createdAt,
   }) = _SearchTextItemDto;
@@ -106,9 +114,9 @@ class SearchTextItemDto with _$SearchTextItemDto {
 @freezed
 class SearchFileItemDto with _$SearchFileItemDto {
   const factory SearchFileItemDto({
-    required int attachmentsId,
-    required int usersId,
-    required int foldersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int usersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,
     @Default('') String attachmentsType,
     @Default('') String objectKey,
     @Default('') String presignedUrl,

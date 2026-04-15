@@ -21,6 +21,7 @@ HomeResponseDto _$HomeResponseDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$HomeResponseDto {
+  @JsonKey(fromJson: _intFromJson)
   int get userId => throw _privateConstructorUsedError;
   List<FolderDto> get folders => throw _privateConstructorUsedError;
   List<FolderViewDto> get foldersViews => throw _privateConstructorUsedError;
@@ -44,7 +45,7 @@ abstract class $HomeResponseDtoCopyWith<$Res> {
   ) = _$HomeResponseDtoCopyWithImpl<$Res, HomeResponseDto>;
   @useResult
   $Res call({
-    int userId,
+    @JsonKey(fromJson: _intFromJson) int userId,
     List<FolderDto> folders,
     List<FolderViewDto> foldersViews,
     List<ScheduleDto> schedules,
@@ -105,7 +106,7 @@ abstract class _$$HomeResponseDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int userId,
+    @JsonKey(fromJson: _intFromJson) int userId,
     List<FolderDto> folders,
     List<FolderViewDto> foldersViews,
     List<ScheduleDto> schedules,
@@ -158,7 +159,7 @@ class __$$HomeResponseDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$HomeResponseDtoImpl implements _HomeResponseDto {
   const _$HomeResponseDtoImpl({
-    required this.userId,
+    @JsonKey(fromJson: _intFromJson) this.userId = 0,
     final List<FolderDto> folders = const [],
     final List<FolderViewDto> foldersViews = const [],
     final List<ScheduleDto> schedules = const [],
@@ -170,6 +171,7 @@ class _$HomeResponseDtoImpl implements _HomeResponseDto {
       _$$HomeResponseDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int userId;
   final List<FolderDto> _folders;
   @override
@@ -249,7 +251,7 @@ class _$HomeResponseDtoImpl implements _HomeResponseDto {
 
 abstract class _HomeResponseDto implements HomeResponseDto {
   const factory _HomeResponseDto({
-    required final int userId,
+    @JsonKey(fromJson: _intFromJson) final int userId,
     final List<FolderDto> folders,
     final List<FolderViewDto> foldersViews,
     final List<ScheduleDto> schedules,
@@ -259,6 +261,7 @@ abstract class _HomeResponseDto implements HomeResponseDto {
       _$HomeResponseDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get userId;
   @override
   List<FolderDto> get folders;
@@ -281,7 +284,9 @@ FolderDto _$FolderDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$FolderDto {
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get memo => throw _privateConstructorUsedError;
@@ -309,8 +314,8 @@ abstract class $FolderDtoCopyWith<$Res> {
       _$FolderDtoCopyWithImpl<$Res, FolderDto>;
   @useResult
   $Res call({
-    int foldersId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String name,
     String memo,
     @JsonKey(fromJson: _boolFromJson) bool isDefault,
@@ -406,8 +411,8 @@ abstract class _$$FolderDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int foldersId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String name,
     String memo,
     @JsonKey(fromJson: _boolFromJson) bool isDefault,
@@ -495,8 +500,8 @@ class __$$FolderDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$FolderDtoImpl implements _FolderDto {
   const _$FolderDtoImpl({
-    required this.foldersId,
-    required this.usersId,
+    @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.name = '',
     this.memo = '',
     @JsonKey(fromJson: _boolFromJson) this.isDefault = false,
@@ -511,8 +516,10 @@ class _$FolderDtoImpl implements _FolderDto {
       _$$FolderDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int foldersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
   @JsonKey()
@@ -597,8 +604,8 @@ class _$FolderDtoImpl implements _FolderDto {
 
 abstract class _FolderDto implements FolderDto {
   const factory _FolderDto({
-    required final int foldersId,
-    required final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int foldersId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
     final String name,
     final String memo,
     @JsonKey(fromJson: _boolFromJson) final bool isDefault,
@@ -613,8 +620,10 @@ abstract class _FolderDto implements FolderDto {
       _$FolderDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
   String get name;
@@ -764,7 +773,7 @@ class __$$FolderViewDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$FolderViewDtoImpl implements _FolderViewDto {
   const _$FolderViewDtoImpl({
-    required this.folderId,
+    this.folderId = 0,
     this.name = '',
     this.lastViewedAt,
   });
@@ -773,6 +782,7 @@ class _$FolderViewDtoImpl implements _FolderViewDto {
       _$$FolderViewDtoImplFromJson(json);
 
   @override
+  @JsonKey()
   final int folderId;
   @override
   @JsonKey()
@@ -817,7 +827,7 @@ class _$FolderViewDtoImpl implements _FolderViewDto {
 
 abstract class _FolderViewDto implements FolderViewDto {
   const factory _FolderViewDto({
-    required final int folderId,
+    final int folderId,
     final String name,
     final String? lastViewedAt,
   }) = _$FolderViewDtoImpl;
@@ -996,7 +1006,7 @@ class __$$ScheduleDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ScheduleDtoImpl implements _ScheduleDto {
   const _$ScheduleDtoImpl({
-    required this.schedulesId,
+    this.schedulesId = 0,
     this.title = '',
     this.startTime,
     this.endTime,
@@ -1007,6 +1017,7 @@ class _$ScheduleDtoImpl implements _ScheduleDto {
       _$$ScheduleDtoImplFromJson(json);
 
   @override
+  @JsonKey()
   final int schedulesId;
   @override
   @JsonKey()
@@ -1066,7 +1077,7 @@ class _$ScheduleDtoImpl implements _ScheduleDto {
 
 abstract class _ScheduleDto implements ScheduleDto {
   const factory _ScheduleDto({
-    required final int schedulesId,
+    final int schedulesId,
     final String title,
     final String? startTime,
     final String? endTime,

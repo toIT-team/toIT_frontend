@@ -12,11 +12,19 @@ bool _boolFromJson(dynamic value) {
   return false;
 }
 
+/// JSON에서 int 파싱 (null, num, String 지원)
+int _intFromJson(dynamic value) {
+  if (value == null) return 0;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
 /// 홈 API 응답 DTO
 @freezed
 class HomeResponseDto with _$HomeResponseDto {
   const factory HomeResponseDto({
-    required int userId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int userId,
     @Default([]) List<FolderDto> folders,
     @Default([]) List<FolderViewDto> foldersViews,
     @Default([]) List<ScheduleDto> schedules,
@@ -30,8 +38,8 @@ class HomeResponseDto with _$HomeResponseDto {
 @freezed
 class FolderDto with _$FolderDto {
   const factory FolderDto({
-    required int foldersId,
-    required int usersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,
+    @JsonKey(fromJson: _intFromJson) @Default(0) int usersId,
     @Default('') String name,
     @Default('') String memo,
     @JsonKey(fromJson: _boolFromJson) @Default(false) bool isDefault,
@@ -50,7 +58,7 @@ class FolderDto with _$FolderDto {
 @freezed
 class FolderViewDto with _$FolderViewDto {
   const factory FolderViewDto({
-    required int folderId,
+    @Default(0) int folderId,
     @Default('') String name,
     String? lastViewedAt,
   }) = _FolderViewDto;
@@ -63,7 +71,7 @@ class FolderViewDto with _$FolderViewDto {
 @freezed
 class ScheduleDto with _$ScheduleDto {
   const factory ScheduleDto({
-    required int schedulesId,
+    @Default(0) int schedulesId,
     @Default('') String title,
     String? startTime,
     String? endTime,
