@@ -51,8 +51,8 @@ Map<String, dynamic> _$$SearchResponseDtoImplToJson(
 _$SearchFolderItemDtoImpl _$$SearchFolderItemDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$SearchFolderItemDtoImpl(
-  foldersId: (json['foldersId'] as num).toInt(),
-  usersId: (json['usersId'] as num).toInt(),
+  foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
   name: json['name'] as String? ?? '',
   memo: json['memo'] as String? ?? '',
   isDefault: json['isDefault'] == null
@@ -83,8 +83,10 @@ Map<String, dynamic> _$$SearchFolderItemDtoImplToJson(
 _$SearchScheduleItemDtoImpl _$$SearchScheduleItemDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$SearchScheduleItemDtoImpl(
-  usersId: (json['usersId'] as num).toInt(),
-  schedulesId: (json['schedulesId'] as num).toInt(),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
+  schedulesId: json['schedulesId'] == null
+      ? 0
+      : _intFromJson(json['schedulesId']),
   title: json['title'] as String? ?? '',
   foldersId: (json['foldersId'] as num?)?.toInt() ?? 0,
   foldersTitle: json['foldersTitle'] as String? ?? '',
@@ -119,9 +121,9 @@ Map<String, dynamic> _$$SearchScheduleItemDtoImplToJson(
 _$SearchLinkItemDtoImpl _$$SearchLinkItemDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$SearchLinkItemDtoImpl(
-  linksId: (json['linksId'] as num).toInt(),
-  foldersId: (json['foldersId'] as num).toInt(),
-  usersId: (json['usersId'] as num).toInt(),
+  linksId: json['linksId'] == null ? 0 : _intFromJson(json['linksId']),
+  foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
   linksName: json['linksName'] as String? ?? '',
   linksUrl: json['linksUrl'] as String? ?? '',
   linksThumbnail: json['linksThumbnail'] as String? ?? '',
@@ -145,9 +147,9 @@ Map<String, dynamic> _$$SearchLinkItemDtoImplToJson(
 _$SearchTextItemDtoImpl _$$SearchTextItemDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$SearchTextItemDtoImpl(
-  textsId: (json['textsId'] as num).toInt(),
-  usersId: (json['usersId'] as num).toInt(),
-  foldersId: (json['foldersId'] as num).toInt(),
+  textsId: json['textsId'] == null ? 0 : _intFromJson(json['textsId']),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
+  foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
   textContent: json['textContent'] as String? ?? '',
   createdAt: json['createdAt'] as String?,
 );
@@ -165,9 +167,11 @@ Map<String, dynamic> _$$SearchTextItemDtoImplToJson(
 _$SearchFileItemDtoImpl _$$SearchFileItemDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$SearchFileItemDtoImpl(
-  attachmentsId: (json['attachmentsId'] as num).toInt(),
-  usersId: (json['usersId'] as num).toInt(),
-  foldersId: (json['foldersId'] as num).toInt(),
+  attachmentsId: json['attachmentsId'] == null
+      ? 0
+      : _intFromJson(json['attachmentsId']),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
+  foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
   attachmentsType: json['attachmentsType'] as String? ?? '',
   objectKey: json['objectKey'] as String? ?? '',
   presignedUrl: json['presignedUrl'] as String? ?? '',

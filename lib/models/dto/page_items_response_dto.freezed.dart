@@ -21,7 +21,9 @@ PageItemsResponseDto _$PageItemsResponseDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$PageItemsResponseDto {
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId => throw _privateConstructorUsedError;
   List<LinkDto> get links => throw _privateConstructorUsedError;
   List<TextDto> get texts => throw _privateConstructorUsedError;
@@ -46,8 +48,8 @@ abstract class $PageItemsResponseDtoCopyWith<$Res> {
   ) = _$PageItemsResponseDtoCopyWithImpl<$Res, PageItemsResponseDto>;
   @useResult
   $Res call({
-    int usersId,
-    int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
     List<LinkDto> links,
     List<TextDto> texts,
     List<AttachmentFileDto> files,
@@ -122,8 +124,8 @@ abstract class _$$PageItemsResponseDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int usersId,
-    int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
     List<LinkDto> links,
     List<TextDto> texts,
     List<AttachmentFileDto> files,
@@ -187,8 +189,8 @@ class __$$PageItemsResponseDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$PageItemsResponseDtoImpl implements _PageItemsResponseDto {
   const _$PageItemsResponseDtoImpl({
-    required this.usersId,
-    required this.foldersId,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
     final List<LinkDto> links = const [],
     final List<TextDto> texts = const [],
     final List<AttachmentFileDto> files = const [],
@@ -202,8 +204,10 @@ class _$PageItemsResponseDtoImpl implements _PageItemsResponseDto {
       _$$PageItemsResponseDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int foldersId;
   final List<LinkDto> _links;
   @override
@@ -292,8 +296,8 @@ class _$PageItemsResponseDtoImpl implements _PageItemsResponseDto {
 
 abstract class _PageItemsResponseDto implements PageItemsResponseDto {
   const factory _PageItemsResponseDto({
-    required final int usersId,
-    required final int foldersId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int foldersId,
     final List<LinkDto> links,
     final List<TextDto> texts,
     final List<AttachmentFileDto> files,
@@ -304,8 +308,10 @@ abstract class _PageItemsResponseDto implements PageItemsResponseDto {
       _$PageItemsResponseDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId;
   @override
   List<LinkDto> get links;
@@ -330,6 +336,7 @@ TextDto _$TextDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$TextDto {
+  @JsonKey(fromJson: _intFromJson)
   int get textsId => throw _privateConstructorUsedError;
   String get textContent => throw _privateConstructorUsedError;
   String? get createdAt => throw _privateConstructorUsedError;
@@ -348,7 +355,11 @@ abstract class $TextDtoCopyWith<$Res> {
   factory $TextDtoCopyWith(TextDto value, $Res Function(TextDto) then) =
       _$TextDtoCopyWithImpl<$Res, TextDto>;
   @useResult
-  $Res call({int textsId, String textContent, String? createdAt});
+  $Res call({
+    @JsonKey(fromJson: _intFromJson) int textsId,
+    String textContent,
+    String? createdAt,
+  });
 }
 
 /// @nodoc
@@ -398,7 +409,11 @@ abstract class _$$TextDtoImplCopyWith<$Res> implements $TextDtoCopyWith<$Res> {
   ) = __$$TextDtoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int textsId, String textContent, String? createdAt});
+  $Res call({
+    @JsonKey(fromJson: _intFromJson) int textsId,
+    String textContent,
+    String? createdAt,
+  });
 }
 
 /// @nodoc
@@ -442,7 +457,7 @@ class __$$TextDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$TextDtoImpl implements _TextDto {
   const _$TextDtoImpl({
-    required this.textsId,
+    @JsonKey(fromJson: _intFromJson) this.textsId = 0,
     this.textContent = '',
     this.createdAt,
   });
@@ -451,6 +466,7 @@ class _$TextDtoImpl implements _TextDto {
       _$$TextDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int textsId;
   @override
   @JsonKey()
@@ -495,7 +511,7 @@ class _$TextDtoImpl implements _TextDto {
 
 abstract class _TextDto implements TextDto {
   const factory _TextDto({
-    required final int textsId,
+    @JsonKey(fromJson: _intFromJson) final int textsId,
     final String textContent,
     final String? createdAt,
   }) = _$TextDtoImpl;
@@ -503,6 +519,7 @@ abstract class _TextDto implements TextDto {
   factory _TextDto.fromJson(Map<String, dynamic> json) = _$TextDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get textsId;
   @override
   String get textContent;
@@ -523,6 +540,7 @@ LinkDto _$LinkDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$LinkDto {
+  @JsonKey(fromJson: _intFromJson)
   int get linksId => throw _privateConstructorUsedError;
   String get linksName => throw _privateConstructorUsedError;
   String get linksUrl => throw _privateConstructorUsedError;
@@ -545,7 +563,7 @@ abstract class $LinkDtoCopyWith<$Res> {
       _$LinkDtoCopyWithImpl<$Res, LinkDto>;
   @useResult
   $Res call({
-    int linksId,
+    @JsonKey(fromJson: _intFromJson) int linksId,
     String linksName,
     String linksUrl,
     String linksThumbnail,
@@ -617,7 +635,7 @@ abstract class _$$LinkDtoImplCopyWith<$Res> implements $LinkDtoCopyWith<$Res> {
   @override
   @useResult
   $Res call({
-    int linksId,
+    @JsonKey(fromJson: _intFromJson) int linksId,
     String linksName,
     String linksUrl,
     String linksThumbnail,
@@ -682,7 +700,7 @@ class __$$LinkDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$LinkDtoImpl implements _LinkDto {
   const _$LinkDtoImpl({
-    required this.linksId,
+    @JsonKey(fromJson: _intFromJson) this.linksId = 0,
     this.linksName = '',
     this.linksUrl = '',
     this.linksThumbnail = '',
@@ -694,6 +712,7 @@ class _$LinkDtoImpl implements _LinkDto {
       _$$LinkDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int linksId;
   @override
   @JsonKey()
@@ -761,7 +780,7 @@ class _$LinkDtoImpl implements _LinkDto {
 
 abstract class _LinkDto implements LinkDto {
   const factory _LinkDto({
-    required final int linksId,
+    @JsonKey(fromJson: _intFromJson) final int linksId,
     final String linksName,
     final String linksUrl,
     final String linksThumbnail,
@@ -772,6 +791,7 @@ abstract class _LinkDto implements LinkDto {
   factory _LinkDto.fromJson(Map<String, dynamic> json) = _$LinkDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get linksId;
   @override
   String get linksName;
@@ -798,7 +818,9 @@ AttachmentFileDto _$AttachmentFileDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AttachmentFileDto {
+  @JsonKey(fromJson: _intFromJson)
   int get attachmentsId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get attachmentsType => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
@@ -826,8 +848,8 @@ abstract class $AttachmentFileDtoCopyWith<$Res> {
   ) = _$AttachmentFileDtoCopyWithImpl<$Res, AttachmentFileDto>;
   @useResult
   $Res call({
-    int attachmentsId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
     String objectKey,
     String presignedUrl,
@@ -917,8 +939,8 @@ abstract class _$$AttachmentFileDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int attachmentsId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
     String objectKey,
     String presignedUrl,
@@ -1000,8 +1022,8 @@ class __$$AttachmentFileDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
   const _$AttachmentFileDtoImpl({
-    required this.attachmentsId,
-    required this.usersId,
+    @JsonKey(fromJson: _intFromJson) this.attachmentsId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.attachmentsType = '',
     this.objectKey = '',
     this.presignedUrl = '',
@@ -1015,8 +1037,10 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
       _$$AttachmentFileDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int attachmentsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
   @JsonKey()
@@ -1102,8 +1126,8 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
 
 abstract class _AttachmentFileDto implements AttachmentFileDto {
   const factory _AttachmentFileDto({
-    required final int attachmentsId,
-    required final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
     final String attachmentsType,
     final String objectKey,
     final String presignedUrl,
@@ -1117,8 +1141,10 @@ abstract class _AttachmentFileDto implements AttachmentFileDto {
       _$AttachmentFileDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get attachmentsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
   String get attachmentsType;
@@ -1149,7 +1175,9 @@ AttachmentImageDto _$AttachmentImageDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AttachmentImageDto {
+  @JsonKey(fromJson: _intFromJson)
   int get attachmentsId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get attachmentsType => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
@@ -1179,8 +1207,8 @@ abstract class $AttachmentImageDtoCopyWith<$Res> {
   ) = _$AttachmentImageDtoCopyWithImpl<$Res, AttachmentImageDto>;
   @useResult
   $Res call({
-    int attachmentsId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
     String objectKey,
     String presignedUrl,
@@ -1282,8 +1310,8 @@ abstract class _$$AttachmentImageDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int attachmentsId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
     String objectKey,
     String presignedUrl,
@@ -1377,8 +1405,8 @@ class __$$AttachmentImageDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
   const _$AttachmentImageDtoImpl({
-    required this.attachmentsId,
-    required this.usersId,
+    @JsonKey(fromJson: _intFromJson) this.attachmentsId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.attachmentsType = '',
     this.objectKey = '',
     this.presignedUrl = '',
@@ -1394,8 +1422,10 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
       _$$AttachmentImageDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int attachmentsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
   @JsonKey()
@@ -1493,8 +1523,8 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
 
 abstract class _AttachmentImageDto implements AttachmentImageDto {
   const factory _AttachmentImageDto({
-    required final int attachmentsId,
-    required final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
     final String attachmentsType,
     final String objectKey,
     final String presignedUrl,
@@ -1510,8 +1540,10 @@ abstract class _AttachmentImageDto implements AttachmentImageDto {
       _$AttachmentImageDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get attachmentsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
   String get attachmentsType;

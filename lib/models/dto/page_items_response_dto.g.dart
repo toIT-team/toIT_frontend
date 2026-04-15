@@ -9,8 +9,8 @@ part of 'page_items_response_dto.dart';
 _$PageItemsResponseDtoImpl _$$PageItemsResponseDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$PageItemsResponseDtoImpl(
-  usersId: (json['usersId'] as num).toInt(),
-  foldersId: (json['foldersId'] as num).toInt(),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
+  foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
   links:
       (json['links'] as List<dynamic>?)
           ?.map((e) => LinkDto.fromJson(e as Map<String, dynamic>))
@@ -46,7 +46,7 @@ Map<String, dynamic> _$$PageItemsResponseDtoImplToJson(
 
 _$TextDtoImpl _$$TextDtoImplFromJson(Map<String, dynamic> json) =>
     _$TextDtoImpl(
-      textsId: (json['textsId'] as num).toInt(),
+      textsId: json['textsId'] == null ? 0 : _intFromJson(json['textsId']),
       textContent: json['textContent'] as String? ?? '',
       createdAt: json['createdAt'] as String?,
     );
@@ -60,7 +60,7 @@ Map<String, dynamic> _$$TextDtoImplToJson(_$TextDtoImpl instance) =>
 
 _$LinkDtoImpl _$$LinkDtoImplFromJson(Map<String, dynamic> json) =>
     _$LinkDtoImpl(
-      linksId: (json['linksId'] as num).toInt(),
+      linksId: json['linksId'] == null ? 0 : _intFromJson(json['linksId']),
       linksName: json['linksName'] as String? ?? '',
       linksUrl: json['linksUrl'] as String? ?? '',
       linksThumbnail: json['linksThumbnail'] as String? ?? '',
@@ -81,8 +81,10 @@ Map<String, dynamic> _$$LinkDtoImplToJson(_$LinkDtoImpl instance) =>
 _$AttachmentFileDtoImpl _$$AttachmentFileDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$AttachmentFileDtoImpl(
-  attachmentsId: (json['attachmentsId'] as num).toInt(),
-  usersId: (json['usersId'] as num).toInt(),
+  attachmentsId: json['attachmentsId'] == null
+      ? 0
+      : _intFromJson(json['attachmentsId']),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
   attachmentsType: json['attachmentsType'] as String? ?? '',
   objectKey: json['objectKey'] as String? ?? '',
   presignedUrl: json['presignedUrl'] as String? ?? '',
@@ -109,8 +111,10 @@ Map<String, dynamic> _$$AttachmentFileDtoImplToJson(
 _$AttachmentImageDtoImpl _$$AttachmentImageDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$AttachmentImageDtoImpl(
-  attachmentsId: (json['attachmentsId'] as num).toInt(),
-  usersId: (json['usersId'] as num).toInt(),
+  attachmentsId: json['attachmentsId'] == null
+      ? 0
+      : _intFromJson(json['attachmentsId']),
+  usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
   attachmentsType: json['attachmentsType'] as String? ?? '',
   objectKey: json['objectKey'] as String? ?? '',
   presignedUrl: json['presignedUrl'] as String? ?? '',

@@ -9,7 +9,7 @@ part of 'home_response_dto.dart';
 _$HomeResponseDtoImpl _$$HomeResponseDtoImplFromJson(
   Map<String, dynamic> json,
 ) => _$HomeResponseDtoImpl(
-  userId: (json['userId'] as num).toInt(),
+  userId: json['userId'] == null ? 0 : _intFromJson(json['userId']),
   folders:
       (json['folders'] as List<dynamic>?)
           ?.map((e) => FolderDto.fromJson(e as Map<String, dynamic>))
@@ -38,8 +38,10 @@ Map<String, dynamic> _$$HomeResponseDtoImplToJson(
 
 _$FolderDtoImpl _$$FolderDtoImplFromJson(Map<String, dynamic> json) =>
     _$FolderDtoImpl(
-      foldersId: (json['foldersId'] as num).toInt(),
-      usersId: (json['usersId'] as num).toInt(),
+      foldersId: json['foldersId'] == null
+          ? 0
+          : _intFromJson(json['foldersId']),
+      usersId: json['usersId'] == null ? 0 : _intFromJson(json['usersId']),
       name: json['name'] as String? ?? '',
       memo: json['memo'] as String? ?? '',
       isDefault: json['isDefault'] == null
@@ -68,7 +70,7 @@ Map<String, dynamic> _$$FolderDtoImplToJson(_$FolderDtoImpl instance) =>
 
 _$FolderViewDtoImpl _$$FolderViewDtoImplFromJson(Map<String, dynamic> json) =>
     _$FolderViewDtoImpl(
-      folderId: (json['folderId'] as num).toInt(),
+      folderId: (json['folderId'] as num?)?.toInt() ?? 0,
       name: json['name'] as String? ?? '',
       lastViewedAt: json['lastViewedAt'] as String?,
     );
@@ -82,7 +84,7 @@ Map<String, dynamic> _$$FolderViewDtoImplToJson(_$FolderViewDtoImpl instance) =>
 
 _$ScheduleDtoImpl _$$ScheduleDtoImplFromJson(Map<String, dynamic> json) =>
     _$ScheduleDtoImpl(
-      schedulesId: (json['schedulesId'] as num).toInt(),
+      schedulesId: (json['schedulesId'] as num?)?.toInt() ?? 0,
       title: json['title'] as String? ?? '',
       startTime: json['startTime'] as String?,
       endTime: json['endTime'] as String?,

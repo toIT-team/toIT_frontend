@@ -23,6 +23,7 @@ ScheduleSearchResponse _$ScheduleSearchResponseFromJson(
 
 /// @nodoc
 mixin _$ScheduleSearchResponse {
+  @JsonKey(fromJson: _intFromJson)
   int get userId => throw _privateConstructorUsedError;
   List<ScheduleItemResponse> get schedulesResponses =>
       throw _privateConstructorUsedError;
@@ -44,7 +45,10 @@ abstract class $ScheduleSearchResponseCopyWith<$Res> {
     $Res Function(ScheduleSearchResponse) then,
   ) = _$ScheduleSearchResponseCopyWithImpl<$Res, ScheduleSearchResponse>;
   @useResult
-  $Res call({int userId, List<ScheduleItemResponse> schedulesResponses});
+  $Res call({
+    @JsonKey(fromJson: _intFromJson) int userId,
+    List<ScheduleItemResponse> schedulesResponses,
+  });
 }
 
 /// @nodoc
@@ -90,7 +94,10 @@ abstract class _$$ScheduleSearchResponseImplCopyWith<$Res>
   ) = __$$ScheduleSearchResponseImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({int userId, List<ScheduleItemResponse> schedulesResponses});
+  $Res call({
+    @JsonKey(fromJson: _intFromJson) int userId,
+    List<ScheduleItemResponse> schedulesResponses,
+  });
 }
 
 /// @nodoc
@@ -127,17 +134,19 @@ class __$$ScheduleSearchResponseImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ScheduleSearchResponseImpl implements _ScheduleSearchResponse {
   const _$ScheduleSearchResponseImpl({
-    required this.userId,
-    required final List<ScheduleItemResponse> schedulesResponses,
+    @JsonKey(fromJson: _intFromJson) this.userId = 0,
+    final List<ScheduleItemResponse> schedulesResponses = const [],
   }) : _schedulesResponses = schedulesResponses;
 
   factory _$ScheduleSearchResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$ScheduleSearchResponseImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int userId;
   final List<ScheduleItemResponse> _schedulesResponses;
   @override
+  @JsonKey()
   List<ScheduleItemResponse> get schedulesResponses {
     if (_schedulesResponses is EqualUnmodifiableListView)
       return _schedulesResponses;
@@ -190,14 +199,15 @@ class _$ScheduleSearchResponseImpl implements _ScheduleSearchResponse {
 
 abstract class _ScheduleSearchResponse implements ScheduleSearchResponse {
   const factory _ScheduleSearchResponse({
-    required final int userId,
-    required final List<ScheduleItemResponse> schedulesResponses,
+    @JsonKey(fromJson: _intFromJson) final int userId,
+    final List<ScheduleItemResponse> schedulesResponses,
   }) = _$ScheduleSearchResponseImpl;
 
   factory _ScheduleSearchResponse.fromJson(Map<String, dynamic> json) =
       _$ScheduleSearchResponseImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get userId;
   @override
   List<ScheduleItemResponse> get schedulesResponses;
@@ -490,6 +500,7 @@ SelectedSchedulesResponse _$SelectedSchedulesResponseFromJson(
 
 /// @nodoc
 mixin _$SelectedSchedulesResponse {
+  @JsonKey(fromJson: _intFromJson)
   int get userId => throw _privateConstructorUsedError;
   List<SelectedScheduleItemResponse> get schedulesResponses =>
       throw _privateConstructorUsedError;
@@ -512,7 +523,7 @@ abstract class $SelectedSchedulesResponseCopyWith<$Res> {
   ) = _$SelectedSchedulesResponseCopyWithImpl<$Res, SelectedSchedulesResponse>;
   @useResult
   $Res call({
-    int userId,
+    @JsonKey(fromJson: _intFromJson) int userId,
     List<SelectedScheduleItemResponse> schedulesResponses,
   });
 }
@@ -561,7 +572,7 @@ abstract class _$$SelectedSchedulesResponseImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int userId,
+    @JsonKey(fromJson: _intFromJson) int userId,
     List<SelectedScheduleItemResponse> schedulesResponses,
   });
 }
@@ -603,17 +614,19 @@ class __$$SelectedSchedulesResponseImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SelectedSchedulesResponseImpl implements _SelectedSchedulesResponse {
   const _$SelectedSchedulesResponseImpl({
-    required this.userId,
-    required final List<SelectedScheduleItemResponse> schedulesResponses,
+    @JsonKey(fromJson: _intFromJson) this.userId = 0,
+    final List<SelectedScheduleItemResponse> schedulesResponses = const [],
   }) : _schedulesResponses = schedulesResponses;
 
   factory _$SelectedSchedulesResponseImpl.fromJson(Map<String, dynamic> json) =>
       _$$SelectedSchedulesResponseImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int userId;
   final List<SelectedScheduleItemResponse> _schedulesResponses;
   @override
+  @JsonKey()
   List<SelectedScheduleItemResponse> get schedulesResponses {
     if (_schedulesResponses is EqualUnmodifiableListView)
       return _schedulesResponses;
@@ -665,14 +678,15 @@ class _$SelectedSchedulesResponseImpl implements _SelectedSchedulesResponse {
 
 abstract class _SelectedSchedulesResponse implements SelectedSchedulesResponse {
   const factory _SelectedSchedulesResponse({
-    required final int userId,
-    required final List<SelectedScheduleItemResponse> schedulesResponses,
+    @JsonKey(fromJson: _intFromJson) final int userId,
+    final List<SelectedScheduleItemResponse> schedulesResponses,
   }) = _$SelectedSchedulesResponseImpl;
 
   factory _SelectedSchedulesResponse.fromJson(Map<String, dynamic> json) =
       _$SelectedSchedulesResponseImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get userId;
   @override
   List<SelectedScheduleItemResponse> get schedulesResponses;
@@ -975,7 +989,6 @@ ScheduleDetailResponse _$ScheduleDetailResponseFromJson(
 
 /// @nodoc
 mixin _$ScheduleDetailResponse {
-  @JsonKey(fromJson: _intFromJson)
   int get userId => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _intFromJson)
   int get schedulesId => throw _privateConstructorUsedError;
@@ -1015,7 +1028,7 @@ abstract class $ScheduleDetailResponseCopyWith<$Res> {
   ) = _$ScheduleDetailResponseCopyWithImpl<$Res, ScheduleDetailResponse>;
   @useResult
   $Res call({
-    @JsonKey(fromJson: _intFromJson) int userId,
+    int userId,
     @JsonKey(fromJson: _intFromJson) int schedulesId,
     @JsonKey(fromJson: _stringFromJson) String title,
     @JsonKey(fromJson: _intFromJson) int foldersId,
@@ -1133,7 +1146,7 @@ abstract class _$$ScheduleDetailResponseImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    @JsonKey(fromJson: _intFromJson) int userId,
+    int userId,
     @JsonKey(fromJson: _intFromJson) int schedulesId,
     @JsonKey(fromJson: _stringFromJson) String title,
     @JsonKey(fromJson: _intFromJson) int foldersId,
@@ -1241,7 +1254,7 @@ class __$$ScheduleDetailResponseImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
   const _$ScheduleDetailResponseImpl({
-    @JsonKey(fromJson: _intFromJson) required this.userId,
+    this.userId = 0,
     @JsonKey(fromJson: _intFromJson) required this.schedulesId,
     @JsonKey(fromJson: _stringFromJson) required this.title,
     @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
@@ -1260,7 +1273,7 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
       _$$ScheduleDetailResponseImplFromJson(json);
 
   @override
-  @JsonKey(fromJson: _intFromJson)
+  @JsonKey()
   final int userId;
   @override
   @JsonKey(fromJson: _intFromJson)
@@ -1369,7 +1382,7 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
 
 abstract class _ScheduleDetailResponse implements ScheduleDetailResponse {
   const factory _ScheduleDetailResponse({
-    @JsonKey(fromJson: _intFromJson) required final int userId,
+    final int userId,
     @JsonKey(fromJson: _intFromJson) required final int schedulesId,
     @JsonKey(fromJson: _stringFromJson) required final String title,
     @JsonKey(fromJson: _intFromJson) final int foldersId,
@@ -1388,7 +1401,6 @@ abstract class _ScheduleDetailResponse implements ScheduleDetailResponse {
       _$ScheduleDetailResponseImpl.fromJson;
 
   @override
-  @JsonKey(fromJson: _intFromJson)
   int get userId;
   @override
   @JsonKey(fromJson: _intFromJson)

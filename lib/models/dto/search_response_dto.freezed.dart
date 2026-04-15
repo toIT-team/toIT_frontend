@@ -316,7 +316,9 @@ SearchFolderItemDto _$SearchFolderItemDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SearchFolderItemDto {
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get memo => throw _privateConstructorUsedError;
@@ -346,8 +348,8 @@ abstract class $SearchFolderItemDtoCopyWith<$Res> {
   ) = _$SearchFolderItemDtoCopyWithImpl<$Res, SearchFolderItemDto>;
   @useResult
   $Res call({
-    int foldersId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String name,
     String memo,
     @JsonKey(fromJson: _boolFromJson) bool isDefault,
@@ -437,8 +439,8 @@ abstract class _$$SearchFolderItemDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int foldersId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String name,
     String memo,
     @JsonKey(fromJson: _boolFromJson) bool isDefault,
@@ -520,8 +522,8 @@ class __$$SearchFolderItemDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SearchFolderItemDtoImpl implements _SearchFolderItemDto {
   const _$SearchFolderItemDtoImpl({
-    required this.foldersId,
-    required this.usersId,
+    @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.name = '',
     this.memo = '',
     @JsonKey(fromJson: _boolFromJson) this.isDefault = false,
@@ -535,8 +537,10 @@ class _$SearchFolderItemDtoImpl implements _SearchFolderItemDto {
       _$$SearchFolderItemDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int foldersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
   @JsonKey()
@@ -618,8 +622,8 @@ class _$SearchFolderItemDtoImpl implements _SearchFolderItemDto {
 
 abstract class _SearchFolderItemDto implements SearchFolderItemDto {
   const factory _SearchFolderItemDto({
-    required final int foldersId,
-    required final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int foldersId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
     final String name,
     final String memo,
     @JsonKey(fromJson: _boolFromJson) final bool isDefault,
@@ -633,8 +637,10 @@ abstract class _SearchFolderItemDto implements SearchFolderItemDto {
       _$SearchFolderItemDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
   String get name;
@@ -669,7 +675,9 @@ SearchScheduleItemDto _$SearchScheduleItemDtoFromJson(
 
 /// @nodoc
 mixin _$SearchScheduleItemDto {
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get schedulesId => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   int get foldersId => throw _privateConstructorUsedError;
@@ -701,8 +709,8 @@ abstract class $SearchScheduleItemDtoCopyWith<$Res> {
   ) = _$SearchScheduleItemDtoCopyWithImpl<$Res, SearchScheduleItemDto>;
   @useResult
   $Res call({
-    int usersId,
-    int schedulesId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int schedulesId,
     String title,
     int foldersId,
     String foldersTitle,
@@ -819,8 +827,8 @@ abstract class _$$SearchScheduleItemDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int usersId,
-    int schedulesId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int schedulesId,
     String title,
     int foldersId,
     String foldersTitle,
@@ -927,8 +935,8 @@ class __$$SearchScheduleItemDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
   const _$SearchScheduleItemDtoImpl({
-    required this.usersId,
-    required this.schedulesId,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.schedulesId = 0,
     this.title = '',
     this.foldersId = 0,
     this.foldersTitle = '',
@@ -946,8 +954,10 @@ class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
       _$$SearchScheduleItemDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int schedulesId;
   @override
   @JsonKey()
@@ -1053,8 +1063,8 @@ class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
 
 abstract class _SearchScheduleItemDto implements SearchScheduleItemDto {
   const factory _SearchScheduleItemDto({
-    required final int usersId,
-    required final int schedulesId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int schedulesId,
     final String title,
     final int foldersId,
     final String foldersTitle,
@@ -1072,8 +1082,10 @@ abstract class _SearchScheduleItemDto implements SearchScheduleItemDto {
       _$SearchScheduleItemDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get schedulesId;
   @override
   String get title;
@@ -1112,8 +1124,11 @@ SearchLinkItemDto _$SearchLinkItemDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SearchLinkItemDto {
+  @JsonKey(fromJson: _intFromJson)
   int get linksId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get linksName => throw _privateConstructorUsedError;
   String get linksUrl => throw _privateConstructorUsedError;
@@ -1139,9 +1154,9 @@ abstract class $SearchLinkItemDtoCopyWith<$Res> {
   ) = _$SearchLinkItemDtoCopyWithImpl<$Res, SearchLinkItemDto>;
   @useResult
   $Res call({
-    int linksId,
-    int foldersId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int linksId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String linksName,
     String linksUrl,
     String linksThumbnail,
@@ -1224,9 +1239,9 @@ abstract class _$$SearchLinkItemDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int linksId,
-    int foldersId,
-    int usersId,
+    @JsonKey(fromJson: _intFromJson) int linksId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
     String linksName,
     String linksUrl,
     String linksThumbnail,
@@ -1301,9 +1316,9 @@ class __$$SearchLinkItemDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
   const _$SearchLinkItemDtoImpl({
-    required this.linksId,
-    required this.foldersId,
-    required this.usersId,
+    @JsonKey(fromJson: _intFromJson) this.linksId = 0,
+    @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.linksName = '',
     this.linksUrl = '',
     this.linksThumbnail = '',
@@ -1315,10 +1330,13 @@ class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
       _$$SearchLinkItemDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int linksId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int foldersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
   @JsonKey()
@@ -1394,9 +1412,9 @@ class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
 
 abstract class _SearchLinkItemDto implements SearchLinkItemDto {
   const factory _SearchLinkItemDto({
-    required final int linksId,
-    required final int foldersId,
-    required final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int linksId,
+    @JsonKey(fromJson: _intFromJson) final int foldersId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
     final String linksName,
     final String linksUrl,
     final String linksThumbnail,
@@ -1408,10 +1426,13 @@ abstract class _SearchLinkItemDto implements SearchLinkItemDto {
       _$SearchLinkItemDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get linksId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
   String get linksName;
@@ -1438,8 +1459,11 @@ SearchTextItemDto _$SearchTextItemDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SearchTextItemDto {
+  @JsonKey(fromJson: _intFromJson)
   int get textsId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId => throw _privateConstructorUsedError;
   String get textContent => throw _privateConstructorUsedError;
   String? get createdAt => throw _privateConstructorUsedError;
@@ -1462,9 +1486,9 @@ abstract class $SearchTextItemDtoCopyWith<$Res> {
   ) = _$SearchTextItemDtoCopyWithImpl<$Res, SearchTextItemDto>;
   @useResult
   $Res call({
-    int textsId,
-    int usersId,
-    int foldersId,
+    @JsonKey(fromJson: _intFromJson) int textsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
     String textContent,
     String? createdAt,
   });
@@ -1529,9 +1553,9 @@ abstract class _$$SearchTextItemDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int textsId,
-    int usersId,
-    int foldersId,
+    @JsonKey(fromJson: _intFromJson) int textsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
     String textContent,
     String? createdAt,
   });
@@ -1588,9 +1612,9 @@ class __$$SearchTextItemDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
   const _$SearchTextItemDtoImpl({
-    required this.textsId,
-    required this.usersId,
-    required this.foldersId,
+    @JsonKey(fromJson: _intFromJson) this.textsId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
     this.textContent = '',
     this.createdAt,
   });
@@ -1599,10 +1623,13 @@ class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
       _$$SearchTextItemDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int textsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int foldersId;
   @override
   @JsonKey()
@@ -1660,9 +1687,9 @@ class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
 
 abstract class _SearchTextItemDto implements SearchTextItemDto {
   const factory _SearchTextItemDto({
-    required final int textsId,
-    required final int usersId,
-    required final int foldersId,
+    @JsonKey(fromJson: _intFromJson) final int textsId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int foldersId,
     final String textContent,
     final String? createdAt,
   }) = _$SearchTextItemDtoImpl;
@@ -1671,10 +1698,13 @@ abstract class _SearchTextItemDto implements SearchTextItemDto {
       _$SearchTextItemDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get textsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId;
   @override
   String get textContent;
@@ -1695,8 +1725,11 @@ SearchFileItemDto _$SearchFileItemDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$SearchFileItemDto {
+  @JsonKey(fromJson: _intFromJson)
   int get attachmentsId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId => throw _privateConstructorUsedError;
   String get attachmentsType => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
@@ -1724,9 +1757,9 @@ abstract class $SearchFileItemDtoCopyWith<$Res> {
   ) = _$SearchFileItemDtoCopyWithImpl<$Res, SearchFileItemDto>;
   @useResult
   $Res call({
-    int attachmentsId,
-    int usersId,
-    int foldersId,
+    @JsonKey(fromJson: _intFromJson) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
     String attachmentsType,
     String objectKey,
     String presignedUrl,
@@ -1821,9 +1854,9 @@ abstract class _$$SearchFileItemDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
-    int attachmentsId,
-    int usersId,
-    int foldersId,
+    @JsonKey(fromJson: _intFromJson) int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) int usersId,
+    @JsonKey(fromJson: _intFromJson) int foldersId,
     String attachmentsType,
     String objectKey,
     String presignedUrl,
@@ -1910,9 +1943,9 @@ class __$$SearchFileItemDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
   const _$SearchFileItemDtoImpl({
-    required this.attachmentsId,
-    required this.usersId,
-    required this.foldersId,
+    @JsonKey(fromJson: _intFromJson) this.attachmentsId = 0,
+    @JsonKey(fromJson: _intFromJson) this.usersId = 0,
+    @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
     this.attachmentsType = '',
     this.objectKey = '',
     this.presignedUrl = '',
@@ -1926,10 +1959,13 @@ class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
       _$$SearchFileItemDtoImplFromJson(json);
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int attachmentsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   final int foldersId;
   @override
   @JsonKey()
@@ -2018,9 +2054,9 @@ class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
 
 abstract class _SearchFileItemDto implements SearchFileItemDto {
   const factory _SearchFileItemDto({
-    required final int attachmentsId,
-    required final int usersId,
-    required final int foldersId,
+    @JsonKey(fromJson: _intFromJson) final int attachmentsId,
+    @JsonKey(fromJson: _intFromJson) final int usersId,
+    @JsonKey(fromJson: _intFromJson) final int foldersId,
     final String attachmentsType,
     final String objectKey,
     final String presignedUrl,
@@ -2034,10 +2070,13 @@ abstract class _SearchFileItemDto implements SearchFileItemDto {
       _$SearchFileItemDtoImpl.fromJson;
 
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get attachmentsId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get usersId;
   @override
+  @JsonKey(fromJson: _intFromJson)
   int get foldersId;
   @override
   String get attachmentsType;

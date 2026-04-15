@@ -9,10 +9,12 @@ part of 'schedule_response.dart';
 _$ScheduleSearchResponseImpl _$$ScheduleSearchResponseImplFromJson(
   Map<String, dynamic> json,
 ) => _$ScheduleSearchResponseImpl(
-  userId: (json['userId'] as num).toInt(),
-  schedulesResponses: (json['schedulesResponses'] as List<dynamic>)
-      .map((e) => ScheduleItemResponse.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  userId: json['userId'] == null ? 0 : _intFromJson(json['userId']),
+  schedulesResponses:
+      (json['schedulesResponses'] as List<dynamic>?)
+          ?.map((e) => ScheduleItemResponse.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$$ScheduleSearchResponseImplToJson(
@@ -45,12 +47,16 @@ Map<String, dynamic> _$$ScheduleItemResponseImplToJson(
 _$SelectedSchedulesResponseImpl _$$SelectedSchedulesResponseImplFromJson(
   Map<String, dynamic> json,
 ) => _$SelectedSchedulesResponseImpl(
-  userId: (json['userId'] as num).toInt(),
-  schedulesResponses: (json['schedulesResponses'] as List<dynamic>)
-      .map(
-        (e) => SelectedScheduleItemResponse.fromJson(e as Map<String, dynamic>),
-      )
-      .toList(),
+  userId: json['userId'] == null ? 0 : _intFromJson(json['userId']),
+  schedulesResponses:
+      (json['schedulesResponses'] as List<dynamic>?)
+          ?.map(
+            (e) => SelectedScheduleItemResponse.fromJson(
+              e as Map<String, dynamic>,
+            ),
+          )
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$$SelectedSchedulesResponseImplToJson(
@@ -83,7 +89,7 @@ Map<String, dynamic> _$$SelectedScheduleItemResponseImplToJson(
 _$ScheduleDetailResponseImpl _$$ScheduleDetailResponseImplFromJson(
   Map<String, dynamic> json,
 ) => _$ScheduleDetailResponseImpl(
-  userId: _intFromJson(json['userId']),
+  userId: (json['userId'] as num?)?.toInt() ?? 0,
   schedulesId: _intFromJson(json['schedulesId']),
   title: _stringFromJson(json['title']),
   foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
