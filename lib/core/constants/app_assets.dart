@@ -31,4 +31,5 @@ class AppAssets {
   static const String fileIcon = 'assets/icons/FileIcon.svg';
   static const String imageIcon = 'assets/icons/ImageIcon.svg';
   static const String scheduleIcon = 'assets/icons/ScheduleIcon.svg';
+  static const String settingIcon = 'assets/icons/SettingIcon.svg';
 }

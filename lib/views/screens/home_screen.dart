@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_gradients.dart';
 import 'my_screen.dart';
+import 'notification_screen.dart';
 import '../widgets/home/home_app_bar.dart';
 import '../widgets/home/greeting_section.dart';
 import '../widgets/home/folder_section.dart';
@@ -27,9 +28,14 @@ class HomeScreen extends ConsumerWidget {
           preferredSize: const Size.fromHeight(56),
           child: HomeAppBar(
             onMenuPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute<void>(builder: (_) => const MyScreen()));
+            },
+            onNotificationPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const MyScreen(),
+                  builder: (_) => const NotificationScreen(),
                 ),
               );
             },
@@ -72,8 +78,7 @@ class HomeScreen extends ConsumerWidget {
   /// 테스트용 카카오 로그인 버튼 (추후 삭제)
   Widget _buildTestLoginButton(WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final isLoggedIn =
-        authState.status == AuthStatus.authenticated;
+    final isLoggedIn = authState.status == AuthStatus.authenticated;
 
     return SizedBox(
       width: double.infinity,
@@ -86,10 +91,7 @@ class HomeScreen extends ConsumerWidget {
             ref.read(authProvider.notifier).loginWithKakao();
           }
         },
-        icon: Icon(
-          isLoggedIn ? Icons.logout : Icons.login,
-          size: 18,
-        ),
+        icon: Icon(isLoggedIn ? Icons.logout : Icons.login, size: 18),
         label: Text(
           isLoggedIn ? '로그아웃 (테스트)' : '카카오 로그인 (테스트)',
           style: const TextStyle(fontSize: 13),
@@ -97,9 +99,7 @@ class HomeScreen extends ConsumerWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.gray600,
           side: const BorderSide(color: AppColors.neutral100),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     );
