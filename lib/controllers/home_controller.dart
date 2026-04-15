@@ -75,45 +75,66 @@ String _buildScheduleTimeLeftText({
   required String? endTime,
   required String? startTime,
 }) {
-  final targetTime = (endTime != null && endTime.isNotEmpty)
-      ? endTime
-      : startTime;
-  if (targetTime == null || targetTime.isEmpty) return '';
+  if (startTime == null ||
+      startTime.isEmpty ||
+      endTime == null ||
+      endTime.isEmpty) {
+    return '하루종일';
+  }
 
-  final parts = targetTime.split(':');
-  if (parts.length < 2) return '';
+  final startParts = startTime.split(':');
+  final endParts = endTime.split(':');
+  if (startParts.length < 2 || endParts.length < 2) return '하루종일';
 
-  final hour = int.tryParse(parts[0]);
-  final minute = int.tryParse(parts[1]);
-  if (hour == null || minute == null) return '';
+  final startHour = int.tryParse(startParts[0]);
+  final startMinute = int.tryParse(startParts[1]);
+  final endHour = int.tryParse(endParts[0]);
+  final endMinute = int.tryParse(endParts[1]);
+  if (startHour == null ||
+      startMinute == null ||
+      endHour == null ||
+      endMinute == null) {
+    return '하루종일';
+  }
 
   final now = DateTime.now();
-  var deadlineDateTime = DateTime(now.year, now.month, now.day, hour, minute);
+  var startDateTime = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    startHour,
+    startMinute,
+  );
+  var endDateTime = DateTime(now.year, now.month, now.day, endHour, endMinute);
 
-  // 시작/종료 시간이 모두 있고 종료 시간이 시작 시간보다 이르면
-  // 자정을 넘기는 일정으로 보고 마감 시점을 다음 날로 보정한다.
-  if (startTime != null && startTime.isNotEmpty && endTime != null && endTime.isNotEmpty) {
-    final startParts = startTime.split(':');
-    if (startParts.length >= 2) {
-      final startHour = int.tryParse(startParts[0]);
-      final startMinute = int.tryParse(startParts[1]);
-      if (startHour != null && startMinute != null) {
-        final startDateTime = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          startHour,
-          startMinute,
-        );
-        if (deadlineDateTime.isBefore(startDateTime)) {
-          deadlineDateTime = deadlineDateTime.add(const Duration(days: 1));
-        }
-      }
+  // 자정을 넘기는 일정(end < start)은 현재 시각 기준으로
+  // [어제 시작 ~ 오늘 종료] 또는 [오늘 시작 ~ 내일 종료] 중 맞는 구간을 선택
+  if (endDateTime.isBefore(startDateTime) ||
+      endDateTime.isAtSameMomentAs(startDateTime)) {
+    final overnightEndToday = endDateTime;
+    final overnightStartYesterday = startDateTime.subtract(
+      const Duration(days: 1),
+    );
+
+    if (now.isBefore(overnightEndToday)) {
+      startDateTime = overnightStartYesterday;
+      endDateTime = overnightEndToday;
+    } else {
+      endDateTime = overnightEndToday.add(const Duration(days: 1));
     }
   }
 
-  final diff = deadlineDateTime.difference(now);
-  if (diff.inMinutes <= 0) return '마감됨';
+  if (now.isAfter(endDateTime) || now.isAtSameMomentAs(endDateTime)) {
+    return '마감됨';
+  }
+
+  if ((now.isAfter(startDateTime) || now.isAtSameMomentAs(startDateTime)) &&
+      now.isBefore(endDateTime)) {
+    return '진행중';
+  }
+
+  final diff = startDateTime.difference(now);
+  if (diff.inMinutes <= 0) return '진행중';
 
   if (diff.inHours >= 1) {
     return '${diff.inHours}시간 전';
@@ -132,7 +153,7 @@ Schedule _mapSchedule(ScheduleDto dto, int index) {
     title: dto.title,
     timeRangeText: timeRange,
     scheduleTime: isAllDay
-        ? '오늘 마감'
+        ? '하루종일'
         : _buildScheduleTimeLeftText(
             endTime: dto.endTime,
             startTime: dto.startTime,
