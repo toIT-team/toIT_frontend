@@ -37,6 +37,7 @@ Future<void> main() async {
 /// FCM 초기화(비동기). OS 알림 권한 요청은 로그인 후
 /// [FcmRegistrationService.syncServerRegistration]에서 수행한다.
 Future<void> _initFcm() async {
+  // TODO(FCM-콘솔정리): 릴리스 전 삭제 — 선조회 로그·catch의 debugPrint/log·필요 시 import
   try {
     final token = await FirebaseMessaging.instance.getToken();
     logFcmTokenSnapshot('main 선조회(getToken)', token);

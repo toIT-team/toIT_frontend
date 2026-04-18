@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 
-/// FCM 토큰을 확보한 직후 — 디버그 콘솔 + DevTools `log`
+// TODO(FCM-콘솔정리): 릴리스 전 삭제 — 아래 logFcm*·_logFcm* 및 호출부·dart:developer log
 void logFcmTokenSnapshot(String context, String? token) {
   final text = (token == null || token.isEmpty)
       ? '[FCM] 토큰 수신 ($context): 없음'
@@ -63,6 +63,7 @@ class FcmRegistrationService {
             await FirebaseMessaging.instance.getNotificationSettings();
       }
       if (!_isPushAllowed(settings.authorizationStatus)) {
+        // TODO(FCM-콘솔정리): 릴리스 전 삭제
         debugPrint(
           '[FcmRegistration] 알림 미허용, 서버 등록 생략',
         );
@@ -70,6 +71,7 @@ class FcmRegistrationService {
       }
       await _postFcmToken(fcmToken);
     } catch (e, st) {
+      // TODO(FCM-콘솔정리): 릴리스 전 삭제
       debugPrint('[FcmRegistration] 서버 FCM 등록 실패: $e\n$st');
     }
   }
@@ -88,6 +90,7 @@ class FcmRegistrationService {
     );
     if (token == null || token.isEmpty) {
       const msg = '[FCM] 토큰 없음 — POST 생략';
+      // TODO(FCM-콘솔정리): 릴리스 전 삭제
       debugPrint(msg);
       log(msg, name: 'FCM');
       return;

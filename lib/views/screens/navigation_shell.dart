@@ -24,6 +24,7 @@ import 'save_file_screen.dart';
 import 'save_image_screen.dart';
 import 'event_detail_screen.dart';
 import 'event_form_screen.dart';
+import 'customer_support_screen.dart';
 
 /// 현재 선택된 탭 인덱스 Provider
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -40,9 +41,7 @@ class NavigationShell extends ConsumerStatefulWidget {
 }
 
 class _NavigationShellState extends ConsumerState<NavigationShell> {
-  static const _deepLinkChannel = MethodChannel(
-    'com.example.pojTodo/deeplink',
-  );
+  static const _deepLinkChannel = MethodChannel('com.example.pojTodo/deeplink');
 
   StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
   bool _isShareSheetVisible = false;
@@ -93,15 +92,16 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
       case ToitDeepLink.scheduleHost:
         await _openScheduleDeepLink(urlString);
         break;
+      case ToitDeepLink.feedbackHost:
+        await _openFeedbackDeepLink(urlString);
+        break;
       default:
         break;
     }
   }
 
   Future<void> _openFolderDeepLink(Uri uri) async {
-    final folderId = int.tryParse(
-      uri.queryParameters['id'] ?? '',
-    );
+    final folderId = int.tryParse(uri.queryParameters['id'] ?? '');
     final folderName = uri.queryParameters['name'] ?? '보관함';
     final tabName = uri.queryParameters['tab'] ?? 'links';
 
@@ -138,6 +138,17 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => EventDetailScreen(schedulesId: schedulesId),
+      ),
+    );
+  }
+
+  Future<void> _openFeedbackDeepLink(String urlString) async {
+    final initialTabIndex = ToitDeepLink.parseFeedbackTabIndex(urlString) ?? 1;
+    if (!mounted) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SupportScreen(initialTabIndex: initialTabIndex),
       ),
     );
   }
