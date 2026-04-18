@@ -282,6 +282,7 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
                 countText: folder.countText,
                 accentColor: folder.accentColor,
                 colorIndex: folder.colorIndex,
+                iconIndex: folder.iconIndex,
                 onTap: folder.foldersId == widget.currentFoldersId
                     ? () {}
                     : () => widget.onSelect(folder),

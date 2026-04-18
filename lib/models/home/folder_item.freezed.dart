@@ -15,10 +15,6 @@ final _privateConstructorUsedError = UnsupportedError(
   'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
 );
 
-FolderItem _$FolderItemFromJson(Map<String, dynamic> json) {
-  return _FolderItem.fromJson(json);
-}
-
 /// @nodoc
 mixin _$FolderItem {
   /// 폴더 ID
@@ -36,16 +32,14 @@ mixin _$FolderItem {
   /// 색상 인덱스 (folderColors 기준)
   int get colorIndex => throw _privateConstructorUsedError;
 
+  /// 폴더 아이콘 인덱스 (assets/icons/FolderIcon/0~11.png)
+  int get iconIndex => throw _privateConstructorUsedError;
+
   /// 기본 보관함 여부 (자동 선택용)
-  @JsonKey(fromJson: _boolFromJson)
   bool get isDefault => throw _privateConstructorUsedError;
 
   /// 강조 색상 (JSON 제외)
-  @JsonKey(includeFromJson: false, includeToJson: false)
   Color get accentColor => throw _privateConstructorUsedError;
-
-  /// Serializes this FolderItem to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
   /// Create a copy of FolderItem
   /// with the given fields replaced by the non-null parameter values.
@@ -67,8 +61,9 @@ abstract class $FolderItemCopyWith<$Res> {
     String memo,
     String countText,
     int colorIndex,
-    @JsonKey(fromJson: _boolFromJson) bool isDefault,
-    @JsonKey(includeFromJson: false, includeToJson: false) Color accentColor,
+    int iconIndex,
+    bool isDefault,
+    Color accentColor,
   });
 }
 
@@ -92,6 +87,7 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
     Object? memo = null,
     Object? countText = null,
     Object? colorIndex = null,
+    Object? iconIndex = null,
     Object? isDefault = null,
     Object? accentColor = null,
   }) {
@@ -116,6 +112,10 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
             colorIndex: null == colorIndex
                 ? _value.colorIndex
                 : colorIndex // ignore: cast_nullable_to_non_nullable
+                      as int,
+            iconIndex: null == iconIndex
+                ? _value.iconIndex
+                : iconIndex // ignore: cast_nullable_to_non_nullable
                       as int,
             isDefault: null == isDefault
                 ? _value.isDefault
@@ -146,8 +146,9 @@ abstract class _$$FolderItemImplCopyWith<$Res>
     String memo,
     String countText,
     int colorIndex,
-    @JsonKey(fromJson: _boolFromJson) bool isDefault,
-    @JsonKey(includeFromJson: false, includeToJson: false) Color accentColor,
+    int iconIndex,
+    bool isDefault,
+    Color accentColor,
   });
 }
 
@@ -170,6 +171,7 @@ class __$$FolderItemImplCopyWithImpl<$Res>
     Object? memo = null,
     Object? countText = null,
     Object? colorIndex = null,
+    Object? iconIndex = null,
     Object? isDefault = null,
     Object? accentColor = null,
   }) {
@@ -195,6 +197,10 @@ class __$$FolderItemImplCopyWithImpl<$Res>
             ? _value.colorIndex
             : colorIndex // ignore: cast_nullable_to_non_nullable
                   as int,
+        iconIndex: null == iconIndex
+            ? _value.iconIndex
+            : iconIndex // ignore: cast_nullable_to_non_nullable
+                  as int,
         isDefault: null == isDefault
             ? _value.isDefault
             : isDefault // ignore: cast_nullable_to_non_nullable
@@ -209,7 +215,7 @@ class __$$FolderItemImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-@JsonSerializable()
+
 class _$FolderItemImpl implements _FolderItem {
   const _$FolderItemImpl({
     this.foldersId = 0,
@@ -217,13 +223,10 @@ class _$FolderItemImpl implements _FolderItem {
     this.memo = '',
     required this.countText,
     this.colorIndex = 5,
-    @JsonKey(fromJson: _boolFromJson) this.isDefault = false,
-    @JsonKey(includeFromJson: false, includeToJson: false)
+    this.iconIndex = 0,
+    this.isDefault = false,
     this.accentColor = const Color(0xFFA2CAFF),
   });
-
-  factory _$FolderItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$FolderItemImplFromJson(json);
 
   /// 폴더 ID
   @override
@@ -248,19 +251,24 @@ class _$FolderItemImpl implements _FolderItem {
   @JsonKey()
   final int colorIndex;
 
+  /// 폴더 아이콘 인덱스 (assets/icons/FolderIcon/0~11.png)
+  @override
+  @JsonKey()
+  final int iconIndex;
+
   /// 기본 보관함 여부 (자동 선택용)
   @override
-  @JsonKey(fromJson: _boolFromJson)
+  @JsonKey()
   final bool isDefault;
 
   /// 강조 색상 (JSON 제외)
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  @JsonKey()
   final Color accentColor;
 
   @override
   String toString() {
-    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, isDefault: $isDefault, accentColor: $accentColor)';
+    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, iconIndex: $iconIndex, isDefault: $isDefault, accentColor: $accentColor)';
   }
 
   @override
@@ -276,13 +284,14 @@ class _$FolderItemImpl implements _FolderItem {
                 other.countText == countText) &&
             (identical(other.colorIndex, colorIndex) ||
                 other.colorIndex == colorIndex) &&
+            (identical(other.iconIndex, iconIndex) ||
+                other.iconIndex == iconIndex) &&
             (identical(other.isDefault, isDefault) ||
                 other.isDefault == isDefault) &&
             (identical(other.accentColor, accentColor) ||
                 other.accentColor == accentColor));
   }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
     runtimeType,
@@ -291,6 +300,7 @@ class _$FolderItemImpl implements _FolderItem {
     memo,
     countText,
     colorIndex,
+    iconIndex,
     isDefault,
     accentColor,
   );
@@ -302,11 +312,6 @@ class _$FolderItemImpl implements _FolderItem {
   @pragma('vm:prefer-inline')
   _$$FolderItemImplCopyWith<_$FolderItemImpl> get copyWith =>
       __$$FolderItemImplCopyWithImpl<_$FolderItemImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$FolderItemImplToJson(this);
-  }
 }
 
 abstract class _FolderItem implements FolderItem {
@@ -316,13 +321,10 @@ abstract class _FolderItem implements FolderItem {
     final String memo,
     required final String countText,
     final int colorIndex,
-    @JsonKey(fromJson: _boolFromJson) final bool isDefault,
-    @JsonKey(includeFromJson: false, includeToJson: false)
+    final int iconIndex,
+    final bool isDefault,
     final Color accentColor,
   }) = _$FolderItemImpl;
-
-  factory _FolderItem.fromJson(Map<String, dynamic> json) =
-      _$FolderItemImpl.fromJson;
 
   /// 폴더 ID
   @override
@@ -344,14 +346,16 @@ abstract class _FolderItem implements FolderItem {
   @override
   int get colorIndex;
 
+  /// 폴더 아이콘 인덱스 (assets/icons/FolderIcon/0~11.png)
+  @override
+  int get iconIndex;
+
   /// 기본 보관함 여부 (자동 선택용)
   @override
-  @JsonKey(fromJson: _boolFromJson)
   bool get isDefault;
 
   /// 강조 색상 (JSON 제외)
   @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
   Color get accentColor;
 
   /// Create a copy of FolderItem

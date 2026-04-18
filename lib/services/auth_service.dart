@@ -14,13 +14,7 @@ const _kAccessToken = 'access_token';
 const _kRefreshToken = 'refresh_token';
 
 /// 소셜 로그인(OAuth 콜백) 결과
-enum AuthCallbackResult {
-  success,
-  cancelled,
-  failed,
-  needsSignup,
-  deletedUser,
-}
+enum AuthCallbackResult { success, cancelled, failed, needsSignup, deletedUser }
 
 /// 콜백 파싱 결과
 class AuthCallbackData {
@@ -166,14 +160,14 @@ class AuthService {
   }
 
   Future<AuthCallbackData> loginWithKakao() => _loginWithBackendOAuth(
-        endpoint: ApiConstants.kakaoLoginEndpoint,
-        logLabel: '카카오',
-      );
+    endpoint: ApiConstants.kakaoLoginEndpoint,
+    logLabel: '카카오',
+  );
 
   Future<AuthCallbackData> loginWithApple() => _loginWithBackendOAuth(
-        endpoint: ApiConstants.appleLoginEndpoint,
-        logLabel: '애플',
-      );
+    endpoint: ApiConstants.appleLoginEndpoint,
+    logLabel: '애플',
+  );
 
   /// 콜백 URL 파싱
   AuthCallbackData _parseCallback(String url) {
@@ -198,8 +192,7 @@ class AuthService {
     );
     debugPrint('  전체 쿼리: ${uri.queryParameters}');
     if (accessToken != null && accessToken.isNotEmpty) {
-      final payload = _tryDecodeJwtPayload(accessToken);
-      debugPrint('  accessToken payload: $payload');
+      _debugPrintJwtPayload(token: accessToken, label: 'callback accessToken');
     }
 
     final result = switch (resultStr) {
@@ -226,8 +219,7 @@ class AuthService {
       debugPrint('[AuthService] 저장된 accessToken이 없습니다.');
       return;
     }
-    final payload = _tryDecodeJwtPayload(accessToken);
-    debugPrint('[AuthService] 저장된 사용자 정보(payload): $payload');
+    _debugPrintJwtPayload(token: accessToken, label: 'stored accessToken');
   }
 
   /// accessToken에서 userId(sub) 추출
@@ -239,6 +231,28 @@ class AuthService {
     final sub = payload['sub'];
     if (sub == null) return null;
     return int.tryParse(sub.toString());
+  }
+
+  /// accessToken에서 사용자 닉네임 추출
+  /// - nickname 클레임 우선
+  /// - 없으면 name 클레임 fallback
+  Future<String?> getNicknameFromToken() async {
+    final accessToken = await getAccessToken();
+    if (accessToken == null || accessToken.isEmpty) return null;
+    final payload = _tryDecodeJwtPayload(accessToken);
+    if (payload == null) return null;
+
+    final nickname = payload['nickname']?.toString().trim();
+    if (nickname != null && nickname.isNotEmpty) {
+      return nickname;
+    }
+
+    final name = payload['name']?.toString().trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+
+    return null;
   }
 
   Map<String, dynamic>? _tryDecodeJwtPayload(String token) {
@@ -253,6 +267,23 @@ class AuthService {
     } catch (_) {
       return null;
     }
+  }
+
+  void _debugPrintJwtPayload({required String token, required String label}) {
+    final payload = _tryDecodeJwtPayload(token);
+    if (payload == null) {
+      debugPrint('[AuthService] $label payload decode 실패');
+      return;
+    }
+
+    debugPrint('[AuthService] $label payload: $payload');
+    debugPrint(
+      '[AuthService] $label claims'
+      ' sub=${payload['sub']}'
+      ' nickname=${payload['nickname']}'
+      ' name=${payload['name']}'
+      ' email=${payload['email']}',
+    );
   }
 
   // ─── 토큰 재발급 ───

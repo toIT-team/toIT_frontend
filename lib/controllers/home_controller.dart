@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'auth_controller.dart';
+import '../services/auth_service.dart';
 import '../core/constants/app_colors.dart';
+import '../core/constants/event_color_tokens.dart';
 import '../models/dto/home_response_dto.dart';
 import '../models/home/folder_item.dart';
 import '../models/home/schedule.dart';
@@ -58,27 +60,104 @@ String _formatTime(String? timeStr) {
 
 /// 일정 색상 매핑
 Color _mapScheduleColor(String colorStr, int index) {
-  const colors = [
-    AppColors.yellow200,
-    AppColors.secondary,
-    AppColors.green200,
-    AppColors.pink100,
-  ];
-  return colors[index % colors.length];
+  // 서버 appColor 토큰(또는 hex)을 우선 사용
+  // 예: blue300, yellow200, #FEEC88, blue_300
+  final resolvedColor = EventColorTokens.fromToken(colorStr);
+  return resolvedColor;
+}
+
+bool _isAllDaySchedule(ScheduleDto dto) {
+  return (dto.startTime == null || dto.startTime!.isEmpty) &&
+      (dto.endTime == null || dto.endTime!.isEmpty);
+}
+
+String _buildScheduleTimeLeftText({
+  required String? endTime,
+  required String? startTime,
+}) {
+  if (startTime == null ||
+      startTime.isEmpty ||
+      endTime == null ||
+      endTime.isEmpty) {
+    return '하루종일';
+  }
+
+  final startParts = startTime.split(':');
+  final endParts = endTime.split(':');
+  if (startParts.length < 2 || endParts.length < 2) return '하루종일';
+
+  final startHour = int.tryParse(startParts[0]);
+  final startMinute = int.tryParse(startParts[1]);
+  final endHour = int.tryParse(endParts[0]);
+  final endMinute = int.tryParse(endParts[1]);
+  if (startHour == null ||
+      startMinute == null ||
+      endHour == null ||
+      endMinute == null) {
+    return '하루종일';
+  }
+
+  final now = DateTime.now();
+  var startDateTime = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    startHour,
+    startMinute,
+  );
+  var endDateTime = DateTime(now.year, now.month, now.day, endHour, endMinute);
+
+  // 자정을 넘기는 일정(end < start)은 현재 시각 기준으로
+  // [어제 시작 ~ 오늘 종료] 또는 [오늘 시작 ~ 내일 종료] 중 맞는 구간을 선택
+  if (endDateTime.isBefore(startDateTime) ||
+      endDateTime.isAtSameMomentAs(startDateTime)) {
+    final overnightEndToday = endDateTime;
+    final overnightStartYesterday = startDateTime.subtract(
+      const Duration(days: 1),
+    );
+
+    if (now.isBefore(overnightEndToday)) {
+      startDateTime = overnightStartYesterday;
+      endDateTime = overnightEndToday;
+    } else {
+      endDateTime = overnightEndToday.add(const Duration(days: 1));
+    }
+  }
+
+  if (now.isAfter(endDateTime) || now.isAtSameMomentAs(endDateTime)) {
+    return '마감됨';
+  }
+
+  if ((now.isAfter(startDateTime) || now.isAtSameMomentAs(startDateTime)) &&
+      now.isBefore(endDateTime)) {
+    return '진행중';
+  }
+
+  final diff = startDateTime.difference(now);
+  if (diff.inMinutes <= 0) return '진행중';
+
+  if (diff.inHours >= 1) {
+    return '${diff.inHours}시간 전';
+  }
+  return '${diff.inMinutes}분 전';
 }
 
 /// DTO → Domain 변환: ScheduleDto → Schedule
 Schedule _mapSchedule(ScheduleDto dto, int index) {
   final startFormatted = _formatTime(dto.startTime);
   final endFormatted = _formatTime(dto.endTime);
-  final timeRange = startFormatted.isNotEmpty && endFormatted.isNotEmpty
-      ? '$startFormatted - $endFormatted'
-      : '하루종일';
+  final isAllDay = _isAllDaySchedule(dto);
+  final timeRange = isAllDay ? '하루종일' : '$startFormatted - $endFormatted';
 
   return Schedule(
     title: dto.title,
     timeRangeText: timeRange,
-    scheduleTime: '', // TODO: 서버에서 남은시간 계산 또는 클라에서 계산
+    scheduleTime: isAllDay
+        ? '하루종일'
+        : _buildScheduleTimeLeftText(
+            endTime: dto.endTime,
+            startTime: dto.startTime,
+          ),
     accentColor: _mapScheduleColor(dto.appColor, index),
   );
 }
@@ -105,6 +184,7 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
     memo: dto.memo,
     countText: countText,
     colorIndex: ci,
+    iconIndex: dto.iconIdx,
     isDefault: dto.isDefault,
     accentColor: AppColors.folderColors[ci],
   );
@@ -125,10 +205,16 @@ class HomeController extends Notifier<HomeState> {
   Future<void> _loadHomeData() async {
     try {
       final repository = ref.read(homeRepositoryProvider);
+      final authService = ref.read(authServiceProvider);
       final now = DateTime.now();
       final today =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       final dto = await repository.fetchHomeData(todayDate: today);
+      final tokenNickname = await authService.getNicknameFromToken();
+      final resolvedUserName =
+          (tokenNickname != null && tokenNickname.trim().isNotEmpty)
+          ? tokenNickname.trim()
+          : '사용자';
 
       // DTO → Domain 변환
       final schedules = dto.schedules
@@ -142,7 +228,7 @@ class HomeController extends Notifier<HomeState> {
       }).toList();
 
       state = state.copyWith(
-        userName: '사용자',
+        userName: resolvedUserName,
         todayScheduleCount: schedules.length,
         schedules: schedules,
         folders: folders,
@@ -183,6 +269,7 @@ class HomeController extends Notifier<HomeState> {
     required String name,
     required String memo,
     required int colorIndex,
+    required int iconIndex,
   }) async {
     try {
       final repository = ref.read(homeRepositoryProvider);
@@ -193,6 +280,7 @@ class HomeController extends Notifier<HomeState> {
         name: name,
         memo: memo,
         color: colorToken,
+        iconIdx: iconIndex,
       );
 
       await refresh();
@@ -208,12 +296,18 @@ class HomeController extends Notifier<HomeState> {
     required String name,
     required String memo,
     required int colorIndex,
+    required int iconIndex,
   }) async {
     try {
       final repository = ref.read(homeRepositoryProvider);
       final colorToken = AppColors.folderColorTokens[colorIndex];
 
-      await repository.createFolder(name: name, memo: memo, color: colorToken);
+      await repository.createFolder(
+        name: name,
+        memo: memo,
+        color: colorToken,
+        iconIdx: iconIndex,
+      );
 
       await refresh();
       return true;

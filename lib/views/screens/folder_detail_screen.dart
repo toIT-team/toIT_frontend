@@ -121,6 +121,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
     final currentMemo = currentFolder?.memo ?? '';
     final currentColorIndex = currentFolder?.colorIndex ?? 5;
+    final currentIconIndex = currentFolder?.iconIndex ?? 0;
     final currentTitle = currentFolder?.title ?? _folderName;
 
     switch (option) {
@@ -133,6 +134,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           initialName: currentTitle,
           initialMemo: currentMemo,
           initialColorIndex: currentColorIndex,
+          initialIconIndex: currentIconIndex,
           isEditMode: true,
         );
         if (editResult == null || !mounted) return;
@@ -143,6 +145,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               name: editResult['name'] as String,
               memo: editResult['memo'] as String,
               colorIndex: editResult['colorIndex'] as int,
+              iconIndex: editResult['iconIndex'] as int,
             );
         if (!mounted) return;
         if (!success) {
