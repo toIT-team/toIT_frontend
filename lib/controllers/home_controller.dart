@@ -192,6 +192,8 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
 
 /// 홈 화면 컨트롤러 (Notifier)
 class HomeController extends Notifier<HomeState> {
+  static const int maxFolderCount = 20;
+
   @override
   HomeState build() {
     // 사용자 세션(로그인/로그아웃/복구) 변경 시 홈 상태 캐시를 재생성
@@ -298,6 +300,11 @@ class HomeController extends Notifier<HomeState> {
     required int colorIndex,
     required int iconIndex,
   }) async {
+    if (state.folders.length >= maxFolderCount) {
+      state = state.copyWith(errorMessage: '보관함은 최대 20개까지 생성할 수 있습니다.');
+      return false;
+    }
+
     try {
       final repository = ref.read(homeRepositoryProvider);
       final colorToken = AppColors.folderColorTokens[colorIndex];

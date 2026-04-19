@@ -22,6 +22,12 @@ class FolderSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final totalFolderCount = ref.watch(
+      homeProvider.select((state) => state.folders.length),
+    );
+    final isFolderLimitReached =
+        totalFolderCount >= HomeController.maxFolderCount;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -45,7 +51,7 @@ class FolderSection extends ConsumerWidget {
             Row(
               children: [
                 Text(
-                  '${folders.length}개의 보관함',
+                  '$totalFolderCount개의 보관함',
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 16,
@@ -70,6 +76,17 @@ class FolderSection extends ConsumerWidget {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () async {
+                    if (isFolderLimitReached) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('보관함은 최대 20개까지 생성할 수 있습니다.'),
+                          ),
+                        );
+                      }
+                      return;
+                    }
+
                     final result = await showAddFolderBottomSheet(context);
                     if (result != null) {
                       final success = await ref
@@ -81,9 +98,12 @@ class FolderSection extends ConsumerWidget {
                             iconIndex: result['iconIndex'] as int,
                           );
                       if (!success && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('보관함 생성에 실패했습니다.')),
-                        );
+                        final errorMessage =
+                            ref.read(homeProvider).errorMessage ??
+                            '보관함 생성에 실패했습니다.';
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(errorMessage)));
                       }
                     }
                   },
@@ -91,6 +111,7 @@ class FolderSection extends ConsumerWidget {
                     AppAssets.addFolderIcon,
                     width: 24,
                     height: 24,
+                    color: isFolderLimitReached ? AppColors.gray200 : null,
                   ),
                 ),
               ],
