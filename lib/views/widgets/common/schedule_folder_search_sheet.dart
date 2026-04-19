@@ -11,6 +11,7 @@ import '../../../models/dto/search_response_dto.dart';
 import '../../../models/home/folder_item.dart';
 import '../../../services/search_api_client.dart';
 import '../home/folder_tile.dart';
+import '../search/search_field_widget.dart';
 
 /// 일정 폼에서 보관함을 고를 때 쓰는 검색 바텀시트.
 ///
@@ -188,7 +189,11 @@ class _ScheduleFolderSearchSheetState
                   AppSpacing.lg,
                   AppSpacing.sm,
                 ),
-                child: _buildSearchBar(),
+                child: SearchFieldWidget(
+                  controller: _searchController,
+                  onChanged: _onQueryChanged,
+                  autofocus: true,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -219,63 +224,6 @@ class _ScheduleFolderSearchSheetState
           decoration: BoxDecoration(
             color: AppColors.borderLight,
             borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    const hintStyle = TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.w500,
-      color: AppColors.gray600,
-      letterSpacing: -0.45,
-      height: 1.2,
-    );
-    const fieldStyle = TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.w500,
-      color: AppColors.gray900,
-      letterSpacing: -0.45,
-      height: 1.2,
-    );
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.neutral300,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: SizedBox(
-          height: 48,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.search,
-                color: AppColors.gray900,
-                size: 22,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onQueryChanged,
-                  autofocus: true,
-                  textAlignVertical: TextAlignVertical.center,
-                  style: fieldStyle,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    hintText: '검색',
-                    hintStyle: hintStyle,
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ),

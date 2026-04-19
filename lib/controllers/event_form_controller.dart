@@ -65,6 +65,29 @@ class EventFormState with _$EventFormState {
   /// 유효성 검사
   bool get isValid => title.isNotEmpty && startDate != null && endDate != null;
 
+  /// 시작/종료 일시 유효성 검사
+  ///
+  /// - 시작 날짜는 종료 날짜보다 늦을 수 없다.
+  /// - 시간 설정이 켜져 있고 같은 날짜라면 시작 시간은 종료 시간보다 빨라야 한다.
+  bool get isDateTimeRangeValid {
+    final start = startDate;
+    final end = endDate;
+    if (start == null || end == null) return false;
+
+    final startDay = DateTime(start.year, start.month, start.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+
+    if (startDay.isAfter(endDay)) return false;
+    if (!timeSetting) return true;
+    if (!_isSameDay(startDay, endDay)) return true;
+
+    final startMinutes = _toMinutes(startTime);
+    final endMinutes = _toMinutes(endTime);
+    if (startMinutes == null || endMinutes == null) return true;
+
+    return startMinutes < endMinutes;
+  }
+
   /// 알림 텍스트 변환
   String? get alarmText {
     if (alarmMinutes == null) return null;
@@ -72,6 +95,20 @@ class EventFormState with _$EventFormState {
     if (alarmMinutes! < 60) return '$alarmMinutes분 전';
     if (alarmMinutes! < 1440) return '${alarmMinutes! ~/ 60}시간 전';
     return '${alarmMinutes! ~/ 1440}일 전';
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  int? _toMinutes(String? hhMm) {
+    if (hhMm == null || hhMm.isEmpty) return null;
+    final parts = hhMm.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return hour * 60 + minute;
   }
 }
 

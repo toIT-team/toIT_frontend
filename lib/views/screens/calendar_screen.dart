@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/app_colors.dart';
 import 'search_screen.dart';
 import 'my_screen.dart';
 import '../widgets/calendar/calendar_widget.dart';
@@ -13,7 +14,7 @@ class CalendarScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.surface,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(56),
         child: HomeAppBar(

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../core/deep_link/toit_deep_link.dart';
@@ -320,6 +321,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     final currentIndex = ref.watch(currentTabIndexProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.surface,
       body: IndexedStack(
         index: currentIndex,
         children: const [HomeScreen(), CalendarScreen(), _ChatPlaceholder()],

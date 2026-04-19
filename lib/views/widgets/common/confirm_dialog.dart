@@ -13,71 +13,87 @@ Future<bool?> showConfirmDialog({
 }) async {
   return showDialog<bool>(
     context: context,
-    barrierColor: Colors.black.withValues(alpha: 0.4),
+    barrierColor: Colors.black.withValues(alpha: 0.28),
     builder: (dialogContext) {
-      return Align(
-        alignment: Alignment.bottomCenter,
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(24, 0, 24, 48),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  message,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
+      final media = MediaQuery.of(dialogContext);
+      return MediaQuery(
+        data: media.copyWith(textScaler: const TextScaler.linear(1.0)),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SafeArea(
+            minimum: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFEAEAEA), width: 1),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF222222),
+                      decoration: TextDecoration.none,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () =>
-                            Navigator.of(dialogContext).pop(false),
-                        child: Text(
-                          cancelLabel,
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontSize: 16,
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(false),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 28),
+                          ),
+                          child: Text(
+                            cancelLabel,
+                            style: const TextStyle(
+                              color: Color(0xFF379BFB),
+                              fontSize: 16,
+                              height: 1.1,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () =>
-                            Navigator.of(dialogContext).pop(true),
-                        child: Text(
-                          confirmLabel,
-                          style: TextStyle(
-                            color: confirmColor ?? Colors.red,
-                            fontSize: 16,
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () =>
+                              Navigator.of(dialogContext).pop(true),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 28),
+                          ),
+                          child: Text(
+                            confirmLabel,
+                            style: TextStyle(
+                              color: confirmColor ?? const Color(0xFFFB373E),
+                              fontSize: 16,
+                              height: 1.1,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
+      ),
       );
     },
   );

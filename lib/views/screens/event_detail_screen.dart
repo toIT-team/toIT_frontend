@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
+import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
 import '../../models/schedule/schedule_response.dart';
@@ -131,6 +132,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       return;
     }
 
+    if (!formState.isDateTimeRangeValid) {
+      await _showInvalidDateRangeDialog();
+      return;
+    }
+
     final schedulesId = int.tryParse(formState.id ?? '');
     if (schedulesId == null) {
       controller.setError('일정 ID를 찾을 수 없습니다.');
@@ -239,10 +245,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         memoController: _memoController,
         formState: formState,
         onTitleChanged: _handleTitleChanged,
-        onStartDateTap: () => _showDatePicker(isStart: true),
-        onEndDateTap: () => _showDatePicker(isStart: false),
-        onStartTimeTap: () => _showTimePicker(isStart: true),
-        onEndTimeTap: () => _showTimePicker(isStart: false),
+        onStartDateChanged: (value) {
+          ref.read(eventFormProvider.notifier).updateStartDate(value);
+        },
+        onEndDateChanged: (value) {
+          ref.read(eventFormProvider.notifier).updateEndDate(value);
+        },
+        onStartTimeChanged: (value) {
+          ref.read(eventFormProvider.notifier).updateStartTime(value);
+        },
+        onEndTimeChanged: (value) {
+          ref.read(eventFormProvider.notifier).updateEndTime(value);
+        },
         onTimeSettingChanged: _handleTimeSettingChanged,
         onFolderTap: _handleFolderTap,
         onAlarmTap: _handleAlarmTap,
@@ -325,7 +339,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     return [
       EventSectionItem(
-        icon: Icons.folder_outlined,
+        iconSvgAsset: EventAssets.sectionFolder,
         iconColor: SettingLayout1Tokens.sectionIconColor,
         child: EventFolderSection(
           folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
@@ -334,7 +348,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ),
       ),
       EventSectionItem(
-        icon: Icons.access_time_outlined,
+        iconSvgAsset: EventAssets.sectionTime,
         iconColor: SettingLayout1Tokens.sectionIconColor,
         child: EventTimeSection(
           startDate: DateTime.parse(detail.startDate),
@@ -345,7 +359,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ),
       ),
       EventSectionItem(
-        icon: Icons.notifications_outlined,
+        iconSvgAsset: EventAssets.sectionNotification,
         iconColor: SettingLayout1Tokens.sectionIconColor,
         child: EventAlarmSection(
           alarmText: alarmText,
@@ -354,7 +368,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         ),
       ),
       EventSectionItem(
-        icon: Icons.description_outlined,
+        iconSvgAsset: EventAssets.sectionNote,
         iconColor: SettingLayout1Tokens.sectionIconColor,
         child: EventMemoSection(
           memo: detail.memo.isEmpty ? null : detail.memo,
@@ -389,24 +403,29 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              BottomBarButton(
-                icon: Icons.ios_share_outlined,
-                label: '공유',
-                onTap: () {
-                  // TODO: 공유 시트 열기
-                },
+              Expanded(
+                child: BottomBarButton(
+                  iconAsset: EventAssets.bottomBarShare,
+                  label: '공유',
+                  onTap: () {
+                    // TODO: 공유 시트 열기
+                  },
+                ),
               ),
-              BottomBarButton(
-                icon: Icons.edit_outlined,
-                label: '수정',
-                onTap: _enterEditMode,
+              Expanded(
+                child: BottomBarButton(
+                  iconAsset: EventAssets.bottomBarUpdate,
+                  label: '수정',
+                  onTap: _enterEditMode,
+                ),
               ),
-              BottomBarButton(
-                icon: Icons.delete_outline,
-                label: '삭제',
-                onTap: _showDeleteConfirmDialog,
+              Expanded(
+                child: BottomBarButton(
+                  iconAsset: EventAssets.bottomBarDelete,
+                  label: '삭제',
+                  onTap: _showDeleteConfirmDialog,
+                ),
               ),
             ],
           ),
@@ -427,66 +446,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       controller.updateEndTime('10:00');
     }
     controller.toggleTimeSetting(value);
-  }
-
-  Future<void> _showDatePicker({required bool isStart}) async {
-    final formState = ref.read(eventFormProvider);
-    final initialDate =
-        (isStart ? formState.startDate : formState.endDate) ?? DateTime.now();
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-
-    if (picked != null) {
-      final controller = ref.read(eventFormProvider.notifier);
-      if (isStart) {
-        controller.updateStartDate(picked);
-      } else {
-        controller.updateEndDate(picked);
-      }
-    }
-  }
-
-  Future<void> _showTimePicker({required bool isStart}) async {
-    final formState = ref.read(eventFormProvider);
-    final timeStr = isStart ? formState.startTime : formState.endTime;
-    var initialTime = const TimeOfDay(hour: 9, minute: 0);
-
-    if (timeStr != null) {
-      final parts = timeStr.split(':');
-      if (parts.length == 2) {
-        initialTime = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 9,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
-      }
-    }
-
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
-    );
-
-    if (picked != null) {
-      final controller = ref.read(eventFormProvider.notifier);
-      final timeString =
-          '${picked.hour.toString().padLeft(2, '0')}:'
-          '${picked.minute.toString().padLeft(2, '0')}';
-
-      if (!formState.timeSetting) {
-        controller.toggleTimeSetting(true);
-      }
-
-      if (isStart) {
-        controller.updateStartTime(timeString);
-      } else {
-        controller.updateEndTime(timeString);
-      }
-    }
   }
 
   Future<void> _handleFolderTap() async {
@@ -518,6 +477,24 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     ref.read(eventFormProvider.notifier).updateMemo(
           value.isEmpty ? null : value,
         );
+  }
+
+  Future<void> _showInvalidDateRangeDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('알림'),
+          content: const Text('시작 날짜는 종료 날짜 이전이어야 합니다.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('확인'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showAlarmPicker() {
@@ -634,7 +611,7 @@ class _EventDetailLayout extends StatelessWidget {
                 children: [
                   for (var i = 0; i < sections.length; i++) ...[
                     EventSection(
-                      icon: sections[i].icon,
+                      iconSvgAsset: sections[i].iconSvgAsset,
                       iconColor: sections[i].iconColor,
                       child: sections[i].child,
                     ),
@@ -658,10 +635,10 @@ class _EventEditLayout extends StatelessWidget {
     required this.memoController,
     required this.formState,
     required this.onTitleChanged,
-    required this.onStartDateTap,
-    required this.onEndDateTap,
-    required this.onStartTimeTap,
-    required this.onEndTimeTap,
+    required this.onStartDateChanged,
+    required this.onEndDateChanged,
+    required this.onStartTimeChanged,
+    required this.onEndTimeChanged,
     required this.onTimeSettingChanged,
     required this.onFolderTap,
     required this.onAlarmTap,
@@ -674,10 +651,10 @@ class _EventEditLayout extends StatelessWidget {
   final TextEditingController memoController;
   final EventFormState formState;
   final ValueChanged<String> onTitleChanged;
-  final VoidCallback onStartDateTap;
-  final VoidCallback onEndDateTap;
-  final VoidCallback onStartTimeTap;
-  final VoidCallback onEndTimeTap;
+  final ValueChanged<DateTime> onStartDateChanged;
+  final ValueChanged<DateTime> onEndDateChanged;
+  final ValueChanged<String> onStartTimeChanged;
+  final ValueChanged<String> onEndTimeChanged;
   final ValueChanged<bool> onTimeSettingChanged;
   final VoidCallback onFolderTap;
   final VoidCallback onAlarmTap;
@@ -717,7 +694,7 @@ class _EventEditLayout extends StatelessWidget {
             const AppDivider(),
             // 보관함 섹션
             EventSection(
-              icon: Icons.folder_outlined,
+              iconSvgAsset: EventAssets.sectionFolder,
               iconColor: SettingLayout1Tokens.sectionIconColor,
               child: EventFolderSection(
                 folderName: formState.folderName,
@@ -728,7 +705,7 @@ class _EventEditLayout extends StatelessWidget {
             const AppDivider(),
             // 시간 설정 섹션
             EventSection(
-              icon: Icons.access_time_outlined,
+              iconSvgAsset: EventAssets.sectionTime,
               iconColor: SettingLayout1Tokens.sectionIconColor,
               child: EventTimeSection(
                 startDate:
@@ -746,16 +723,16 @@ class _EventEditLayout extends StatelessWidget {
                 isEditable: true,
                 timeSetting: formState.timeSetting,
                 onTimeSettingChanged: onTimeSettingChanged,
-                onStartDateTap: onStartDateTap,
-                onStartTimeTap: onStartTimeTap,
-                onEndDateTap: onEndDateTap,
-                onEndTimeTap: onEndTimeTap,
+                onStartDateChanged: onStartDateChanged,
+                onStartTimeChanged: onStartTimeChanged,
+                onEndDateChanged: onEndDateChanged,
+                onEndTimeChanged: onEndTimeChanged,
               ),
             ),
             const AppDivider(),
             // 알림 섹션
             EventSection(
-              icon: Icons.notifications_outlined,
+              iconSvgAsset: EventAssets.sectionNotification,
               iconColor: SettingLayout1Tokens.sectionIconColor,
               child: EventAlarmSection(
                 alarmText: formState.alarmText,
@@ -774,7 +751,7 @@ class _EventEditLayout extends StatelessWidget {
             const AppDivider(),
             // 메모 섹션 (터치 시 포커스되어 바로 입력 가능)
             EventSection(
-              icon: Icons.description_outlined,
+              iconSvgAsset: EventAssets.sectionNote,
               iconColor: SettingLayout1Tokens.sectionIconColor,
               child: EventMemoSection(
                 memo: formState.memo,
