@@ -35,4 +35,6 @@ class AppAssets {
   static const String imageIcon = 'assets/icons/ImageIcon.svg';
   static const String scheduleIcon = 'assets/icons/ScheduleIcon.svg';
   static const String settingIcon = 'assets/icons/SettingIcon.svg';
+  static const String navHomeIcon = 'assets/icons/NavHomeIcon.svg';
+  static const String navCalendarIcon = 'assets/icons/NavCalendarIcon.svg';
 }

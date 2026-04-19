@@ -1,5 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import 'add_popup_menu.dart';
 
@@ -29,52 +34,29 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Expanded(
-            child: Container(
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(99),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadowNavBlue.withOpacity(0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.08),
-                    blurRadius: 15,
-                    spreadRadius: -5,
-                    offset: const Offset(-5, -5),
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.08),
-                    blurRadius: 15,
-                    spreadRadius: 5,
-                    offset: const Offset(5, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _NavItem(
-                    icon: _HomeIcon(isSelected: widget.currentIndex == 0),
+          _GlassNavPill(
+            width: 259,
+            height: 52,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _NavItem(
+                  icon: _NavSvgIcon(
+                    assetPath: AppAssets.navHomeIcon,
                     isSelected: widget.currentIndex == 0,
-                    onTap: () => widget.onTap(0),
                   ),
-                  _NavItem(
-                    icon: _CalendarIcon(isSelected: widget.currentIndex == 1),
+                  isSelected: widget.currentIndex == 0,
+                  onTap: () => widget.onTap(0),
+                ),
+                _NavItem(
+                  icon: _NavSvgIcon(
+                    assetPath: AppAssets.navCalendarIcon,
                     isSelected: widget.currentIndex == 1,
-                    onTap: () => widget.onTap(1),
                   ),
-                  _NavItem(
-                    icon: _ChatIcon(isSelected: widget.currentIndex == 2),
-                    isSelected: widget.currentIndex == 2,
-                    onTap: () => widget.onTap(2),
-                  ),
-                ],
-              ),
+                  isSelected: widget.currentIndex == 1,
+                  onTap: () => widget.onTap(1),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 24),
@@ -96,8 +78,146 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   }
 }
 
+/// 글래스모피즘 알약 네비 컨테이너.
+///
+/// 사용자 설명을 기준으로 다음 6개 레이어를 쌓습니다.
+/// 1. 외곽 soft drop-shadow                   → 떠 있는 느낌
+/// 2. [BackdropFilter] sigma 10                → 뒤 콘텐츠 색이 은은히 비침
+/// 3. 수직 그라디언트 (상단 투명 → 하단 불투명) → 상단 어두움 / 하단 밝음
+/// 4. 우하단 코너에서 올라오는 radial shine    → "유리가 빛나는" 광택
+/// 5. 상단 edge 어두운 radial                  → 상단 살짝 그림자
+/// 6. 1px 반투명 흰 테두리                     → 유리 가장자리
+class _GlassNavPill extends StatelessWidget {
+  final double width;
+  final double height;
+  final Widget child;
+
+  const _GlassNavPill({
+    required this.width,
+    required this.height,
+    required this.child,
+  });
+
+  static const double _radius = 99;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(_radius);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: radius,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(0.45),
+                          Colors.white.withOpacity(0.80),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: _GlassLightingPainter(borderRadius: _radius),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: radius,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.65),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(child: child),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 비대칭 라이팅 페인터.
+///
+/// 가로로 긴 알약(259×52) 도형이라 RadialGradient는 한쪽에 뭉치는 문제가 있어
+/// 모든 라이팅을 LinearGradient로 처리해 가로 방향으로 고르게 분포시킵니다.
+/// - 상단 edge: 옅은 회색 음영 (위→아래 방향, 균일하게 깔림)
+/// - 우측 전반: 흰색 광택 (좌→우 방향, 우측으로 갈수록 진해짐)
+class _GlassLightingPainter extends CustomPainter {
+  final double borderRadius;
+
+  const _GlassLightingPainter({required this.borderRadius});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(borderRadius));
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    final topShadow = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF7E8698).withOpacity(0.04),
+          const Color(0x007E8698),
+        ],
+        stops: const [0.0, 0.55],
+      ).createShader(rect);
+    canvas.drawRect(rect, topShadow);
+
+    final rightShine = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [Colors.white.withOpacity(0.0), Colors.white.withOpacity(0.30)],
+        stops: const [0.55, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, rightShine);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlassLightingPainter oldDelegate) =>
+      oldDelegate.borderRadius != borderRadius;
+}
+
 /// 네비게이션 아이템
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   final Widget icon;
   final bool isSelected;
   final VoidCallback onTap;
@@ -109,11 +229,65 @@ class _NavItem extends StatelessWidget {
   });
 
   @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> {
+  bool isPressed = false;
+
+  void setPressedState(bool nextPressed) {
+    if (isPressed == nextPressed) return;
+    setState(() {
+      isPressed = nextPressed;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pulseColor = widget.isSelected ? AppColors.blue500 : Colors.white;
+
     return GestureDetector(
-      onTap: onTap,
+      onTapDown: (_) {
+        setPressedState(true);
+        HapticFeedback.lightImpact();
+      },
+      onTapUp: (_) => setPressedState(false),
+      onTapCancel: () => setPressedState(false),
+      onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
-      child: SizedBox(width: 60, height: 52, child: Center(child: icon)),
+      child: SizedBox(
+        width: 60,
+        height: 52,
+        child: Center(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                curve: Curves.easeOut,
+                width: isPressed ? 36 : 32,
+                height: isPressed ? 36 : 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: pulseColor.withOpacity(isPressed ? 0.20 : 0.0),
+                      blurRadius: isPressed ? 12 : 0,
+                      spreadRadius: isPressed ? 1 : 0,
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedScale(
+                duration: const Duration(milliseconds: 100),
+                curve: Curves.easeOut,
+                scale: isPressed ? 0.9 : 1.0,
+                child: widget.icon,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -136,7 +310,7 @@ class _AddButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(99),
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadowNavBlue.withOpacity(0.12),
+              color: Colors.black.withOpacity(0.10),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -150,11 +324,12 @@ class _AddButton extends StatelessWidget {
   }
 }
 
-/// 홈 아이콘
-class _HomeIcon extends StatelessWidget {
+/// 네비 SVG 아이콘
+class _NavSvgIcon extends StatelessWidget {
+  final String assetPath;
   final bool isSelected;
 
-  const _HomeIcon({required this.isSelected});
+  const _NavSvgIcon({required this.assetPath, required this.isSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -162,216 +337,12 @@ class _HomeIcon extends StatelessWidget {
     return SizedBox(
       width: 28,
       height: 28,
-      child: CustomPaint(painter: _HomeIconPainter(color: color)),
-    );
-  }
-}
-
-class _HomeIconPainter extends CustomPainter {
-  final Color color;
-
-  _HomeIconPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final path = Path();
-
-    // 지붕
-    path.moveTo(size.width * 0.125, size.height * 0.417);
-    path.lineTo(size.width * 0.5, size.height * 0.083);
-    path.lineTo(size.width * 0.875, size.height * 0.417);
-
-    // 집 본체
-    path.moveTo(size.width * 0.208, size.height * 0.333);
-    path.lineTo(size.width * 0.208, size.height * 0.875);
-    path.lineTo(size.width * 0.792, size.height * 0.875);
-    path.lineTo(size.width * 0.792, size.height * 0.333);
-
-    // 문
-    path.moveTo(size.width * 0.375, size.height * 0.875);
-    path.lineTo(size.width * 0.375, size.height * 0.583);
-    path.lineTo(size.width * 0.625, size.height * 0.583);
-    path.lineTo(size.width * 0.625, size.height * 0.875);
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _HomeIconPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
-/// 캘린더 아이콘
-class _CalendarIcon extends StatelessWidget {
-  final bool isSelected;
-
-  const _CalendarIcon({required this.isSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.blue500 : AppColors.gray600;
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: CustomPaint(painter: _CalendarIconPainter(color: color)),
-    );
-  }
-}
-
-class _CalendarIconPainter extends CustomPainter {
-  final Color color;
-
-  _CalendarIconPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    // 캘린더 본체
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        size.width * 0.125,
-        size.height * 0.167,
-        size.width * 0.75,
-        size.height * 0.75,
+      child: SvgPicture.asset(
+        assetPath,
+        width: 28,
+        height: 28,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       ),
-      const Radius.circular(4),
     );
-    canvas.drawRRect(rect, paint);
-
-    // 상단 고리들
-    canvas.drawLine(
-      Offset(size.width * 0.333, size.height * 0.083),
-      Offset(size.width * 0.333, size.height * 0.25),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.667, size.height * 0.083),
-      Offset(size.width * 0.667, size.height * 0.25),
-      paint,
-    );
-
-    // 가로선
-    canvas.drawLine(
-      Offset(size.width * 0.125, size.height * 0.417),
-      Offset(size.width * 0.875, size.height * 0.417),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _CalendarIconPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
-/// 채팅 아이콘
-class _ChatIcon extends StatelessWidget {
-  final bool isSelected;
-
-  const _ChatIcon({required this.isSelected});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.blue500 : AppColors.gray600;
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: CustomPaint(painter: _ChatIconPainter(color: color)),
-    );
-  }
-}
-
-class _ChatIconPainter extends CustomPainter {
-  final Color color;
-
-  _ChatIconPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    // 말풍선 본체
-    final path = Path();
-    path.moveTo(size.width * 0.125, size.height * 0.167);
-    path.lineTo(size.width * 0.875, size.height * 0.167);
-    path.quadraticBezierTo(
-      size.width * 0.917,
-      size.height * 0.167,
-      size.width * 0.917,
-      size.height * 0.25,
-    );
-    path.lineTo(size.width * 0.917, size.height * 0.583);
-    path.quadraticBezierTo(
-      size.width * 0.917,
-      size.height * 0.667,
-      size.width * 0.833,
-      size.height * 0.667,
-    );
-    path.lineTo(size.width * 0.333, size.height * 0.667);
-    path.lineTo(size.width * 0.167, size.height * 0.833);
-    path.lineTo(size.width * 0.167, size.height * 0.667);
-    path.lineTo(size.width * 0.167, size.height * 0.667);
-    path.quadraticBezierTo(
-      size.width * 0.083,
-      size.height * 0.667,
-      size.width * 0.083,
-      size.height * 0.583,
-    );
-    path.lineTo(size.width * 0.083, size.height * 0.25);
-    path.quadraticBezierTo(
-      size.width * 0.083,
-      size.height * 0.167,
-      size.width * 0.167,
-      size.height * 0.167,
-    );
-    path.close();
-
-    canvas.drawPath(path, paint);
-
-    // 점 3개
-    final dotRadius = size.width * 0.05;
-    canvas.drawCircle(
-      Offset(size.width * 0.333, size.height * 0.417),
-      dotRadius,
-      fillPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.5, size.height * 0.417),
-      dotRadius,
-      fillPaint,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.667, size.height * 0.417),
-      dotRadius,
-      fillPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _ChatIconPainter oldDelegate) {
-    return oldDelegate.color != color;
   }
 }

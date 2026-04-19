@@ -324,7 +324,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
       backgroundColor: AppColors.surface,
       body: IndexedStack(
         index: currentIndex,
-        children: const [HomeScreen(), CalendarScreen(), _ChatPlaceholder()],
+        children: const [HomeScreen(), CalendarScreen()],
       ),
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: currentIndex,
@@ -371,24 +371,6 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         },
       ),
       extendBody: true,
-    );
-  }
-}
-
-/// 채팅 화면 플레이스홀더
-class _ChatPlaceholder extends StatelessWidget {
-  const _ChatPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          '채팅 화면\n(준비 중)',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, color: Colors.grey),
-        ),
-      ),
     );
   }
 }
