@@ -65,6 +65,9 @@ class ApiConstants {
   /// 액세스 토큰 재발급 (POST, body: refreshToken)
   static const String reissueEndpoint = '/api/v1/auth/reissue';
 
+  /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
+  static const String fcmEndpoint = '/fcm';
+
   /// 앱 복귀 딥링크 스킴
   static const String authCallbackScheme = 'toit';
 

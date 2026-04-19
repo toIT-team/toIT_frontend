@@ -91,6 +91,7 @@ flutter:
     - .env
     - assets/icons/
     - assets/icons/FolderIcon/
+    - assets/icons/event/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
