@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_colors.dart';
 import '../constants/event_color_tokens.dart';
 
 /// 앱 테마 설정
@@ -18,9 +19,19 @@ class AppTheme {
       EventColorTokens.pickerEntries;
 
   static ThemeData get lightTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.deepPurple,
+    ).copyWith(
+      surface: AppColors.surface,
+      surfaceTint: Colors.transparent,
+    );
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      scaffoldBackgroundColor: AppColors.surface,
+      colorScheme: colorScheme,
+      dialogTheme: const DialogThemeData(
+        surfaceTintColor: Colors.transparent,
+      ),
     );
   }
 

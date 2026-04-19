@@ -45,8 +45,7 @@ class SearchResultSection extends StatelessWidget {
         ...items.expand(
           (item) => [
             SearchResultTile(
-              title: item.title,
-              subtitle: item.subtitle,
+              item: item,
               onTap: () => onItemTap?.call(item),
             ),
             if (item != items.last)

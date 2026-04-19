@@ -8,10 +8,14 @@ class CalendarHeader extends StatelessWidget {
     super.key,
     required this.focusedMonth,
     this.onMonthTap,
+    this.monthSelectorKey,
   });
 
   final DateTime focusedMonth;
   final VoidCallback? onMonthTap;
+
+  /// 년월 피커를 이 위젯 바로 아래에 붙이기 위한 앵커
+  final GlobalKey? monthSelectorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +25,7 @@ class CalendarHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GestureDetector(
+            key: monthSelectorKey,
             onTap: onMonthTap,
             child: Row(
               mainAxisSize: MainAxisSize.min,

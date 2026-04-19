@@ -8,7 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/folder_tab_index.dart';
+import '../../core/deep_link/toit_deep_link.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
@@ -20,10 +23,15 @@ import 'save_link_screen.dart';
 import 'save_note_screen.dart';
 import 'save_file_screen.dart';
 import 'save_image_screen.dart';
+import 'event_detail_screen.dart';
 import 'event_form_screen.dart';
+import 'customer_support_screen.dart';
 
 /// 현재 선택된 탭 인덱스 Provider
 final currentTabIndexProvider = StateProvider<int>((ref) => 0);
+
+/// FCM 등에서 설정 후 [NavigationShell]이 소비하는 대기 딥링크 URL
+final pendingDeepLinkUrlProvider = StateProvider<String?>((ref) => null);
 
 /// 네비게이션 쉘 (하단 네비바 + 화면 전환 관리)
 class NavigationShell extends ConsumerStatefulWidget {
@@ -34,9 +42,7 @@ class NavigationShell extends ConsumerStatefulWidget {
 }
 
 class _NavigationShellState extends ConsumerState<NavigationShell> {
-  static const _deepLinkChannel = MethodChannel(
-    'com.example.pojTodo/deeplink',
-  );
+  static const _deepLinkChannel = MethodChannel('com.example.pojTodo/deeplink');
 
   StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
   bool _isShareSheetVisible = false;
@@ -47,6 +53,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     super.initState();
     _deepLinkChannel.setMethodCallHandler(_handleDeepLink);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _consumePendingDeepLinkIfAny();
       _bindShareReceiver();
     });
   }
@@ -62,13 +69,40 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     if (call.method != 'onDeepLink') return;
     final urlString = call.arguments as String?;
     if (urlString == null) return;
+    await _openDeepLinkFromString(urlString);
+  }
 
+  /// FCM이 먼저 도착한 뒤 쉘이 붙는 경우 초기 1회 소비
+  void _consumePendingDeepLinkIfAny() {
+    final pending = ref.read(pendingDeepLinkUrlProvider);
+    if (pending == null) return;
+    ref.read(pendingDeepLinkUrlProvider.notifier).state = null;
+    unawaited(_openDeepLinkFromString(pending));
+  }
+
+  Future<void> _openDeepLinkFromString(String urlString) async {
     final uri = Uri.tryParse(urlString);
-    if (uri == null || uri.host != 'folder') return;
+    if (uri == null || uri.scheme != ApiConstants.authCallbackScheme) {
+      return;
+    }
 
-    final folderId = int.tryParse(
-      uri.queryParameters['id'] ?? '',
-    );
+    switch (uri.host) {
+      case ToitDeepLink.folderHost:
+        await _openFolderDeepLink(uri);
+        break;
+      case ToitDeepLink.scheduleHost:
+        await _openScheduleDeepLink(urlString);
+        break;
+      case ToitDeepLink.feedbackHost:
+        await _openFeedbackDeepLink(urlString);
+        break;
+      default:
+        break;
+    }
+  }
+
+  Future<void> _openFolderDeepLink(Uri uri) async {
+    final folderId = int.tryParse(uri.queryParameters['id'] ?? '');
     final folderName = uri.queryParameters['name'] ?? '보관함';
     final tabName = uri.queryParameters['tab'] ?? 'links';
 
@@ -85,6 +119,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
 
     await ref.read(homeProvider.notifier).refresh();
 
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => FolderDetailScreen(
@@ -92,6 +127,29 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
           folderName: folderName,
           initialTab: initialTab,
         ),
+      ),
+    );
+  }
+
+  Future<void> _openScheduleDeepLink(String urlString) async {
+    final schedulesId = ToitDeepLink.parseScheduleId(urlString);
+    if (schedulesId == null) return;
+    if (!mounted) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EventDetailScreen(schedulesId: schedulesId),
+      ),
+    );
+  }
+
+  Future<void> _openFeedbackDeepLink(String urlString) async {
+    final initialTabIndex = ToitDeepLink.parseFeedbackTabIndex(urlString) ?? 1;
+    if (!mounted) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SupportScreen(initialTabIndex: initialTabIndex),
       ),
     );
   }
@@ -250,9 +308,20 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(pendingDeepLinkUrlProvider, (previous, next) {
+      if (next == null) return;
+      final toOpen = next;
+      ref.read(pendingDeepLinkUrlProvider.notifier).state = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_openDeepLinkFromString(toOpen));
+      });
+    });
+
     final currentIndex = ref.watch(currentTabIndexProvider);
 
     return Scaffold(
+      backgroundColor: AppColors.surface,
       body: IndexedStack(
         index: currentIndex,
         children: const [HomeScreen(), CalendarScreen(), _ChatPlaceholder()],

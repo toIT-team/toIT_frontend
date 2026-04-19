@@ -1135,6 +1135,8 @@ mixin _$SearchLinkItemDto {
   String get linksThumbnail => throw _privateConstructorUsedError;
   String get textContent => throw _privateConstructorUsedError;
   String? get createdAt => throw _privateConstructorUsedError;
+  String get foldersName => throw _privateConstructorUsedError;
+  String get dayOfWeek => throw _privateConstructorUsedError;
 
   /// Serializes this SearchLinkItemDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1162,6 +1164,8 @@ abstract class $SearchLinkItemDtoCopyWith<$Res> {
     String linksThumbnail,
     String textContent,
     String? createdAt,
+    String foldersName,
+    String dayOfWeek,
   });
 }
 
@@ -1188,6 +1192,8 @@ class _$SearchLinkItemDtoCopyWithImpl<$Res, $Val extends SearchLinkItemDto>
     Object? linksThumbnail = null,
     Object? textContent = null,
     Object? createdAt = freezed,
+    Object? foldersName = null,
+    Object? dayOfWeek = null,
   }) {
     return _then(
       _value.copyWith(
@@ -1223,6 +1229,14 @@ class _$SearchLinkItemDtoCopyWithImpl<$Res, $Val extends SearchLinkItemDto>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as String?,
+            foldersName: null == foldersName
+                ? _value.foldersName
+                : foldersName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            dayOfWeek: null == dayOfWeek
+                ? _value.dayOfWeek
+                : dayOfWeek // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -1247,6 +1261,8 @@ abstract class _$$SearchLinkItemDtoImplCopyWith<$Res>
     String linksThumbnail,
     String textContent,
     String? createdAt,
+    String foldersName,
+    String dayOfWeek,
   });
 }
 
@@ -1272,6 +1288,8 @@ class __$$SearchLinkItemDtoImplCopyWithImpl<$Res>
     Object? linksThumbnail = null,
     Object? textContent = null,
     Object? createdAt = freezed,
+    Object? foldersName = null,
+    Object? dayOfWeek = null,
   }) {
     return _then(
       _$SearchLinkItemDtoImpl(
@@ -1307,6 +1325,14 @@ class __$$SearchLinkItemDtoImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as String?,
+        foldersName: null == foldersName
+            ? _value.foldersName
+            : foldersName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        dayOfWeek: null == dayOfWeek
+            ? _value.dayOfWeek
+            : dayOfWeek // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -1324,6 +1350,8 @@ class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
     this.linksThumbnail = '',
     this.textContent = '',
     this.createdAt,
+    this.foldersName = '',
+    this.dayOfWeek = '',
   });
 
   factory _$SearchLinkItemDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -1352,10 +1380,16 @@ class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
   final String textContent;
   @override
   final String? createdAt;
+  @override
+  @JsonKey()
+  final String foldersName;
+  @override
+  @JsonKey()
+  final String dayOfWeek;
 
   @override
   String toString() {
-    return 'SearchLinkItemDto(linksId: $linksId, foldersId: $foldersId, usersId: $usersId, linksName: $linksName, linksUrl: $linksUrl, linksThumbnail: $linksThumbnail, textContent: $textContent, createdAt: $createdAt)';
+    return 'SearchLinkItemDto(linksId: $linksId, foldersId: $foldersId, usersId: $usersId, linksName: $linksName, linksUrl: $linksUrl, linksThumbnail: $linksThumbnail, textContent: $textContent, createdAt: $createdAt, foldersName: $foldersName, dayOfWeek: $dayOfWeek)';
   }
 
   @override
@@ -1376,7 +1410,11 @@ class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
             (identical(other.textContent, textContent) ||
                 other.textContent == textContent) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.foldersName, foldersName) ||
+                other.foldersName == foldersName) &&
+            (identical(other.dayOfWeek, dayOfWeek) ||
+                other.dayOfWeek == dayOfWeek));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1391,6 +1429,8 @@ class _$SearchLinkItemDtoImpl implements _SearchLinkItemDto {
     linksThumbnail,
     textContent,
     createdAt,
+    foldersName,
+    dayOfWeek,
   );
 
   /// Create a copy of SearchLinkItemDto
@@ -1420,6 +1460,8 @@ abstract class _SearchLinkItemDto implements SearchLinkItemDto {
     final String linksThumbnail,
     final String textContent,
     final String? createdAt,
+    final String foldersName,
+    final String dayOfWeek,
   }) = _$SearchLinkItemDtoImpl;
 
   factory _SearchLinkItemDto.fromJson(Map<String, dynamic> json) =
@@ -1444,6 +1486,10 @@ abstract class _SearchLinkItemDto implements SearchLinkItemDto {
   String get textContent;
   @override
   String? get createdAt;
+  @override
+  String get foldersName;
+  @override
+  String get dayOfWeek;
 
   /// Create a copy of SearchLinkItemDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1467,6 +1513,8 @@ mixin _$SearchTextItemDto {
   int get foldersId => throw _privateConstructorUsedError;
   String get textContent => throw _privateConstructorUsedError;
   String? get createdAt => throw _privateConstructorUsedError;
+  String get foldersName => throw _privateConstructorUsedError;
+  String get dayOfWeek => throw _privateConstructorUsedError;
 
   /// Serializes this SearchTextItemDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1491,6 +1539,8 @@ abstract class $SearchTextItemDtoCopyWith<$Res> {
     @JsonKey(fromJson: _intFromJson) int foldersId,
     String textContent,
     String? createdAt,
+    String foldersName,
+    String dayOfWeek,
   });
 }
 
@@ -1514,6 +1564,8 @@ class _$SearchTextItemDtoCopyWithImpl<$Res, $Val extends SearchTextItemDto>
     Object? foldersId = null,
     Object? textContent = null,
     Object? createdAt = freezed,
+    Object? foldersName = null,
+    Object? dayOfWeek = null,
   }) {
     return _then(
       _value.copyWith(
@@ -1537,6 +1589,14 @@ class _$SearchTextItemDtoCopyWithImpl<$Res, $Val extends SearchTextItemDto>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as String?,
+            foldersName: null == foldersName
+                ? _value.foldersName
+                : foldersName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            dayOfWeek: null == dayOfWeek
+                ? _value.dayOfWeek
+                : dayOfWeek // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -1558,6 +1618,8 @@ abstract class _$$SearchTextItemDtoImplCopyWith<$Res>
     @JsonKey(fromJson: _intFromJson) int foldersId,
     String textContent,
     String? createdAt,
+    String foldersName,
+    String dayOfWeek,
   });
 }
 
@@ -1580,6 +1642,8 @@ class __$$SearchTextItemDtoImplCopyWithImpl<$Res>
     Object? foldersId = null,
     Object? textContent = null,
     Object? createdAt = freezed,
+    Object? foldersName = null,
+    Object? dayOfWeek = null,
   }) {
     return _then(
       _$SearchTextItemDtoImpl(
@@ -1603,6 +1667,14 @@ class __$$SearchTextItemDtoImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as String?,
+        foldersName: null == foldersName
+            ? _value.foldersName
+            : foldersName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        dayOfWeek: null == dayOfWeek
+            ? _value.dayOfWeek
+            : dayOfWeek // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -1617,6 +1689,8 @@ class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
     @JsonKey(fromJson: _intFromJson) this.foldersId = 0,
     this.textContent = '',
     this.createdAt,
+    this.foldersName = '',
+    this.dayOfWeek = '',
   });
 
   factory _$SearchTextItemDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -1636,10 +1710,16 @@ class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
   final String textContent;
   @override
   final String? createdAt;
+  @override
+  @JsonKey()
+  final String foldersName;
+  @override
+  @JsonKey()
+  final String dayOfWeek;
 
   @override
   String toString() {
-    return 'SearchTextItemDto(textsId: $textsId, usersId: $usersId, foldersId: $foldersId, textContent: $textContent, createdAt: $createdAt)';
+    return 'SearchTextItemDto(textsId: $textsId, usersId: $usersId, foldersId: $foldersId, textContent: $textContent, createdAt: $createdAt, foldersName: $foldersName, dayOfWeek: $dayOfWeek)';
   }
 
   @override
@@ -1654,7 +1734,11 @@ class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
             (identical(other.textContent, textContent) ||
                 other.textContent == textContent) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.foldersName, foldersName) ||
+                other.foldersName == foldersName) &&
+            (identical(other.dayOfWeek, dayOfWeek) ||
+                other.dayOfWeek == dayOfWeek));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1666,6 +1750,8 @@ class _$SearchTextItemDtoImpl implements _SearchTextItemDto {
     foldersId,
     textContent,
     createdAt,
+    foldersName,
+    dayOfWeek,
   );
 
   /// Create a copy of SearchTextItemDto
@@ -1692,6 +1778,8 @@ abstract class _SearchTextItemDto implements SearchTextItemDto {
     @JsonKey(fromJson: _intFromJson) final int foldersId,
     final String textContent,
     final String? createdAt,
+    final String foldersName,
+    final String dayOfWeek,
   }) = _$SearchTextItemDtoImpl;
 
   factory _SearchTextItemDto.fromJson(Map<String, dynamic> json) =
@@ -1710,6 +1798,10 @@ abstract class _SearchTextItemDto implements SearchTextItemDto {
   String get textContent;
   @override
   String? get createdAt;
+  @override
+  String get foldersName;
+  @override
+  String get dayOfWeek;
 
   /// Create a copy of SearchTextItemDto
   /// with the given fields replaced by the non-null parameter values.
@@ -1735,9 +1827,12 @@ mixin _$SearchFileItemDto {
   String get objectKey => throw _privateConstructorUsedError;
   String get presignedUrl => throw _privateConstructorUsedError;
   String get attachmentsExtension => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _doubleFromJson)
   double get attachmentsSize => throw _privateConstructorUsedError;
   String get fileName => throw _privateConstructorUsedError;
   String? get createdAt => throw _privateConstructorUsedError;
+  String get foldersName => throw _privateConstructorUsedError;
+  String get dayOfWeek => throw _privateConstructorUsedError;
 
   /// Serializes this SearchFileItemDto to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -1764,9 +1859,11 @@ abstract class $SearchFileItemDtoCopyWith<$Res> {
     String objectKey,
     String presignedUrl,
     String attachmentsExtension,
-    double attachmentsSize,
+    @JsonKey(fromJson: _doubleFromJson) double attachmentsSize,
     String fileName,
     String? createdAt,
+    String foldersName,
+    String dayOfWeek,
   });
 }
 
@@ -1795,6 +1892,8 @@ class _$SearchFileItemDtoCopyWithImpl<$Res, $Val extends SearchFileItemDto>
     Object? attachmentsSize = null,
     Object? fileName = null,
     Object? createdAt = freezed,
+    Object? foldersName = null,
+    Object? dayOfWeek = null,
   }) {
     return _then(
       _value.copyWith(
@@ -1838,6 +1937,14 @@ class _$SearchFileItemDtoCopyWithImpl<$Res, $Val extends SearchFileItemDto>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as String?,
+            foldersName: null == foldersName
+                ? _value.foldersName
+                : foldersName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            dayOfWeek: null == dayOfWeek
+                ? _value.dayOfWeek
+                : dayOfWeek // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -1861,9 +1968,11 @@ abstract class _$$SearchFileItemDtoImplCopyWith<$Res>
     String objectKey,
     String presignedUrl,
     String attachmentsExtension,
-    double attachmentsSize,
+    @JsonKey(fromJson: _doubleFromJson) double attachmentsSize,
     String fileName,
     String? createdAt,
+    String foldersName,
+    String dayOfWeek,
   });
 }
 
@@ -1891,6 +2000,8 @@ class __$$SearchFileItemDtoImplCopyWithImpl<$Res>
     Object? attachmentsSize = null,
     Object? fileName = null,
     Object? createdAt = freezed,
+    Object? foldersName = null,
+    Object? dayOfWeek = null,
   }) {
     return _then(
       _$SearchFileItemDtoImpl(
@@ -1934,6 +2045,14 @@ class __$$SearchFileItemDtoImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as String?,
+        foldersName: null == foldersName
+            ? _value.foldersName
+            : foldersName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        dayOfWeek: null == dayOfWeek
+            ? _value.dayOfWeek
+            : dayOfWeek // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -1950,9 +2069,11 @@ class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
     this.objectKey = '',
     this.presignedUrl = '',
     this.attachmentsExtension = '',
-    this.attachmentsSize = 0.0,
+    @JsonKey(fromJson: _doubleFromJson) this.attachmentsSize = 0.0,
     this.fileName = '',
     this.createdAt,
+    this.foldersName = '',
+    this.dayOfWeek = '',
   });
 
   factory _$SearchFileItemDtoImpl.fromJson(Map<String, dynamic> json) =>
@@ -1980,17 +2101,23 @@ class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
   @JsonKey()
   final String attachmentsExtension;
   @override
-  @JsonKey()
+  @JsonKey(fromJson: _doubleFromJson)
   final double attachmentsSize;
   @override
   @JsonKey()
   final String fileName;
   @override
   final String? createdAt;
+  @override
+  @JsonKey()
+  final String foldersName;
+  @override
+  @JsonKey()
+  final String dayOfWeek;
 
   @override
   String toString() {
-    return 'SearchFileItemDto(attachmentsId: $attachmentsId, usersId: $usersId, foldersId: $foldersId, attachmentsType: $attachmentsType, objectKey: $objectKey, presignedUrl: $presignedUrl, attachmentsExtension: $attachmentsExtension, attachmentsSize: $attachmentsSize, fileName: $fileName, createdAt: $createdAt)';
+    return 'SearchFileItemDto(attachmentsId: $attachmentsId, usersId: $usersId, foldersId: $foldersId, attachmentsType: $attachmentsType, objectKey: $objectKey, presignedUrl: $presignedUrl, attachmentsExtension: $attachmentsExtension, attachmentsSize: $attachmentsSize, fileName: $fileName, createdAt: $createdAt, foldersName: $foldersName, dayOfWeek: $dayOfWeek)';
   }
 
   @override
@@ -2016,7 +2143,11 @@ class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
             (identical(other.fileName, fileName) ||
                 other.fileName == fileName) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.foldersName, foldersName) ||
+                other.foldersName == foldersName) &&
+            (identical(other.dayOfWeek, dayOfWeek) ||
+                other.dayOfWeek == dayOfWeek));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2033,6 +2164,8 @@ class _$SearchFileItemDtoImpl implements _SearchFileItemDto {
     attachmentsSize,
     fileName,
     createdAt,
+    foldersName,
+    dayOfWeek,
   );
 
   /// Create a copy of SearchFileItemDto
@@ -2061,9 +2194,11 @@ abstract class _SearchFileItemDto implements SearchFileItemDto {
     final String objectKey,
     final String presignedUrl,
     final String attachmentsExtension,
-    final double attachmentsSize,
+    @JsonKey(fromJson: _doubleFromJson) final double attachmentsSize,
     final String fileName,
     final String? createdAt,
+    final String foldersName,
+    final String dayOfWeek,
   }) = _$SearchFileItemDtoImpl;
 
   factory _SearchFileItemDto.fromJson(Map<String, dynamic> json) =
@@ -2087,11 +2222,16 @@ abstract class _SearchFileItemDto implements SearchFileItemDto {
   @override
   String get attachmentsExtension;
   @override
+  @JsonKey(fromJson: _doubleFromJson)
   double get attachmentsSize;
   @override
   String get fileName;
   @override
   String? get createdAt;
+  @override
+  String get foldersName;
+  @override
+  String get dayOfWeek;
 
   /// Create a copy of SearchFileItemDto
   /// with the given fields replaced by the non-null parameter values.

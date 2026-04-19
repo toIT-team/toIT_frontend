@@ -11,6 +11,8 @@ class EventTimeRow extends StatelessWidget {
     this.isEditable = false,
     this.onDateTap,
     this.onTimeTap,
+    this.isDateActive = false,
+    this.isTimeActive = false,
   });
 
   final String label;
@@ -22,6 +24,8 @@ class EventTimeRow extends StatelessWidget {
   final bool isEditable;
   final VoidCallback? onDateTap;
   final VoidCallback? onTimeTap;
+  final bool isDateActive;
+  final bool isTimeActive;
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +33,7 @@ class EventTimeRow extends StatelessWidget {
     final dateText =
         '${date.year}.${date.month.toString().padLeft(2, '0')}.'
         '${date.day.toString().padLeft(2, '0')} ($weekday)';
-    final timeText =
-        time != null ? _formatTime(time!) : '시간 없음';
+    final timeText = time != null ? _formatTime(time!) : '시간 없음';
 
     return Row(
       children: [
@@ -48,6 +51,7 @@ class EventTimeRow extends StatelessWidget {
           child: _buildChip(
             text: dateText,
             onTap: isEditable ? onDateTap : null,
+            isActive: isDateActive,
           ),
         ),
         if (showTimeChip) ...[
@@ -57,6 +61,7 @@ class EventTimeRow extends StatelessWidget {
             child: _buildChip(
               text: timeText,
               onTap: isEditable ? onTimeTap : null,
+              isActive: isTimeActive,
             ),
           ),
         ],
@@ -67,6 +72,7 @@ class EventTimeRow extends StatelessWidget {
   Widget _buildChip({
     required String text,
     VoidCallback? onTap,
+    bool isActive = false,
   }) {
     final chip = Container(
       padding: const EdgeInsets.symmetric(
@@ -79,7 +85,11 @@ class EventTimeRow extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 14),
+        style: TextStyle(
+          fontSize: 14,
+          color: isActive ? Colors.blue : Colors.black87,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+        ),
       ),
     );
 
@@ -107,8 +117,7 @@ class EventTimeRow extends StatelessWidget {
     final minute = parts[1];
 
     final period = hour < 12 ? '오전' : '오후';
-    final displayHour =
-        hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
 
     return '$period $displayHour:$minute';
   }

@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../controllers/calendar_controller.dart';
 import '../../../models/calendar/calendar_event.dart';
-import '../../../services/schedule_api_client.dart' show scheduleApiClientProvider;
+import '../../../services/schedule_api_client.dart'
+    show scheduleApiClientProvider;
 import '../../screens/event_form_screen.dart';
 import '../common/add_action_button.dart';
 import '../common/add_context_menu.dart';
@@ -172,6 +173,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
           event: event,
           onEdit: () => _handleEdit(event),
           onDelete: () => _handleDelete(event),
+          onShare: () => _handleShare(event),
         );
       },
     );
@@ -182,6 +184,10 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => EventFormScreen(event: event)));
+  }
+
+  void _handleShare(CalendarEvent _) {
+    // TODO: 공유 시트 열기 (일정 상세 하단 바와 동일 플로우)
   }
 
   Future<void> _handleDelete(CalendarEvent event) async {
@@ -199,9 +205,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
       if (schedulesId == null) return;
 
       final apiClient = ref.read(scheduleApiClientProvider);
-      await apiClient.deleteSchedule(
-        schedulesId: schedulesId,
-      );
+      await apiClient.deleteSchedule(schedulesId: schedulesId);
 
       if (!mounted) return;
 

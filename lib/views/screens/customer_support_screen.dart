@@ -6,7 +6,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
-  const SupportScreen({super.key});
+  const SupportScreen({super.key, this.initialTabIndex = 0});
+
+  final int initialTabIndex;
 
   @override
   ConsumerState<SupportScreen> createState() => _SupportScreenState();
@@ -26,7 +28,12 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    final initialIndex = widget.initialTabIndex.clamp(0, 1).toInt();
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
     _titleController.addListener(_onInputChanged);
     _contentController.addListener(_onContentChanged);
   }
@@ -430,7 +437,7 @@ class _FeedbackHistoryTab extends StatelessWidget {
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
           itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final item = items[index];
             return Container(

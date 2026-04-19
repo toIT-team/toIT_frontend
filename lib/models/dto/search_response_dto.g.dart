@@ -129,6 +129,8 @@ _$SearchLinkItemDtoImpl _$$SearchLinkItemDtoImplFromJson(
   linksThumbnail: json['linksThumbnail'] as String? ?? '',
   textContent: json['textContent'] as String? ?? '',
   createdAt: json['createdAt'] as String?,
+  foldersName: json['foldersName'] as String? ?? '',
+  dayOfWeek: json['dayOfWeek'] as String? ?? '',
 );
 
 Map<String, dynamic> _$$SearchLinkItemDtoImplToJson(
@@ -142,6 +144,8 @@ Map<String, dynamic> _$$SearchLinkItemDtoImplToJson(
   'linksThumbnail': instance.linksThumbnail,
   'textContent': instance.textContent,
   'createdAt': instance.createdAt,
+  'foldersName': instance.foldersName,
+  'dayOfWeek': instance.dayOfWeek,
 };
 
 _$SearchTextItemDtoImpl _$$SearchTextItemDtoImplFromJson(
@@ -152,6 +156,8 @@ _$SearchTextItemDtoImpl _$$SearchTextItemDtoImplFromJson(
   foldersId: json['foldersId'] == null ? 0 : _intFromJson(json['foldersId']),
   textContent: json['textContent'] as String? ?? '',
   createdAt: json['createdAt'] as String?,
+  foldersName: json['foldersName'] as String? ?? '',
+  dayOfWeek: json['dayOfWeek'] as String? ?? '',
 );
 
 Map<String, dynamic> _$$SearchTextItemDtoImplToJson(
@@ -162,6 +168,8 @@ Map<String, dynamic> _$$SearchTextItemDtoImplToJson(
   'foldersId': instance.foldersId,
   'textContent': instance.textContent,
   'createdAt': instance.createdAt,
+  'foldersName': instance.foldersName,
+  'dayOfWeek': instance.dayOfWeek,
 };
 
 _$SearchFileItemDtoImpl _$$SearchFileItemDtoImplFromJson(
@@ -176,9 +184,13 @@ _$SearchFileItemDtoImpl _$$SearchFileItemDtoImplFromJson(
   objectKey: json['objectKey'] as String? ?? '',
   presignedUrl: json['presignedUrl'] as String? ?? '',
   attachmentsExtension: json['attachmentsExtension'] as String? ?? '',
-  attachmentsSize: (json['attachmentsSize'] as num?)?.toDouble() ?? 0.0,
+  attachmentsSize: json['attachmentsSize'] == null
+      ? 0.0
+      : _doubleFromJson(json['attachmentsSize']),
   fileName: json['fileName'] as String? ?? '',
   createdAt: json['createdAt'] as String?,
+  foldersName: json['foldersName'] as String? ?? '',
+  dayOfWeek: json['dayOfWeek'] as String? ?? '',
 );
 
 Map<String, dynamic> _$$SearchFileItemDtoImplToJson(
@@ -194,4 +206,6 @@ Map<String, dynamic> _$$SearchFileItemDtoImplToJson(
   'attachmentsSize': instance.attachmentsSize,
   'fileName': instance.fileName,
   'createdAt': instance.createdAt,
+  'foldersName': instance.foldersName,
+  'dayOfWeek': instance.dayOfWeek,
 };

@@ -5,7 +5,7 @@ import '../../../core/constants/setting_layout_tokens.dart';
 /// 보관함(폴더) 섹션
 ///
 /// [isEditable] true (수정 모드):
-///   - 보관함 미선택: "보관함 추가" (회색) + (+) 아이콘
+///   - 보관함 미선택: "보관함 선택" (회색) + (+) 아이콘
 ///   - 보관함 선택됨: 보관함 이름 (검정) + (+) 아이콘
 /// [isEditable] false (일정 상세 모드):
 ///   - 보관함 이름 (검정) + (>) 화살표 아이콘
@@ -35,7 +35,7 @@ class EventFolderSection extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              _hasFolder ? folderName! : '보관함 추가',
+              _hasFolder ? folderName! : '보관함 선택',
               style: TextStyle(
                 fontSize: SettingLayout1Tokens.fontSize,
                 color: _hasFolder
