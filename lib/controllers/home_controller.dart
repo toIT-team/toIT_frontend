@@ -150,6 +150,7 @@ Schedule _mapSchedule(ScheduleDto dto, int index) {
   final timeRange = isAllDay ? '하루종일' : '$startFormatted - $endFormatted';
 
   return Schedule(
+    schedulesId: dto.schedulesId,
     title: dto.title,
     timeRangeText: timeRange,
     scheduleTime: isAllDay
@@ -247,8 +248,13 @@ class HomeController extends Notifier<HomeState> {
   }
 
   /// 데이터 새로고침
-  Future<void> refresh() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  /// [silent]이 true면 전체 화면 로딩 없이 백그라운드로 갱신 (다른 화면 복귀 시 등)
+  Future<void> refresh({bool silent = false}) async {
+    if (silent) {
+      state = state.copyWith(errorMessage: null);
+    } else {
+      state = state.copyWith(isLoading: true, errorMessage: null);
+    }
     await _loadHomeData();
   }
 

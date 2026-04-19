@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../models/home/schedule.dart';
+import '../../screens/event_detail_screen.dart';
 import '../../screens/event_form_screen.dart';
 import 'schedule_card.dart';
 
 /// 인사말 + 일정 카드 영역
-class GreetingSection extends StatelessWidget {
+class GreetingSection extends ConsumerWidget {
   final String userName;
   final int todayScheduleCount;
   final List<Schedule> schedules;
@@ -21,7 +24,7 @@ class GreetingSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasSchedules = schedules.isNotEmpty;
     final greetingText = hasSchedules
         ? '$userName님 오늘 일정이\n$todayScheduleCount개 있습니다 ›'
@@ -56,7 +59,7 @@ class GreetingSection extends StatelessWidget {
         if (hasSchedules)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: Row(children: _buildScheduleCards()),
+            child: Row(children: _buildScheduleCards(context, ref)),
           )
         else
           SizedBox(
@@ -68,21 +71,24 @@ class GreetingSection extends StatelessWidget {
               trailingText: null,
               accentColor: AppColors.gray100,
               showAddAction: true,
-              onAddTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        EventFormScreen(initialDate: DateTime.now()),
-                  ),
-                );
-              },
+              onAddTap: () => _openAddSchedule(context, ref),
             ),
           ),
       ],
     );
   }
 
-  List<Widget> _buildScheduleCards() {
+  Future<void> _openAddSchedule(BuildContext context, WidgetRef ref) async {
+    final result = await Navigator.of(context).push<Object?>(
+      MaterialPageRoute<Object?>(
+        builder: (_) => EventFormScreen(initialDate: DateTime.now()),
+      ),
+    );
+    if (!context.mounted || result == null) return;
+    await ref.read(homeProvider.notifier).refresh(silent: true);
+  }
+
+  List<Widget> _buildScheduleCards(BuildContext context, WidgetRef ref) {
     final widgets = <Widget>[];
     for (int i = 0; i < schedules.length; i++) {
       final s = schedules[i];
@@ -90,13 +96,28 @@ class GreetingSection extends StatelessWidget {
         SizedBox(
           width: 189,
           height: 111,
-          child: ScheduleCard(
-            title: s.title,
-            subtitle: s.timeRangeText,
-            trailingText: s.scheduleTime,
-            accentColor: s.accentColor,
-            showAddAction: false,
-            onAddTap: null,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: s.schedulesId > 0
+                ? () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) =>
+                            EventDetailScreen(schedulesId: s.schedulesId),
+                      ),
+                    );
+                    if (!context.mounted) return;
+                    await ref.read(homeProvider.notifier).refresh(silent: true);
+                  }
+                : null,
+            child: ScheduleCard(
+              title: s.title,
+              subtitle: s.timeRangeText,
+              trailingText: s.scheduleTime,
+              accentColor: s.accentColor,
+              showAddAction: false,
+              onAddTap: null,
+            ),
           ),
         ),
       );
