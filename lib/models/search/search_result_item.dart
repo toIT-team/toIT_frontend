@@ -42,6 +42,9 @@ class SearchResultItem {
 
   /// 파일 타입 여부
   bool get isFile => type == SearchResultType.file;
+
+  /// 이미지 첨부 타입 여부
+  bool get isImage => type == SearchResultType.image;
 }
 
 /// 검색 결과 타입
@@ -51,4 +54,5 @@ enum SearchResultType {
   link,
   note,
   file,
+  image,
 }

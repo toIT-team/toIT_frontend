@@ -25,4 +25,30 @@ class SearchUtils {
     return '${date.year}.${date.month.toString().padLeft(2, '0')}.'
         '${date.day.toString().padLeft(2, '0')} (${_weekdayKo[weekday]})';
   }
+
+  /// 검색 결과 부제: 유형 태그 + (선택) 보관함명 · 요일/메타 · 날짜
+  static String composeSearchSubtitle({
+    required String typeTag,
+    String? foldersName,
+    String? dayOfWeek,
+    String? isoTimestamp,
+    String? calendarDate,
+  }) {
+    final meta = <String>[];
+    if (foldersName != null && foldersName.isNotEmpty) {
+      meta.add(foldersName);
+    }
+    if (dayOfWeek != null && dayOfWeek.isNotEmpty) {
+      meta.add(dayOfWeek);
+    }
+    if (isoTimestamp != null && isoTimestamp.isNotEmpty) {
+      final d = formatDateFromIso(isoTimestamp);
+      if (d.isNotEmpty) meta.add(d);
+    } else if (calendarDate != null && calendarDate.isNotEmpty) {
+      final d = formatDateSubtitle(calendarDate);
+      if (d.isNotEmpty) meta.add(d);
+    }
+    if (meta.isEmpty) return typeTag;
+    return '$typeTag | ${meta.join(' · ')}';
+  }
 }
