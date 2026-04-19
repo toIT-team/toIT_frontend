@@ -20,6 +20,14 @@ int _intFromJson(dynamic value) {
   return 0;
 }
 
+/// JSON에서 double 파싱 (null, num, String 지원)
+double _doubleFromJson(dynamic value) {
+  if (value == null) return 0;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value) ?? 0;
+  return 0;
+}
+
 /// 통합 검색 API 응답 (GET /page/search)
 @freezed
 class SearchResponseDto with _$SearchResponseDto {
@@ -89,6 +97,8 @@ class SearchLinkItemDto with _$SearchLinkItemDto {
     @Default('') String linksThumbnail,
     @Default('') String textContent,
     String? createdAt,
+    @Default('') String foldersName,
+    @Default('') String dayOfWeek,
   }) = _SearchLinkItemDto;
 
   factory SearchLinkItemDto.fromJson(Map<String, dynamic> json) =>
@@ -104,6 +114,8 @@ class SearchTextItemDto with _$SearchTextItemDto {
     @JsonKey(fromJson: _intFromJson) @Default(0) int foldersId,
     @Default('') String textContent,
     String? createdAt,
+    @Default('') String foldersName,
+    @Default('') String dayOfWeek,
   }) = _SearchTextItemDto;
 
   factory SearchTextItemDto.fromJson(Map<String, dynamic> json) =>
@@ -121,9 +133,11 @@ class SearchFileItemDto with _$SearchFileItemDto {
     @Default('') String objectKey,
     @Default('') String presignedUrl,
     @Default('') String attachmentsExtension,
-    @Default(0.0) double attachmentsSize,
+    @JsonKey(fromJson: _doubleFromJson) @Default(0.0) double attachmentsSize,
     @Default('') String fileName,
     String? createdAt,
+    @Default('') String foldersName,
+    @Default('') String dayOfWeek,
   }) = _SearchFileItemDto;
 
   factory SearchFileItemDto.fromJson(Map<String, dynamic> json) =>

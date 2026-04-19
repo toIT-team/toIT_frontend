@@ -11,6 +11,7 @@ class DayEventCard extends StatefulWidget {
     required this.event,
     this.onEdit,
     this.onDelete,
+    this.onShare,
   });
 
   final CalendarEvent event;
@@ -20,6 +21,9 @@ class DayEventCard extends StatefulWidget {
 
   /// 삭제 탭 시 호출 (null이면 롱 프레스 메뉴 미표시)
   final VoidCallback? onDelete;
+
+  /// 공유 탭 시 호출 (null이면 메뉴에 공유 항목 미표시)
+  final VoidCallback? onShare;
 
   @override
   State<DayEventCard> createState() => _DayEventCardState();
@@ -31,8 +35,7 @@ class _DayEventCardState extends State<DayEventCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hasContextMenu =
-        widget.onEdit != null && widget.onDelete != null;
+    final hasContextMenu = widget.onEdit != null && widget.onDelete != null;
 
     return Listener(
       onPointerDown: (event) {
@@ -56,8 +59,7 @@ class _DayEventCardState extends State<DayEventCard> {
           Navigator.of(context).pop();
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) =>
-                  EventDetailScreen(schedulesId: schedulesId),
+              builder: (context) => EventDetailScreen(schedulesId: schedulesId),
             ),
           );
         },
@@ -96,8 +98,10 @@ class _DayEventCardState extends State<DayEventCard> {
               ),
               Expanded(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -111,10 +115,7 @@ class _DayEventCardState extends State<DayEventCard> {
                       const SizedBox(height: 4),
                       Text(
                         _getTimeText(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -133,6 +134,7 @@ class _DayEventCardState extends State<DayEventCard> {
       touchPosition: touchPosition,
       onEdit: widget.onEdit!,
       onDelete: widget.onDelete!,
+      onShare: widget.onShare,
     );
   }
 

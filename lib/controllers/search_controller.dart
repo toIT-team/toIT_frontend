@@ -93,6 +93,11 @@ class _CacheEntry {
   final DateTime timestamp;
 }
 
+/// 첨부 타입이 이미지면 이미지 탭으로 안내 (그 외는 파일)
+bool _isSearchImageAttachment(String attachmentsType) {
+  return attachmentsType.trim().toUpperCase() == 'IMAGE';
+}
+
 /// SearchResponseDto → SearchResultItem 변환
 List<SearchResultItem> _toSearchResultItems(SearchResponseDto dto) {
   final items = <SearchResultItem>[];
@@ -100,12 +105,20 @@ List<SearchResultItem> _toSearchResultItems(SearchResponseDto dto) {
     for (final f in dto.folders) f.foldersId: f.name,
   };
 
+  String resolvedFolderName(int foldersId, String dtoName) {
+    if (dtoName.isNotEmpty) return dtoName;
+    return folderNames[foldersId] ?? '';
+  }
+
   for (final f in dto.folders) {
     items.add(SearchResultItem(
       id: 'folder_${f.foldersId}',
       type: SearchResultType.folder,
       title: f.name,
-      subtitle: '보관함',
+      subtitle: SearchUtils.composeSearchSubtitle(
+        typeTag: '보관함',
+        isoTimestamp: f.createdAt,
+      ),
       foldersId: f.foldersId,
       foldersName: f.name,
     ));
@@ -116,22 +129,32 @@ List<SearchResultItem> _toSearchResultItems(SearchResponseDto dto) {
       id: 'schedule_${s.schedulesId}',
       type: SearchResultType.schedule,
       title: s.title,
-      subtitle: '일정 | ${SearchUtils.formatDateSubtitle(s.startDate)}',
+      subtitle: SearchUtils.composeSearchSubtitle(
+        typeTag: '일정',
+        foldersName: s.foldersTitle.isNotEmpty ? s.foldersTitle : null,
+        calendarDate: s.startDate,
+      ),
       foldersId: s.foldersId,
-      foldersName: s.foldersTitle,
+      foldersName: s.foldersTitle.isNotEmpty ? s.foldersTitle : null,
       schedulesId: s.schedulesId,
     ));
   }
 
   for (final l in dto.links) {
     final title = l.linksName.isNotEmpty ? l.linksName : l.linksUrl;
+    final folderLabel = resolvedFolderName(l.foldersId, l.foldersName);
     items.add(SearchResultItem(
       id: 'link_${l.linksId}',
       type: SearchResultType.link,
       title: title,
-      subtitle: '링크 | ${SearchUtils.formatDateFromIso(l.createdAt)}',
+      subtitle: SearchUtils.composeSearchSubtitle(
+        typeTag: '링크',
+        foldersName: folderLabel.isNotEmpty ? folderLabel : null,
+        dayOfWeek: l.dayOfWeek.isNotEmpty ? l.dayOfWeek : null,
+        isoTimestamp: l.createdAt,
+      ),
       foldersId: l.foldersId,
-      foldersName: folderNames[l.foldersId],
+      foldersName: folderLabel.isNotEmpty ? folderLabel : null,
     ));
   }
 
@@ -139,13 +162,19 @@ List<SearchResultItem> _toSearchResultItems(SearchResponseDto dto) {
     final title = t.textContent.length > 20
         ? '${t.textContent.substring(0, 20)}...'
         : (t.textContent.isEmpty ? '노트' : t.textContent);
+    final folderLabel = resolvedFolderName(t.foldersId, t.foldersName);
     items.add(SearchResultItem(
       id: 'text_${t.textsId}',
       type: SearchResultType.note,
       title: title,
-      subtitle: '노트 | ${SearchUtils.formatDateFromIso(t.createdAt)}',
+      subtitle: SearchUtils.composeSearchSubtitle(
+        typeTag: '노트',
+        foldersName: folderLabel.isNotEmpty ? folderLabel : null,
+        dayOfWeek: t.dayOfWeek.isNotEmpty ? t.dayOfWeek : null,
+        isoTimestamp: t.createdAt,
+      ),
       foldersId: t.foldersId,
-      foldersName: folderNames[t.foldersId],
+      foldersName: folderLabel.isNotEmpty ? folderLabel : null,
       textsId: t.textsId,
       textContent: t.textContent,
       createdAt: t.createdAt,
@@ -153,13 +182,23 @@ List<SearchResultItem> _toSearchResultItems(SearchResponseDto dto) {
   }
 
   for (final f in dto.files) {
+    final isImage = _isSearchImageAttachment(f.attachmentsType);
+    final resultType =
+        isImage ? SearchResultType.image : SearchResultType.file;
+    final kindLabel = isImage ? '이미지' : '파일';
+    final folderLabel = resolvedFolderName(f.foldersId, f.foldersName);
     items.add(SearchResultItem(
-      id: 'file_${f.attachmentsId}',
-      type: SearchResultType.file,
+      id: '${isImage ? 'image' : 'file'}_${f.attachmentsId}',
+      type: resultType,
       title: f.fileName,
-      subtitle: '파일 | ${SearchUtils.formatDateFromIso(f.createdAt)}',
+      subtitle: SearchUtils.composeSearchSubtitle(
+        typeTag: kindLabel,
+        foldersName: folderLabel.isNotEmpty ? folderLabel : null,
+        dayOfWeek: f.dayOfWeek.isNotEmpty ? f.dayOfWeek : null,
+        isoTimestamp: f.createdAt,
+      ),
       foldersId: f.foldersId,
-      foldersName: folderNames[f.foldersId],
+      foldersName: folderLabel.isNotEmpty ? folderLabel : null,
     ));
   }
 
@@ -178,7 +217,7 @@ List<SearchResultItem> _applyFilter(
     case SearchFilterType.note:
       return items.where((i) => i.isNote).toList();
     case SearchFilterType.file:
-      return items.where((i) => i.isFile).toList();
+      return items.where((i) => i.isFile || i.isImage).toList();
     case SearchFilterType.schedule:
       return items.where((i) => i.isSchedule).toList();
   }

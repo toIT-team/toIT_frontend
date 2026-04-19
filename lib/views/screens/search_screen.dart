@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/folder_tab_index.dart';
 import '../../controllers/search_controller.dart';
+import '../../models/dto/page_items_response_dto.dart';
+import '../../models/search/search_result_item.dart';
+import 'event_detail_screen.dart';
+import 'folder_detail_screen.dart';
+import 'note_detail_screen.dart';
 import '../widgets/search/recent_search_section.dart';
 import '../widgets/search/search_bar_widget.dart';
 import '../widgets/search/search_filter_section.dart';
@@ -35,6 +41,100 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       TextPosition(offset: term.length),
     );
     ref.read(searchProvider.notifier).onQueryChanged(term);
+  }
+
+  void _onSearchResultTap(SearchResultItem item) {
+    switch (item.type) {
+      case SearchResultType.folder:
+        if (item.foldersId == null || item.foldersId! <= 0) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => FolderDetailScreen(
+              foldersId: item.foldersId!,
+              folderName: item.title,
+              initialTab: FolderTab.links,
+            ),
+          ),
+        );
+      case SearchResultType.schedule:
+        if (item.schedulesId == null || item.schedulesId! <= 0) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => EventDetailScreen(
+              schedulesId: item.schedulesId!,
+            ),
+          ),
+        );
+      case SearchResultType.link:
+        if (item.foldersId == null || item.foldersId! <= 0) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => FolderDetailScreen(
+              foldersId: item.foldersId!,
+              folderName: item.foldersName?.isNotEmpty == true
+                  ? item.foldersName!
+                  : '보관함',
+              initialTab: FolderTab.links,
+            ),
+          ),
+        );
+      case SearchResultType.note:
+        if (item.foldersId == null ||
+            item.foldersId! <= 0 ||
+            item.textsId == null ||
+            item.textsId! <= 0) {
+          return;
+        }
+        final note = TextDto(
+          textsId: item.textsId!,
+          textContent: item.textContent ?? '',
+          createdAt: item.createdAt,
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => NoteDetailScreen(
+              note: note,
+              foldersId: item.foldersId!,
+            ),
+          ),
+        );
+      case SearchResultType.file:
+        if (item.foldersId == null || item.foldersId! <= 0) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => FolderDetailScreen(
+              foldersId: item.foldersId!,
+              folderName: item.foldersName?.isNotEmpty == true
+                  ? item.foldersName!
+                  : '보관함',
+              initialTab: FolderTab.files,
+            ),
+          ),
+        );
+      case SearchResultType.image:
+        if (item.foldersId == null || item.foldersId! <= 0) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => FolderDetailScreen(
+              foldersId: item.foldersId!,
+              folderName: item.foldersName?.isNotEmpty == true
+                  ? item.foldersName!
+                  : '보관함',
+              initialTab: FolderTab.images,
+            ),
+          ),
+        );
+    }
   }
 
   @override
@@ -100,7 +200,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         );
       case SearchStatus.loaded:
         return SingleChildScrollView(
-          child: SearchResultSection(items: state.items),
+          child: SearchResultSection(
+            items: state.items,
+            onItemTap: _onSearchResultTap,
+          ),
         );
     }
   }
