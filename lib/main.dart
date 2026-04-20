@@ -17,21 +17,16 @@ import 'services/fcm_registration_service.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/navigation_shell.dart'
     show NavigationShell, pendingDeepLinkUrlProvider;
+import 'views/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   _initFcm();
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 /// FCM 초기화(비동기). OS 알림 권한 요청은 로그인 후
@@ -55,9 +50,16 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp>
-    with WidgetsBindingObserver {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
+  /// 부트스트랩이 너무 빨라 화면이 깜빡이는 인상을 주지 않기 위함.
+  static const _minSplashDuration = Duration(milliseconds: 1500);
+
   StreamSubscription<String>? _fcmTokenRefreshSub;
+
+  /// 스플래시 최소 노출 시간이 지난 뒤에만 true.
+  /// `authState`가 먼저 확정되더라도 이 값이 false인 동안에는 스플래시를 유지한다.
+  bool _isSplashFinished = false;
 
   @override
   void initState() {
@@ -82,34 +84,35 @@ class _MyAppState extends ConsumerState<MyApp>
     final auth = ref.read(authProvider);
     if (auth.status != AuthStatus.authenticated) return;
     unawaited(
-      ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-            promptForPermission: false,
-          ),
+      ref
+          .read(fcmRegistrationServiceProvider)
+          .syncServerRegistration(promptForPermission: false),
     );
   }
 
   /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
   void _bindFcmTokenRefresh() {
-    _fcmTokenRefreshSub =
-        FirebaseMessaging.instance.onTokenRefresh.listen(
-      (String newToken) {
-        final auth = ref.read(authProvider);
-        if (auth.status != AuthStatus.authenticated) return;
-        unawaited(
-          ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-                promptForPermission: false,
-                fcmToken: newToken,
-              ),
-        );
-      },
-    );
+    _fcmTokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((
+      String newToken,
+    ) {
+      final auth = ref.read(authProvider);
+      if (auth.status != AuthStatus.authenticated) return;
+      unawaited(
+        ref
+            .read(fcmRegistrationServiceProvider)
+            .syncServerRegistration(
+              promptForPermission: false,
+              fcmToken: newToken,
+            ),
+      );
+    });
   }
 
   void _bindFcmDeepLinks() {
     FirebaseMessaging.onMessageOpenedApp.listen(_onFcmMessageOpened);
-    FirebaseMessaging.instance
-        .getInitialMessage()
-        .then((RemoteMessage? message) {
+    FirebaseMessaging.instance.getInitialMessage().then((
+      RemoteMessage? message,
+    ) {
       if (message != null) _onFcmMessageOpened(message);
     });
   }
@@ -132,8 +135,16 @@ class _MyAppState extends ConsumerState<MyApp>
       },
     );
 
-    // 저장된 토큰 확인 → 인증 상태 복원
-    await ref.read(authProvider.notifier).checkAuthStatus();
+    // 저장된 토큰 확인 → 인증 상태 복원.
+    // 스플래시 최소 노출 시간과 병렬 대기하여 빠른 부팅 시의 깜빡임을 방지한다.
+    // `checkAuthStatus`는 내부에서 state를 바로 바꾸기 때문에 지연만으로는
+    // 화면 전환을 막을 수 없어, 완료 플래그(_isSplashFinished)를 함께 운용한다.
+    await Future.wait<void>([
+      ref.read(authProvider.notifier).checkAuthStatus(),
+      Future<void>.delayed(_minSplashDuration),
+    ]);
+    if (!mounted) return;
+    setState(() => _isSplashFinished = true);
   }
 
   @override
@@ -150,15 +161,16 @@ class _MyAppState extends ConsumerState<MyApp>
   }
 
   Widget _buildHome(AuthState authState) {
+    if (!_isSplashFinished || authState.status == AuthStatus.unknown) {
+      return const SplashScreen();
+    }
     switch (authState.status) {
-      case AuthStatus.unknown:
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
       case AuthStatus.unauthenticated:
         return const LoginScreen();
       case AuthStatus.authenticated:
         return const NavigationShell();
+      case AuthStatus.unknown:
+        return const SplashScreen();
     }
   }
 }
