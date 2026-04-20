@@ -69,6 +69,9 @@ class ApiConstants {
   /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
   static const String fcmEndpoint = '/fcm';
 
+  /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
+  static const String fcmEndpoint = '/fcm';
+
   /// 앱 복귀 딥링크 스킴
   static const String authCallbackScheme = 'toit';
 
