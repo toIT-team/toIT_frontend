@@ -637,6 +637,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               controller: _tabController,
               labelColor: AppColors.gray900,
               unselectedLabelColor: AppColors.gray600,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
               labelStyle: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
