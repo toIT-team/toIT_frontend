@@ -1,7 +1,4 @@
-/// 앱 공통 에셋 경로 상수.
-///
-/// 일정 화면 전용 SVG(`assets/icons/event/`)는
-/// `event_assets.dart`의 `EventAssets`를 사용합니다.
+/// 에셋 경로 상수
 class AppAssets {
   AppAssets._();
 
