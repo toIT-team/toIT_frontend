@@ -24,17 +24,11 @@ class FolderSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeNotifier = ref.read(homeProvider.notifier);
-    final selectedFilterIndex = ref.watch(
-      homeProvider.select((state) => state.selectedFilterIndex),
-    );
     final totalFolderCount = ref.watch(
       homeProvider.select((state) => state.folders.length),
     );
     final isFolderLimitReached =
         totalFolderCount >= HomeController.maxFolderCount;
-    final clampedFilterIndex = filters.isEmpty
-        ? 0
-        : selectedFilterIndex.clamp(0, filters.length - 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,22 +61,8 @@ class FolderSection extends ConsumerWidget {
                   ),
                 ),
                 const Spacer(),
-                Row(
-                  children: [
-                    const Text(
-                      '최신순',
-                      style: TextStyle(
-                        color: AppColors.gray900,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Image.asset(AppAssets.downArrowIcon, width: 18, height: 18),
-                  ],
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
+                _AddFolderButton(
+                  isFolderLimitReached: isFolderLimitReached,
                   onTap: () async {
                     if (isFolderLimitReached) {
                       if (context.mounted) {
@@ -115,12 +95,6 @@ class FolderSection extends ConsumerWidget {
                       }
                     }
                   },
-                  child: Image.asset(
-                    AppAssets.addFolderIcon,
-                    width: 24,
-                    height: 24,
-                    color: isFolderLimitReached ? AppColors.gray200 : null,
-                  ),
                 ),
               ],
             ),
@@ -151,7 +125,6 @@ class FolderSection extends ConsumerWidget {
               ),
             );
           },
-          selectedIndex: clampedFilterIndex,
           filterLabelBuilder: homeNotifier.getFilterLabel,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -192,13 +165,11 @@ class FolderSection extends ConsumerWidget {
 class _ChipsRow extends StatelessWidget {
   final List<String> filters;
   final ValueChanged<int> onTapFilter;
-  final int selectedIndex;
   final String Function(String filterToken) filterLabelBuilder;
 
   const _ChipsRow({
     required this.filters,
     required this.onTapFilter,
-    required this.selectedIndex,
     required this.filterLabelBuilder,
   });
 
@@ -211,7 +182,6 @@ class _ChipsRow extends StatelessWidget {
           for (int i = 0; i < filters.length; i++) ...[
             _FilterChip(
               label: filterLabelBuilder(filters[i]),
-              selected: i == selectedIndex,
               onTap: () => onTapFilter(i),
             ),
             if (i != filters.length - 1) const SizedBox(width: AppSpacing.xs),
@@ -222,46 +192,118 @@ class _ChipsRow extends StatelessWidget {
   }
 }
 
-class _FilterChip extends StatelessWidget {
+class _FilterChip extends StatefulWidget {
   final String label;
-  final bool selected;
   final VoidCallback onTap;
 
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  const _FilterChip({required this.label, required this.onTap});
+
+  @override
+  State<_FilterChip> createState() => _FilterChipState();
+}
+
+class _FilterChipState extends State<_FilterChip> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final selectedColor = AppColors.neutral200;
-    final unselectedText = AppColors.gray600;
-    final unselectedBorder = unselectedText.withOpacity(0.35);
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onTap,
+    final baseTextColor = AppColors.gray600;
+    final baseBorderColor = baseTextColor.withOpacity(0.35);
+
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.95 : 1.0,
+      child: Material(
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(999),
-        splashColor: AppColors.gray600.withOpacity(0.08),
-        highlightColor: AppColors.gray600.withOpacity(0.04),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: AppSpacing.xs,
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          borderRadius: BorderRadius.circular(999),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: isPressed
+                  ? AppColors.neutral100.withOpacity(0.55)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: baseBorderColor),
+            ),
+            child: Text(
+              widget.label,
+              style: const TextStyle(
+                color: AppColors.gray600,
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+            ),
           ),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: selected ? selectedColor : unselectedBorder),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? selectedColor : unselectedText,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              fontSize: 16,
+        ),
+      ),
+    );
+  }
+}
+
+class _AddFolderButton extends StatefulWidget {
+  const _AddFolderButton({
+    required this.isFolderLimitReached,
+    required this.onTap,
+  });
+
+  final bool isFolderLimitReached;
+  final VoidCallback onTap;
+
+  @override
+  State<_AddFolderButton> createState() => _AddFolderButtonState();
+}
+
+class _AddFolderButtonState extends State<_AddFolderButton> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.9 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(99),
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          borderRadius: BorderRadius.circular(99),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Image.asset(
+              AppAssets.addFolderIcon,
+              width: 24,
+              height: 24,
+              color: widget.isFolderLimitReached ? AppColors.gray200 : null,
             ),
           ),
         ),

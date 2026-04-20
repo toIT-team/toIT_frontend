@@ -197,9 +197,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              nextFavoriteState
-                  ? '즐겨찾기에 추가되었습니다.'
-                  : '즐겨찾기가 해제되었습니다.',
+              nextFavoriteState ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.',
             ),
           ),
         );
@@ -214,9 +212,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          isNowFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.',
-        ),
+        content: Text(isNowFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.'),
       ),
     );
   }
@@ -634,9 +630,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         backgroundColor: AppColors.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
+        leading: _TapScaleIconButton(
+          onTap: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.gray900),
-          onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           _folderName,
@@ -649,12 +645,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ),
         actions: [
-          IconButton(
+          _TapScaleIconButton(
+            onTap: () {},
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
-            onPressed: () {},
           ),
-          IconButton(
-            onPressed: _toggleFavoriteFromHeader,
+          _TapScaleIconButton(
+            onTap: _toggleFavoriteFromHeader,
             icon: SizedBox(
               width: 24,
               height: 24,
@@ -675,9 +671,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                     ),
             ),
           ),
-          IconButton(
+          _TapScaleIconButton(
+            onTap: _openFolderOptions,
             icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
-            onPressed: _openFolderOptions,
           ),
         ],
       ),
@@ -736,9 +732,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(right: 4, bottom: 16),
-        child: GestureDetector(
+        child: _TapScale(
           key: _addButtonKey,
           onTap: _onAddMenuTap,
+          pressedScale: 0.94,
+          borderRadius: BorderRadius.circular(99),
           child: Container(
             width: 52,
             height: 52,
@@ -760,6 +758,87 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _TapScaleIconButton extends StatelessWidget {
+  const _TapScaleIconButton({required this.onTap, required this.icon});
+
+  final VoidCallback onTap;
+  final Widget icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return _TapScale(
+      onTap: onTap,
+      pressedScale: 0.92,
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(width: 44, height: 44, child: Center(child: icon)),
+    );
+  }
+}
+
+class _TapScale extends StatefulWidget {
+  const _TapScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.pressedScale = 0.98,
+    this.borderRadius,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double pressedScale;
+  final BorderRadius? borderRadius;
+
+  @override
+  State<_TapScale> createState() => _TapScaleState();
+}
+
+class _TapScaleState extends State<_TapScale> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = widget.borderRadius ?? BorderRadius.circular(12);
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? widget.pressedScale : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          onHighlightChanged: setPressed,
+          borderRadius: radius,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: isPressed
+                  ? AppColors.neutral100.withOpacity(0.45)
+                  : Colors.transparent,
+              borderRadius: radius,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -867,85 +946,91 @@ class _LinkItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateText = _formatCreatedAt(link.createdAt);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      link.linksName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.gray900,
-                        letterSpacing: -0.025 * 18,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (link.textContent.isNotEmpty)
+    return _TapScale(
+      onTap: () {},
+      pressedScale: 0.995,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        link.textContent,
+                        link.linksName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.gray600,
-                          letterSpacing: -0.025 * 14,
-                          height: 1.5,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray900,
+                          letterSpacing: -0.025 * 18,
+                          height: 1.4,
                         ),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xxl),
-              _LinkThumbnail(thumbnailUrl: link.linksThumbnail),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                dateText,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.gray600,
-                  letterSpacing: -0.025 * 14,
-                  height: 1.5,
-                ),
-              ),
-              GestureDetector(
-                onTap: onMoreTap,
-                behavior: HitTestBehavior.opaque,
-                child: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: AppColors.gray600,
+                      const SizedBox(height: AppSpacing.sm),
+                      if (link.textContent.isNotEmpty)
+                        Text(
+                          link.textContent,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.gray600,
+                            letterSpacing: -0.025 * 14,
+                            height: 1.5,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: AppSpacing.xxl),
+                _LinkThumbnail(thumbnailUrl: link.linksThumbnail),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  dateText,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray600,
+                    letterSpacing: -0.025 * 14,
+                    height: 1.5,
+                  ),
+                ),
+                _TapScale(
+                  onTap: onMoreTap,
+                  pressedScale: 0.92,
+                  borderRadius: BorderRadius.circular(999),
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: AppColors.gray600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1097,9 +1182,10 @@ class _NoteCard extends StatelessWidget {
         : content;
     final dateText = _formatCreatedAt(note.createdAt);
 
-    return GestureDetector(
+    return _TapScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      pressedScale: 0.99,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1153,9 +1239,10 @@ class _NoteCard extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
-              GestureDetector(
+              _TapScale(
                 onTap: onKebabTap,
-                behavior: HitTestBehavior.opaque,
+                pressedScale: 0.92,
+                borderRadius: BorderRadius.circular(999),
                 child: const SizedBox(
                   width: 20,
                   height: 20,
@@ -1235,62 +1322,69 @@ class _FileItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitle = _formatFileSubtitle(file.createdAt, file.attachmentsSize);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.neutral100,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+    return _TapScale(
+      onTap: () {},
+      pressedScale: 0.995,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.neutral100,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm + 1),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  file.fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gray900,
-                    letterSpacing: -0.025 * 18,
-                    height: 1.4,
+            const SizedBox(width: AppSpacing.sm + 1),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    file.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray900,
+                      letterSpacing: -0.025 * 18,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.gray600,
-                    letterSpacing: -0.025 * 14,
-                    height: 1.5,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.gray600,
+                      letterSpacing: -0.025 * 14,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: onMoreTap,
-            child: const Icon(
-              Icons.more_horiz,
-              size: 20,
-              color: AppColors.gray600,
+            _TapScale(
+              onTap: onMoreTap,
+              pressedScale: 0.92,
+              borderRadius: BorderRadius.circular(999),
+              child: const Icon(
+                Icons.more_horiz,
+                size: 20,
+                color: AppColors.gray600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1346,10 +1440,11 @@ class _ImageTabContent extends StatelessWidget {
               runSpacing: AppSpacing.md,
               children: images
                   .map(
-                    (img) => GestureDetector(
+                    (img) => _TapScale(
                       onTap: () => onImageTap(img),
                       onLongPress: () => onImageLongPress(img),
-                      behavior: HitTestBehavior.opaque,
+                      pressedScale: 0.94,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                       child: SizedBox(
                         width: 161,
                         height: 163,

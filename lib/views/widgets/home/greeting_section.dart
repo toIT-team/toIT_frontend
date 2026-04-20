@@ -96,8 +96,7 @@ class GreetingSection extends ConsumerWidget {
         SizedBox(
           width: 189,
           height: 111,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
+          child: _ScheduleCardTapAnimation(
             onTap: s.schedulesId > 0
                 ? () async {
                     await Navigator.of(context).push<void>(
@@ -133,5 +132,48 @@ class GreetingSection extends ConsumerWidget {
     final now = DateTime.now();
     final weekday = weekdays[now.weekday - 1];
     return '${now.month}월${now.day}일($weekday)';
+  }
+}
+
+class _ScheduleCardTapAnimation extends StatefulWidget {
+  const _ScheduleCardTapAnimation({required this.child, required this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  State<_ScheduleCardTapAnimation> createState() =>
+      _ScheduleCardTapAnimationState();
+}
+
+class _ScheduleCardTapAnimationState extends State<_ScheduleCardTapAnimation> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.94 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }

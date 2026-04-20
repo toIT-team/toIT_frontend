@@ -120,7 +120,7 @@ class _FolderOptionsSheet extends StatelessWidget {
   }
 }
 
-class _OptionItem extends StatelessWidget {
+class _OptionItem extends StatefulWidget {
   final String iconAssetPath;
   final bool isSvgIcon;
   final Color? iconTintColor;
@@ -144,50 +144,80 @@ class _OptionItem extends StatelessWidget {
   });
 
   @override
+  State<_OptionItem> createState() => _OptionItemState();
+}
+
+class _OptionItemState extends State<_OptionItem> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 54,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        alignment: Alignment.centerLeft,
-        child: Row(
-          children: [
-            SizedBox(
-              width: iconWidth,
-              height: iconHeight,
-              child:
-                  customIcon ??
-                  (isSvgIcon
-                      ? SvgPicture.asset(
-                          iconAssetPath,
-                          width: iconWidth,
-                          height: iconHeight,
-                          colorFilter: iconTintColor != null
-                              ? ColorFilter.mode(
-                                  iconTintColor!,
-                                  BlendMode.srcIn,
-                                )
-                              : null,
-                        )
-                      : Image.asset(
-                          iconAssetPath,
-                          width: iconWidth,
-                          height: iconHeight,
-                        )),
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.99 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            height: 54,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            alignment: Alignment.centerLeft,
+            color: isPressed
+                ? AppColors.neutral100.withOpacity(0.55)
+                : Colors.transparent,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: widget.iconWidth,
+                  height: widget.iconHeight,
+                  child:
+                      widget.customIcon ??
+                      (widget.isSvgIcon
+                          ? SvgPicture.asset(
+                              widget.iconAssetPath,
+                              width: widget.iconWidth,
+                              height: widget.iconHeight,
+                              colorFilter: widget.iconTintColor != null
+                                  ? ColorFilter.mode(
+                                      widget.iconTintColor!,
+                                      BlendMode.srcIn,
+                                    )
+                                  : null,
+                            )
+                          : Image.asset(
+                              widget.iconAssetPath,
+                              width: widget.iconWidth,
+                              height: widget.iconHeight,
+                            )),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: widget.textColor,
+                    letterSpacing: -0.025 * 18,
+                    height: 1.25,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: textColor,
-                letterSpacing: -0.025 * 18,
-                height: 1.25,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

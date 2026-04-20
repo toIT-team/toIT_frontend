@@ -110,30 +110,79 @@ class ScheduleCard extends StatelessWidget {
             const Spacer(),
             Align(
               alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: onAddTap,
-                behavior: HitTestBehavior.opaque,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '추가',
-                      style: TextStyle(
-                        color: AppColors.gray600,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
-                        letterSpacing: -0.35,
-                      ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(Icons.add, size: 16, color: AppColors.gray600),
-                  ],
-                ),
-              ),
+              child: _ScheduleAddActionButton(onTap: onAddTap),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ScheduleAddActionButton extends StatefulWidget {
+  const _ScheduleAddActionButton({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  State<_ScheduleAddActionButton> createState() =>
+      _ScheduleAddActionButtonState();
+}
+
+class _ScheduleAddActionButtonState extends State<_ScheduleAddActionButton> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.94 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          borderRadius: BorderRadius.circular(999),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: isPressed
+                  ? AppColors.neutral100.withOpacity(0.55)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '추가',
+                  style: TextStyle(
+                    color: AppColors.gray600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                    letterSpacing: -0.35,
+                  ),
+                ),
+                SizedBox(width: 4),
+                Icon(Icons.add, size: 16, color: AppColors.gray600),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
