@@ -121,25 +121,34 @@ class FolderSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         _ChipsRow(filters: filters),
         const SizedBox(height: AppSpacing.md),
-        GridView.count(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          crossAxisCount: 2,
-          crossAxisSpacing: AppSpacing.md,
-          mainAxisSpacing: AppSpacing.md,
-          childAspectRatio: 1.5,
-          children: [
-            for (final f in folders)
-              FolderTile(
-                foldersId: f.foldersId,
-                title: f.title,
-                memo: f.memo,
-                countText: f.countText,
-                accentColor: f.accentColor,
-                colorIndex: f.colorIndex,
-                iconIndex: f.iconIndex,
-              ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Android Small Phone 같은 좁은 폭 환경에서 카드 하단 overflow를 방지하기 위해
+            // 셀 높이를 한 단계 더 확보한다.
+            final isNarrowWidth = constraints.maxWidth <= 360;
+            final childAspectRatio = isNarrowWidth ? 1.35 : 1.45;
+
+            return GridView.count(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+              childAspectRatio: childAspectRatio,
+              children: [
+                for (final f in folders)
+                  FolderTile(
+                    foldersId: f.foldersId,
+                    title: f.title,
+                    memo: f.memo,
+                    countText: f.countText,
+                    accentColor: f.accentColor,
+                    colorIndex: f.colorIndex,
+                    iconIndex: f.iconIndex,
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );

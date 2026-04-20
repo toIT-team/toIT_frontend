@@ -30,49 +30,56 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          _GlassNavPill(
-            width: 259,
-            height: 52,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _NavItem(
-                  icon: _NavSvgIcon(
-                    assetPath: AppAssets.navHomeIcon,
+    final isAndroid = Theme.of(context).platform == TargetPlatform.android;
+    final bottomInset = isAndroid ? 12.0 : 8.0;
+
+    return SafeArea(
+      top: false,
+      minimum: EdgeInsets.only(bottom: bottomInset),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+        child: Row(
+          children: [
+            _GlassNavPill(
+              width: 259,
+              height: 52,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _NavItem(
+                    icon: _NavSvgIcon(
+                      assetPath: AppAssets.navHomeIcon,
+                      isSelected: widget.currentIndex == 0,
+                    ),
                     isSelected: widget.currentIndex == 0,
+                    onTap: () => widget.onTap(0),
                   ),
-                  isSelected: widget.currentIndex == 0,
-                  onTap: () => widget.onTap(0),
-                ),
-                _NavItem(
-                  icon: _NavSvgIcon(
-                    assetPath: AppAssets.navCalendarIcon,
+                  _NavItem(
+                    icon: _NavSvgIcon(
+                      assetPath: AppAssets.navCalendarIcon,
+                      isSelected: widget.currentIndex == 1,
+                    ),
                     isSelected: widget.currentIndex == 1,
+                    onTap: () => widget.onTap(1),
                   ),
-                  isSelected: widget.currentIndex == 1,
-                  onTap: () => widget.onTap(1),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 24),
-          _AddButton(
-            key: _addButtonKey,
-            onTap: () async {
-              final selected = await showAddPopupMenu(
-                context,
-                anchorKey: _addButtonKey,
-              );
-              if (selected != null) {
-                widget.onAddMenuTap?.call(selected);
-              }
-            },
-          ),
-        ],
+            const SizedBox(width: 24),
+            _AddButton(
+              key: _addButtonKey,
+              onTap: () async {
+                final selected = await showAddPopupMenu(
+                  context,
+                  anchorKey: _addButtonKey,
+                );
+                if (selected != null) {
+                  widget.onAddMenuTap?.call(selected);
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -131,8 +138,8 @@ class _GlassNavPill extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.white.withOpacity(0.45),
-                          Colors.white.withOpacity(0.80),
+                          Colors.white.withOpacity(0.14),
+                          Colors.white.withOpacity(0.26),
                         ],
                       ),
                     ),
@@ -151,7 +158,7 @@ class _GlassNavPill extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: radius,
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.65),
+                          color: Colors.white.withOpacity(0.38),
                           width: 1,
                         ),
                       ),
