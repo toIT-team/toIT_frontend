@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
@@ -51,6 +52,12 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
 
 class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     with SingleTickerProviderStateMixin {
+  static const String _filledFavoriteIconSvg = '''
+<svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M14.1667 2.5C14.6088 2.5 15.0327 2.67559 15.3453 2.98816C15.6578 3.30072 15.8334 3.72464 15.8334 4.16667V16.6667C15.8334 16.8126 15.795 16.956 15.7221 17.0824C15.6493 17.2089 15.5445 17.314 15.4183 17.3872C15.2921 17.4604 15.1488 17.4992 15.0029 17.4997C14.857 17.5002 14.7135 17.4624 14.5867 17.39L10.8267 15.2417C10.575 15.0978 10.29 15.0222 10.0001 15.0222C9.71013 15.0222 9.42519 15.0978 9.17342 15.2417L5.41341 17.39C5.2867 17.4624 5.1432 17.5002 4.99727 17.4997C4.85133 17.4992 4.70809 17.4604 4.58187 17.3872C4.45564 17.314 4.35086 17.2089 4.27801 17.0824C4.20516 16.956 4.1668 16.8126 4.16675 16.6667V4.16667C4.16675 3.72464 4.34234 3.30072 4.6549 2.98816C4.96746 2.67559 5.39139 2.5 5.83341 2.5H14.1667Z" fill="#222222" stroke="#222222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+''';
+
   late TabController _tabController;
   String _folderName = '';
   final GlobalKey _addButtonKey = GlobalKey();
@@ -109,7 +116,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   }
 
   Future<void> _openFolderOptions() async {
-    final option = await showFolderOptionsBottomSheet(context);
+    final isFavoriteFolder = ref
+        .read(homeProvider.notifier)
+        .isFavoriteFolder(widget.foldersId);
+    final option = await showFolderOptionsBottomSheet(
+      context,
+      isFavorite: isFavoriteFolder,
+    );
     if (option == null || !mounted) return;
 
     FolderItem? currentFolder;
@@ -176,7 +189,36 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         }
         Navigator.of(context).pop();
         break;
+      case FolderOption.toggleFavorite:
+        final nextFavoriteState = ref
+            .read(homeProvider.notifier)
+            .toggleFavoriteFolderLocal(widget.foldersId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              nextFavoriteState
+                  ? '즐겨찾기에 추가되었습니다.'
+                  : '즐겨찾기가 해제되었습니다.',
+            ),
+          ),
+        );
+        break;
     }
+  }
+
+  void _toggleFavoriteFromHeader() {
+    final isNowFavorite = ref
+        .read(homeProvider.notifier)
+        .toggleFavoriteFolderLocal(widget.foldersId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isNowFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.',
+        ),
+      ),
+    );
   }
 
   Future<void> _onAddMenuTap() async {
@@ -579,6 +621,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    // 즐겨찾기 로컬 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
+    ref.watch(homeProvider.select((state) => state.folders));
+    final isFavoriteFolder = ref
+        .read(homeProvider.notifier)
+        .isFavoriteFolder(widget.foldersId);
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
 
     return Scaffold(
@@ -605,6 +652,28 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           IconButton(
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
             onPressed: () {},
+          ),
+          IconButton(
+            onPressed: _toggleFavoriteFromHeader,
+            icon: SizedBox(
+              width: 24,
+              height: 24,
+              child: isFavoriteFolder
+                  ? SvgPicture.string(
+                      _filledFavoriteIconSvg,
+                      width: 24,
+                      height: 24,
+                    )
+                  : SvgPicture.asset(
+                      AppAssets.favoriteIcon,
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.gray900,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz, color: AppColors.gray900),

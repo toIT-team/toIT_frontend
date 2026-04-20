@@ -163,6 +163,9 @@ class FolderTile extends ConsumerWidget {
                                   final option =
                                       await showFolderOptionsBottomSheet(
                                         context,
+                                        isFavorite: ref
+                                            .read(homeProvider.notifier)
+                                            .isFavoriteFolder(foldersId),
                                       );
                                   if (option == null || !context.mounted) {
                                     return;
@@ -228,6 +231,22 @@ class FolderTile extends ConsumerWidget {
                                         ).showSnackBar(
                                           const SnackBar(
                                             content: Text('보관함 삭제에 실패했습니다.'),
+                                          ),
+                                        );
+                                      }
+                                      break;
+                                    case FolderOption.toggleFavorite:
+                                      final nextFavoriteState = ref
+                                          .read(homeProvider.notifier)
+                                          .toggleFavoriteFolderLocal(foldersId);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              nextFavoriteState
+                                                  ? '즐겨찾기에 추가되었습니다.'
+                                                  : '즐겨찾기가 해제되었습니다.',
+                                            ),
                                           ),
                                         );
                                       }

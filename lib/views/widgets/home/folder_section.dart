@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../models/home/folder_item.dart';
+import '../../screens/folder_detail_screen.dart';
 import 'add_folder_bottom_sheet.dart';
 import 'folder_tile.dart';
 
@@ -22,11 +23,18 @@ class FolderSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final homeNotifier = ref.read(homeProvider.notifier);
+    final selectedFilterIndex = ref.watch(
+      homeProvider.select((state) => state.selectedFilterIndex),
+    );
     final totalFolderCount = ref.watch(
       homeProvider.select((state) => state.folders.length),
     );
     final isFolderLimitReached =
         totalFolderCount >= HomeController.maxFolderCount;
+    final clampedFilterIndex = filters.isEmpty
+        ? 0
+        : selectedFilterIndex.clamp(0, filters.length - 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +45,7 @@ class FolderSection extends ConsumerWidget {
             Row(
               children: const [
                 Text(
-                  '폴더',
+                  '보관함',
                   style: TextStyle(
                     color: AppColors.gray900,
                     fontSize: 18,
@@ -119,7 +127,33 @@ class FolderSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        _ChipsRow(filters: filters),
+        _ChipsRow(
+          filters: filters,
+          onTapFilter: (index) {
+            if (index < 0 || index >= filters.length) return;
+            ref.read(homeProvider.notifier).selectFilter(index);
+            final filterToken = filters[index];
+            if (!homeNotifier.isFolderShortcutFilter(filterToken)) return;
+
+            final folderId = homeNotifier.getFolderShortcutId(filterToken);
+            if (folderId == null) return;
+            final targetFolder = folders.where(
+              (folder) => folder.foldersId == folderId,
+            );
+            if (targetFolder.isEmpty) return;
+
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => FolderDetailScreen(
+                  foldersId: targetFolder.first.foldersId,
+                  folderName: targetFolder.first.title,
+                ),
+              ),
+            );
+          },
+          selectedIndex: clampedFilterIndex,
+          filterLabelBuilder: homeNotifier.getFilterLabel,
+        ),
         const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -157,8 +191,16 @@ class FolderSection extends ConsumerWidget {
 
 class _ChipsRow extends StatelessWidget {
   final List<String> filters;
+  final ValueChanged<int> onTapFilter;
+  final int selectedIndex;
+  final String Function(String filterToken) filterLabelBuilder;
 
-  const _ChipsRow({required this.filters});
+  const _ChipsRow({
+    required this.filters,
+    required this.onTapFilter,
+    required this.selectedIndex,
+    required this.filterLabelBuilder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +209,11 @@ class _ChipsRow extends StatelessWidget {
       child: Row(
         children: [
           for (int i = 0; i < filters.length; i++) ...[
-            _FilterChip(label: filters[i], selected: i == 0),
+            _FilterChip(
+              label: filterLabelBuilder(filters[i]),
+              selected: i == selectedIndex,
+              onTap: () => onTapFilter(i),
+            ),
             if (i != filters.length - 1) const SizedBox(width: AppSpacing.xs),
           ],
         ],
@@ -179,30 +225,45 @@ class _ChipsRow extends StatelessWidget {
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
-  const _FilterChip({required this.label, required this.selected});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final selectedColor = AppColors.neutral200;
     final unselectedText = AppColors.gray600;
     final unselectedBorder = unselectedText.withOpacity(0.35);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: selected ? selectedColor : unselectedBorder),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: selected ? selectedColor : unselectedText,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          fontSize: 16,
+        splashColor: AppColors.gray600.withOpacity(0.08),
+        highlightColor: AppColors.gray600.withOpacity(0.04),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: AppSpacing.xs,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: selected ? selectedColor : unselectedBorder),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? selectedColor : unselectedText,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 16,
+            ),
+          ),
         ),
       ),
     );

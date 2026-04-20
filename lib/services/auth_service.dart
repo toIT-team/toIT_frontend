@@ -86,8 +86,23 @@ class AuthService {
   Future<String?> getRefreshToken() => _storage.read(key: _kRefreshToken);
 
   Future<bool> hasTokens() async {
-    final token = await getAccessToken();
-    return token != null && token.isNotEmpty;
+    final accessToken = await getAccessToken();
+    final refreshToken = await getRefreshToken();
+
+    final hasAccessToken = accessToken != null && accessToken.isNotEmpty;
+    final hasRefreshToken = refreshToken != null && refreshToken.isNotEmpty;
+
+    // 토큰 쌍이 어긋난 상태(access만 있거나 refresh만 있는 경우)는
+    // 앱 시작 시 authenticated로 오판되어 401 루프를 만들 수 있다.
+    if (hasAccessToken != hasRefreshToken) {
+      debugPrint(
+        '[AuthService] 토큰 쌍 불일치 감지(access=$hasAccessToken, refresh=$hasRefreshToken) → 토큰 정리',
+      );
+      await clearTokens();
+      return false;
+    }
+
+    return hasAccessToken && hasRefreshToken;
   }
 
   /// 앱 시작 시 기존 토큰을 App Group에 1회 동기화
