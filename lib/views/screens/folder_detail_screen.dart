@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
@@ -300,6 +301,43 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     );
   }
 
+  Future<void> _openLink(LinkDto link) async {
+    final rawUrl = link.linksUrl.trim();
+    if (rawUrl.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('열 수 있는 링크가 없습니다.')));
+      return;
+    }
+
+    Uri? uri = Uri.tryParse(rawUrl);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('유효하지 않은 링크입니다.')));
+      return;
+    }
+
+    if (uri.scheme.isEmpty) {
+      uri = Uri.tryParse('https://$rawUrl');
+      if (uri == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('유효하지 않은 링크입니다.')));
+        return;
+      }
+    }
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (launched || !mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('링크를 열 수 없습니다.')));
+  }
+
   void _openNoteDetail(TextDto note) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -592,6 +630,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         case FolderTab.links:
           return _LinkTabContent(
             links: data.links,
+            onLinkTap: _openLink,
             onLinkKebabTap: _showLinkKebabSheet,
           );
         case FolderTab.notes:
@@ -888,9 +927,14 @@ Widget _buildSectionToolbar(int count) {
 // ─── 링크 탭 (API links[]) ───
 class _LinkTabContent extends StatelessWidget {
   final List<LinkDto> links;
+  final void Function(LinkDto link) onLinkTap;
   final void Function(LinkDto link) onLinkKebabTap;
 
-  const _LinkTabContent({required this.links, required this.onLinkKebabTap});
+  const _LinkTabContent({
+    required this.links,
+    required this.onLinkTap,
+    required this.onLinkKebabTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -927,6 +971,7 @@ class _LinkTabContent extends StatelessWidget {
               final link = links[index];
               return _LinkItemRow(
                 link: link,
+                onTap: () => onLinkTap(link),
                 onMoreTap: () => onLinkKebabTap(link),
               );
             },
@@ -939,15 +984,20 @@ class _LinkTabContent extends StatelessWidget {
 
 class _LinkItemRow extends StatelessWidget {
   final LinkDto link;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
-  const _LinkItemRow({required this.link, required this.onMoreTap});
+  const _LinkItemRow({
+    required this.link,
+    required this.onTap,
+    required this.onMoreTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateText = _formatCreatedAt(link.createdAt);
     return _TapScale(
-      onTap: () {},
+      onTap: onTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(

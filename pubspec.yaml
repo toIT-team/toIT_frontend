@@ -59,6 +59,7 @@ dependencies:
   flutter_web_auth_2: ^5.0.2
   flutter_secure_storage: ^10.0.0
   receive_sharing_intent: ^1.8.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
