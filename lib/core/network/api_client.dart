@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -101,12 +103,29 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 });
 
 /// 인증 인터셉터
-/// - 요청마다 Authorization: Bearer 헤더 추가
-/// - 401 응답 시 refreshToken으로 재발급 후 재시도
-/// - 재발급도 실패하면 강제 로그아웃
+///
+/// 책임:
+/// 1. 모든 요청에 `Authorization: Bearer <accessToken>` 헤더 첨부
+/// 2. 401 응답 시 refreshToken으로 access 토큰 재발급 후 원본 요청 재시도
+/// 3. 재발급 실패 / 재시도도 401 이면 강제 로그아웃
+///
+/// 동시성 처리 (Single-Flight Pattern):
+/// - 동시에 여러 요청이 401을 받아도 reissue 호출은 단 1회만 수행
+/// - 진행 중인 reissue가 있으면 모든 후속 요청은 같은 Completer를 await
+/// - reissue 도중 새로 출발하는 요청도 onRequest에서 Completer를 await 하여
+///   stale token으로 보내지 않도록 보장
+///
+/// 무한 루프 방지:
+/// - reissue 자체는 별도 Dio (AuthService 내부) 사용 → 인터셉터 미적용
+/// - extra['__retried__'] 플래그로 동일 요청을 두 번 이상 재시도하지 않음
 class _AuthInterceptor extends Interceptor {
+  static const String _retriedExtraKey = '__retried_after_refresh__';
+
   final ApiClient _client;
-  bool _isRefreshing = false;
+
+  /// 진행 중인 토큰 재발급 작업.
+  /// null 이면 idle, non-null 이면 refresh 진행 중이며 결과(String? newAccessToken)를 await 가능.
+  Completer<String?>? _refreshCompleter;
 
   _AuthInterceptor(this._client);
 
@@ -117,6 +136,18 @@ class _AuthInterceptor extends Interceptor {
   ) async {
     final authService = _client._authService;
     if (authService == null) return handler.next(options);
+
+    // 진행 중인 refresh 가 있으면 그 결과를 기다린 뒤 토큰을 첨부한다.
+    // 이렇게 하지 않으면 refresh 도중 출발한 요청은 stale token 으로 401을 받게 됨.
+    final inFlight = _refreshCompleter;
+    if (inFlight != null) {
+      final refreshed = await inFlight.future;
+      if (refreshed != null && refreshed.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $refreshed';
+        return handler.next(options);
+      }
+      // refresh 실패한 경우엔 그냥 진행 (어차피 force logout 으로 정리됨)
+    }
 
     final token = await authService.getAccessToken();
     if (token != null && token.isNotEmpty) {
@@ -130,41 +161,73 @@ class _AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode != 401) {
+    final response = err.response;
+    if (response?.statusCode != 401) {
       return handler.next(err);
     }
 
-    // 재발급 API 자체가 401이면 무한 루프 방지
-    final path = err.requestOptions.path;
-    if (path == ApiConstants.reissueEndpoint) {
+    final requestOptions = err.requestOptions;
+
+    // 이미 한 번 재시도한 요청이 또 401 → refresh 토큰 자체가 무효
+    final alreadyRetried = requestOptions.extra[_retriedExtraKey] == true;
+    if (alreadyRetried) {
       _client._onForceLogout?.call();
       return handler.next(err);
     }
 
-    if (_isRefreshing) return handler.next(err);
-    _isRefreshing = true;
+    final newAccessToken = await _refreshAccessTokenSingleFlight();
+
+    if (newAccessToken == null || newAccessToken.isEmpty) {
+      _client._onForceLogout?.call();
+      return handler.next(err);
+    }
+
+    try {
+      requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+      requestOptions.extra[_retriedExtraKey] = true;
+
+      final retried = await _client._dio.fetch(requestOptions);
+      handler.resolve(retried);
+    } on DioException catch (retryError) {
+      handler.next(retryError);
+    } catch (retryError, stackTrace) {
+      handler.next(
+        DioException(
+          requestOptions: requestOptions,
+          error: retryError,
+          stackTrace: stackTrace,
+          type: DioExceptionType.unknown,
+        ),
+      );
+    }
+  }
+
+  /// 동시에 여러 요청이 호출해도 실제 reissue 는 단 1회만 실행되고
+  /// 모든 호출자는 동일한 Future 결과(새 accessToken 혹은 null)를 공유한다.
+  Future<String?> _refreshAccessTokenSingleFlight() async {
+    final inFlight = _refreshCompleter;
+    if (inFlight != null) {
+      return inFlight.future;
+    }
+
+    final completer = Completer<String?>();
+    _refreshCompleter = completer;
 
     try {
       final authService = _client._authService;
-      if (authService == null) return handler.next(err);
-
-      final newToken = await authService.reissueAccessToken();
-      _isRefreshing = false;
-
-      if (newToken == null) {
-        _client._onForceLogout?.call();
-        return handler.next(err);
+      if (authService == null) {
+        completer.complete(null);
+      } else {
+        final newToken = await authService.reissueAccessToken();
+        completer.complete(newToken);
       }
-
-      // 원본 요청을 새 토큰으로 재시도
-      final options = err.requestOptions;
-      options.headers['Authorization'] = 'Bearer $newToken';
-      final response = await _client._dio.fetch(options);
-      handler.resolve(response);
-    } catch (e) {
-      _isRefreshing = false;
-      _client._onForceLogout?.call();
-      handler.next(err);
+    } catch (e, st) {
+      debugPrint('[_AuthInterceptor] reissue 예외: $e\n$st');
+      completer.complete(null);
+    } finally {
+      _refreshCompleter = null;
     }
+
+    return completer.future;
   }
 }
