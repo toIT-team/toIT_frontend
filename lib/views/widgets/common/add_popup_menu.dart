@@ -121,7 +121,7 @@ class _AddPopupMenuContent extends StatelessWidget {
 }
 
 /// 팝업 메뉴 개별 항목
-class _PopupMenuItem extends StatelessWidget {
+class _PopupMenuItem extends StatefulWidget {
   final AddMenuItem item;
   final bool isLast;
   final VoidCallback onTap;
@@ -133,36 +133,66 @@ class _PopupMenuItem extends StatelessWidget {
   });
 
   @override
+  State<_PopupMenuItem> createState() => _PopupMenuItemState();
+}
+
+class _PopupMenuItemState extends State<_PopupMenuItem> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: 140,
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 13),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              item.svgPath,
-              width: 16,
-              height: 16,
-              colorFilter: const ColorFilter.mode(
-                AppColors.gray600,
-                BlendMode.srcIn,
-              ),
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.99 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            width: 140,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            color: isPressed
+                ? AppColors.neutral100.withOpacity(0.55)
+                : Colors.transparent,
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  widget.item.svgPath,
+                  width: 16,
+                  height: 16,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.gray600,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  widget.item.label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray900,
+                    letterSpacing: -0.025 * 16,
+                    height: 1.25,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              item.label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: AppColors.gray900,
-                letterSpacing: -0.025 * 16,
-                height: 1.25,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

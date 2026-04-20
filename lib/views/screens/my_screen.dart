@@ -314,7 +314,7 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
-class _SettingTile extends StatelessWidget {
+class _SettingTile extends StatefulWidget {
   const _SettingTile({
     required this.iconPath,
     required this.title,
@@ -332,62 +332,91 @@ class _SettingTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_SettingTile> createState() => _SettingTileState();
+}
+
+class _SettingTileState extends State<_SettingTile> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scale = widget.scale;
     double s(double value) => value * scale;
 
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: s(80),
-        padding: EdgeInsets.symmetric(horizontal: s(20)),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            bottom: BorderSide(color: AppColors.neutral50, width: 1),
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.99 : 1.0,
+      child: InkWell(
+        onTap: widget.onTap,
+        onHighlightChanged: setPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          height: s(80),
+          padding: EdgeInsets.symmetric(horizontal: s(20)),
+          decoration: BoxDecoration(
+            color: isPressed
+                ? AppColors.neutral50.withOpacity(0.55)
+                : Colors.white,
+            border: const Border(
+              bottom: BorderSide(color: AppColors.neutral50, width: 1),
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: s(44),
-              height: s(44),
-              child: Image.asset(iconPath, fit: BoxFit.contain),
-            ),
-            SizedBox(width: s(16)),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: AppColors.gray900,
-                      fontSize: s(18),
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.025 * s(18),
-                      height: 1.25,
-                    ),
-                  ),
-                  SizedBox(height: s(2)),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColors.gray600,
-                      fontSize: s(14),
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: -0.025 * s(14),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
+          child: Row(
+            children: [
+              SizedBox(
+                width: s(44),
+                height: s(44),
+                child: Image.asset(widget.iconPath, fit: BoxFit.contain),
               ),
-            ),
-            if (showChevron)
-              Icon(Icons.chevron_right, color: AppColors.gray600, size: s(24)),
-          ],
+              SizedBox(width: s(16)),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        color: AppColors.gray900,
+                        fontSize: s(18),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.025 * s(18),
+                        height: 1.25,
+                      ),
+                    ),
+                    SizedBox(height: s(2)),
+                    Text(
+                      widget.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.gray600,
+                        fontSize: s(14),
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: -0.025 * s(14),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.showChevron)
+                Icon(
+                  Icons.chevron_right,
+                  color: AppColors.gray600,
+                  size: s(24),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -7,9 +7,7 @@ class ApiConstants {
 
   /// 서버 기본 URL (.env 파일에서 읽음)
   static String get baseUrl =>
-      dotenv.maybeGet('API_BASE_URL') ??
-      dotenv.maybeGet('BASE_URL') ??
-      'http://localhost:8080';
+      dotenv.maybeGet('BASE_URL') ?? 'http://localhost:8080';
 
   /// 요청 타임아웃 (밀리초)
   static const int connectTimeout = 10000;
@@ -59,14 +57,17 @@ class ApiConstants {
   // ─── 인증 ───
 
   /// 카카오 소셜 로그인 (GET → 브라우저로 열어 OAuth 진행)
-  static const String kakaoLoginEndpoint =
-      '/api/auth/kakao/login';
+  static const String kakaoLoginEndpoint = '/api/auth/kakao/login';
 
-  static const String appleLoginEndpoint =
-      '/api/auth/apple/login';
+  static const String appleLoginEndpoint = '/api/auth/apple/login';
   static const String restoreAccountEndpoint = '/api/auth/restore';
-  /// 액세스 토큰 재발급 (POST, body: refreshToken)
-  static const String reissueEndpoint = '/api/v1/auth/reissue';
+
+  /// 액세스 토큰 재발급 (POST, body: { refreshToken })
+  /// 응답: { accessToken: string }
+  static const String reissueEndpoint = '/api/auth/reissue';
+
+  /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
+  static const String fcmEndpoint = '/fcm';
 
   /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
   static const String fcmEndpoint = '/fcm';

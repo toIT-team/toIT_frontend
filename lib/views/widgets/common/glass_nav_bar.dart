@@ -19,20 +19,11 @@ class GlassNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    _NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
-      label: '홈',
-    ),
+    _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home, label: '홈'),
     _NavItem(
       icon: Icons.calendar_today_outlined,
       activeIcon: Icons.calendar_today,
       label: '캘린더',
-    ),
-    _NavItem(
-      icon: Icons.chat_bubble_outline,
-      activeIcon: Icons.chat_bubble,
-      label: '채팅',
     ),
   ];
 
@@ -105,9 +96,7 @@ class _NavBarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected
-        ? const Color(0xFF4285F4)
-        : Colors.grey[600];
+    final color = isSelected ? const Color(0xFF4285F4) : Colors.grey[600];
 
     return GestureDetector(
       onTap: onTap,
@@ -115,13 +104,7 @@ class _NavBarItem extends StatelessWidget {
       child: SizedBox(
         width: 56,
         height: 56,
-        child: Center(
-          child: Icon(
-            icon,
-            size: 26,
-            color: color,
-          ),
-        ),
+        child: Center(child: Icon(icon, size: 26, color: color)),
       ),
     );
   }

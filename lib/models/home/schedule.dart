@@ -8,6 +8,9 @@ part 'schedule.g.dart';
 @freezed
 class Schedule with _$Schedule {
   const factory Schedule({
+    /// 서버 일정 ID (상세 화면 이동용)
+    @Default(0) int schedulesId,
+
     /// 일정 제목
     required String title,
 
@@ -18,8 +21,9 @@ class Schedule with _$Schedule {
     required String scheduleTime,
 
     /// 강조 색상 (JSON 제외)
-    @JsonKey(includeFromJson: false, includeToJson: false)
     @Default(Color(0xFF4285F4))
+    // ignore: invalid_annotation_target
+    @JsonKey(includeFromJson: false, includeToJson: false)
     Color accentColor,
   }) = _Schedule;
 

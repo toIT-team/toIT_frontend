@@ -150,6 +150,7 @@ Schedule _mapSchedule(ScheduleDto dto, int index) {
   final timeRange = isAllDay ? '하루종일' : '$startFormatted - $endFormatted';
 
   return Schedule(
+    schedulesId: dto.schedulesId,
     title: dto.title,
     timeRangeText: timeRange,
     scheduleTime: isAllDay
@@ -192,6 +193,13 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
 
 /// 홈 화면 컨트롤러 (Notifier)
 class HomeController extends Notifier<HomeState> {
+  static const int maxFolderCount = 20;
+  static const String allFilterToken = '__all__';
+  static const String favoriteFilterToken = '__favorite__';
+  static const String folderFilterPrefix = '__folder__';
+
+  Set<int> _favoriteFolderIds = <int>{};
+
   @override
   HomeState build() {
     // 사용자 세션(로그인/로그아웃/복구) 변경 시 홈 상태 캐시를 재생성
@@ -227,12 +235,27 @@ class HomeController extends Notifier<HomeState> {
         return _mapFolder(e.value, e.key, countText: '${e.value.itemsCount}개');
       }).toList();
 
+      _favoriteFolderIds = dto.folders
+          .where((folder) => folder.isFavorite)
+          .map((folder) => folder.foldersId)
+          .toSet();
+
+      final filters = _buildFilterTokens(
+        folders: folders,
+        foldersViews: dto.foldersViews,
+      );
+      final nextSelectedIndex = state.selectedFilterIndex.clamp(
+        0,
+        filters.isEmpty ? 0 : filters.length - 1,
+      );
+
       state = state.copyWith(
         userName: resolvedUserName,
         todayScheduleCount: schedules.length,
         schedules: schedules,
         folders: folders,
-        filters: const ['전체', '즐겨찾기'],
+        filters: filters,
+        selectedFilterIndex: nextSelectedIndex,
         isLoading: false,
         errorMessage: null,
       );
@@ -245,8 +268,13 @@ class HomeController extends Notifier<HomeState> {
   }
 
   /// 데이터 새로고침
-  Future<void> refresh() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+  /// [silent]이 true면 전체 화면 로딩 없이 백그라운드로 갱신 (다른 화면 복귀 시 등)
+  Future<void> refresh({bool silent = false}) async {
+    if (silent) {
+      state = state.copyWith(errorMessage: null);
+    } else {
+      state = state.copyWith(isLoading: true, errorMessage: null);
+    }
     await _loadHomeData();
   }
 
@@ -298,6 +326,11 @@ class HomeController extends Notifier<HomeState> {
     required int colorIndex,
     required int iconIndex,
   }) async {
+    if (state.folders.length >= maxFolderCount) {
+      state = state.copyWith(errorMessage: '보관함은 최대 20개까지 생성할 수 있습니다.');
+      return false;
+    }
+
     try {
       final repository = ref.read(homeRepositoryProvider);
       final colorToken = AppColors.folderColorTokens[colorIndex];
@@ -319,7 +352,98 @@ class HomeController extends Notifier<HomeState> {
 
   /// 필터 선택
   void selectFilter(int index) {
+    if (index < 0 || index >= state.filters.length) return;
     state = state.copyWith(selectedFilterIndex: index);
+  }
+
+  List<FolderItem> getFilteredFolders({
+    required List<FolderItem> folders,
+    required String selectedFilterToken,
+  }) {
+    if (selectedFilterToken == allFilterToken) {
+      return folders;
+    }
+
+    if (selectedFilterToken == favoriteFilterToken) {
+      return folders
+          .where((folder) => _favoriteFolderIds.contains(folder.foldersId))
+          .toList();
+    }
+
+    final folderId = _tryParseFolderFilterId(selectedFilterToken);
+    if (folderId == null) return folders;
+    return folders.where((folder) => folder.foldersId == folderId).toList();
+  }
+
+  bool isFavoriteFolder(int foldersId) {
+    return _favoriteFolderIds.contains(foldersId);
+  }
+
+  bool toggleFavoriteFolderLocal(int foldersId) {
+    final isNowFavorite = !_favoriteFolderIds.contains(foldersId);
+    if (isNowFavorite) {
+      _favoriteFolderIds.add(foldersId);
+    } else {
+      _favoriteFolderIds.remove(foldersId);
+    }
+
+    // API 미연동 상태이므로 로컬 UI 상태만 갱신한다.
+    state = state.copyWith(folders: [...state.folders]);
+    return isNowFavorite;
+  }
+
+  String getFilterLabel(String filterToken) {
+    if (filterToken == allFilterToken) return '전체';
+    if (filterToken == favoriteFilterToken) return '즐겨찾기';
+
+    if (filterToken.startsWith('$folderFilterPrefix:')) {
+      final parts = filterToken.split(':');
+      if (parts.length >= 3) {
+        return parts.sublist(2).join(':');
+      }
+    }
+    return filterToken;
+  }
+
+  bool isFolderShortcutFilter(String filterToken) {
+    return filterToken.startsWith('$folderFilterPrefix:');
+  }
+
+  int? getFolderShortcutId(String filterToken) {
+    return _tryParseFolderFilterId(filterToken);
+  }
+
+  List<String> _buildFilterTokens({
+    required List<FolderItem> folders,
+    required List<FolderViewDto> foldersViews,
+  }) {
+    final tokens = <String>[allFilterToken, favoriteFilterToken];
+    final addedFolderIds = <int>{};
+
+    for (final viewedFolder in foldersViews) {
+      final viewedFolderId = viewedFolder.folderId;
+      if (viewedFolderId <= 0 || addedFolderIds.contains(viewedFolderId)) {
+        continue;
+      }
+
+      final folder = folders.where((item) => item.foldersId == viewedFolderId);
+      if (folder.isEmpty) continue;
+
+      final folderName = viewedFolder.name.trim().isNotEmpty
+          ? viewedFolder.name.trim()
+          : folder.first.title;
+      tokens.add('$folderFilterPrefix:$viewedFolderId:$folderName');
+      addedFolderIds.add(viewedFolderId);
+    }
+
+    return tokens;
+  }
+
+  int? _tryParseFolderFilterId(String filterToken) {
+    if (!filterToken.startsWith('$folderFilterPrefix:')) return null;
+    final parts = filterToken.split(':');
+    if (parts.length < 3) return null;
+    return int.tryParse(parts[1]);
   }
 }
 

@@ -27,6 +27,9 @@ class AppAssets {
   static const String customerSupportIcon =
       'assets/icons/CustomerSupportIcon.png';
   static const String versionIcon = 'assets/icons/VersionIcon.png';
+  static const String editFolderIcon = 'assets/icons/EditFolderIcon.svg';
+  static const String folderMemoIcon = 'assets/icons/FolderMemoIcon.svg';
+  static const String favoriteIcon = 'assets/icons/FavoriteIcon.svg';
 
   // SVG Icons (팝업 메뉴용)
   static const String linkIcon = 'assets/icons/LinkIcon.svg';
@@ -35,4 +38,6 @@ class AppAssets {
   static const String imageIcon = 'assets/icons/ImageIcon.svg';
   static const String scheduleIcon = 'assets/icons/ScheduleIcon.svg';
   static const String settingIcon = 'assets/icons/SettingIcon.svg';
+  static const String navHomeIcon = 'assets/icons/NavHomeIcon.svg';
+  static const String navCalendarIcon = 'assets/icons/NavCalendarIcon.svg';
 }

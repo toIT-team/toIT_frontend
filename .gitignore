@@ -47,6 +47,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android Gradle 루트 빌드 산출물 (reports, intermediates 등)
+/android/build/
+
 # 환경변수
 .env
 .env.*

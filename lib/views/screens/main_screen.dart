@@ -32,8 +32,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final currentTab = ref.watch(currentTabProvider);
-    final bottomPadding =
-        MediaQuery.of(context).padding.bottom;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: Stack(
@@ -41,17 +40,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           // 탭 화면들
           Padding(
             padding: EdgeInsets.only(
-              bottom: _bottomBarHeight +
-                  _bottomBarPadding * 2 +
-                  bottomPadding,
+              bottom: _bottomBarHeight + _bottomBarPadding * 2 + bottomPadding,
             ),
             child: IndexedStack(
               index: currentTab,
-              children: const [
-                _HomePlaceholder(),
-                CalendarScreen(),
-                _ChatPlaceholder(),
-              ],
+              children: const [_HomePlaceholder(), CalendarScreen()],
             ),
           ),
           // 하단 네비게이션 영역
@@ -91,14 +84,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   void _navigateToEventForm() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const EventFormScreen(),
-      ),
-    ).then((result) {
-      if (result == null) return;
-      ref.read(currentTabProvider.notifier).state = 1;
-    });
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const EventFormScreen()))
+        .then((result) {
+          if (result == null) return;
+          ref.read(currentTabProvider.notifier).state = 1;
+        });
   }
 }
 
@@ -121,26 +112,16 @@ class _BottomBarArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: bottomPadding + 16,
-      ),
+      padding: EdgeInsets.only(left: 16, right: 16, bottom: bottomPadding + 16),
       child: Row(
         children: [
           // 글래스모피즘 네비게이션 바 (좌측 ~70%)
           Expanded(
-            child: GlassNavBar(
-              currentIndex: currentTab,
-              onTap: onTabChanged,
-            ),
+            child: GlassNavBar(currentIndex: currentTab, onTap: onTabChanged),
           ),
           const SizedBox(width: 12),
           // + FAB 버튼 (우측)
-          AddActionButton(
-            key: fabKey,
-            onTap: onFabTap,
-          ),
+          AddActionButton(key: fabKey, onTap: onFabTap),
         ],
       ),
     );
@@ -164,42 +145,7 @@ class _HomePlaceholder extends StatelessWidget {
         title: const Text('홈'),
       ),
       body: const Center(
-        child: Text(
-          '홈 화면',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 채팅 화면 Placeholder
-class _ChatPlaceholder extends StatelessWidget {
-  const _ChatPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () {
-            // TODO: 메뉴 열기
-          },
-        ),
-        title: const Text('채팅'),
-      ),
-      body: const Center(
-        child: Text(
-          '채팅 화면',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
-          ),
-        ),
+        child: Text('홈 화면', style: TextStyle(fontSize: 16, color: Colors.grey)),
       ),
     );
   }

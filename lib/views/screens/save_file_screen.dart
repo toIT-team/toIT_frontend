@@ -11,7 +11,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
-import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 파일 저장 화면 (POST /attachments/files API 연동)
@@ -148,10 +148,10 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
   }
 
   void _openFolderPicker() {
-    showFolderPickerSheet(
+    showMoveToFolderSheet(
       context,
       ref,
-      selectedFolder: _selectedFolder,
+      currentFoldersId: _selectedFolder?.foldersId ?? -1,
       onSelect: (folder) => setState(() => _selectedFolder = folder),
     );
   }

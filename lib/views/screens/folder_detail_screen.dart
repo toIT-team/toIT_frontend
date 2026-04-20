@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
@@ -51,6 +53,12 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
 
 class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     with SingleTickerProviderStateMixin {
+  static const String _filledFavoriteIconSvg = '''
+<svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M14.1667 2.5C14.6088 2.5 15.0327 2.67559 15.3453 2.98816C15.6578 3.30072 15.8334 3.72464 15.8334 4.16667V16.6667C15.8334 16.8126 15.795 16.956 15.7221 17.0824C15.6493 17.2089 15.5445 17.314 15.4183 17.3872C15.2921 17.4604 15.1488 17.4992 15.0029 17.4997C14.857 17.5002 14.7135 17.4624 14.5867 17.39L10.8267 15.2417C10.575 15.0978 10.29 15.0222 10.0001 15.0222C9.71013 15.0222 9.42519 15.0978 9.17342 15.2417L5.41341 17.39C5.2867 17.4624 5.1432 17.5002 4.99727 17.4997C4.85133 17.4992 4.70809 17.4604 4.58187 17.3872C4.45564 17.314 4.35086 17.2089 4.27801 17.0824C4.20516 16.956 4.1668 16.8126 4.16675 16.6667V4.16667C4.16675 3.72464 4.34234 3.30072 4.6549 2.98816C4.96746 2.67559 5.39139 2.5 5.83341 2.5H14.1667Z" fill="#222222" stroke="#222222" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+''';
+
   late TabController _tabController;
   String _folderName = '';
   final GlobalKey _addButtonKey = GlobalKey();
@@ -109,7 +117,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   }
 
   Future<void> _openFolderOptions() async {
-    final option = await showFolderOptionsBottomSheet(context);
+    final isFavoriteFolder = ref
+        .read(homeProvider.notifier)
+        .isFavoriteFolder(widget.foldersId);
+    final option = await showFolderOptionsBottomSheet(
+      context,
+      isFavorite: isFavoriteFolder,
+    );
     if (option == null || !mounted) return;
 
     FolderItem? currentFolder;
@@ -176,7 +190,32 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         }
         Navigator.of(context).pop();
         break;
+      case FolderOption.toggleFavorite:
+        final nextFavoriteState = ref
+            .read(homeProvider.notifier)
+            .toggleFavoriteFolderLocal(widget.foldersId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              nextFavoriteState ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.',
+            ),
+          ),
+        );
+        break;
     }
+  }
+
+  void _toggleFavoriteFromHeader() {
+    final isNowFavorite = ref
+        .read(homeProvider.notifier)
+        .toggleFavoriteFolderLocal(widget.foldersId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isNowFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.'),
+      ),
+    );
   }
 
   Future<void> _onAddMenuTap() async {
@@ -260,6 +299,43 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         }
       },
     );
+  }
+
+  Future<void> _openLink(LinkDto link) async {
+    final rawUrl = link.linksUrl.trim();
+    if (rawUrl.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('열 수 있는 링크가 없습니다.')));
+      return;
+    }
+
+    Uri? uri = Uri.tryParse(rawUrl);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('유효하지 않은 링크입니다.')));
+      return;
+    }
+
+    if (uri.scheme.isEmpty) {
+      uri = Uri.tryParse('https://$rawUrl');
+      if (uri == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('유효하지 않은 링크입니다.')));
+        return;
+      }
+    }
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (launched || !mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('링크를 열 수 없습니다.')));
   }
 
   void _openNoteDetail(TextDto note) {
@@ -554,6 +630,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         case FolderTab.links:
           return _LinkTabContent(
             links: data.links,
+            onLinkTap: _openLink,
             onLinkKebabTap: _showLinkKebabSheet,
           );
         case FolderTab.notes:
@@ -579,6 +656,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    // 즐겨찾기 로컬 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
+    ref.watch(homeProvider.select((state) => state.folders));
+    final isFavoriteFolder = ref
+        .read(homeProvider.notifier)
+        .isFavoriteFolder(widget.foldersId);
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
 
     return Scaffold(
@@ -587,9 +669,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         backgroundColor: AppColors.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
+        leading: _TapScaleIconButton(
+          onTap: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.gray900),
-          onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           _folderName,
@@ -602,13 +684,35 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ),
         actions: [
-          IconButton(
+          _TapScaleIconButton(
+            onTap: () {},
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
-            onPressed: () {},
           ),
-          IconButton(
+          _TapScaleIconButton(
+            onTap: _toggleFavoriteFromHeader,
+            icon: SizedBox(
+              width: 24,
+              height: 24,
+              child: isFavoriteFolder
+                  ? SvgPicture.string(
+                      _filledFavoriteIconSvg,
+                      width: 24,
+                      height: 24,
+                    )
+                  : SvgPicture.asset(
+                      AppAssets.favoriteIcon,
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.gray900,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+            ),
+          ),
+          _TapScaleIconButton(
+            onTap: _openFolderOptions,
             icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
-            onPressed: _openFolderOptions,
           ),
         ],
       ),
@@ -637,6 +741,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               controller: _tabController,
               labelColor: AppColors.gray900,
               unselectedLabelColor: AppColors.gray600,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
               labelStyle: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -665,9 +771,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(right: 4, bottom: 16),
-        child: GestureDetector(
+        child: _TapScale(
           key: _addButtonKey,
           onTap: _onAddMenuTap,
+          pressedScale: 0.94,
+          borderRadius: BorderRadius.circular(99),
           child: Container(
             width: 52,
             height: 52,
@@ -689,6 +797,87 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _TapScaleIconButton extends StatelessWidget {
+  const _TapScaleIconButton({required this.onTap, required this.icon});
+
+  final VoidCallback onTap;
+  final Widget icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return _TapScale(
+      onTap: onTap,
+      pressedScale: 0.92,
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(width: 44, height: 44, child: Center(child: icon)),
+    );
+  }
+}
+
+class _TapScale extends StatefulWidget {
+  const _TapScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.pressedScale = 0.98,
+    this.borderRadius,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double pressedScale;
+  final BorderRadius? borderRadius;
+
+  @override
+  State<_TapScale> createState() => _TapScaleState();
+}
+
+class _TapScaleState extends State<_TapScale> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = widget.borderRadius ?? BorderRadius.circular(12);
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? widget.pressedScale : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          onHighlightChanged: setPressed,
+          borderRadius: radius,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: isPressed
+                  ? AppColors.neutral100.withOpacity(0.45)
+                  : Colors.transparent,
+              borderRadius: radius,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -738,9 +927,14 @@ Widget _buildSectionToolbar(int count) {
 // ─── 링크 탭 (API links[]) ───
 class _LinkTabContent extends StatelessWidget {
   final List<LinkDto> links;
+  final void Function(LinkDto link) onLinkTap;
   final void Function(LinkDto link) onLinkKebabTap;
 
-  const _LinkTabContent({required this.links, required this.onLinkKebabTap});
+  const _LinkTabContent({
+    required this.links,
+    required this.onLinkTap,
+    required this.onLinkKebabTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -777,6 +971,7 @@ class _LinkTabContent extends StatelessWidget {
               final link = links[index];
               return _LinkItemRow(
                 link: link,
+                onTap: () => onLinkTap(link),
                 onMoreTap: () => onLinkKebabTap(link),
               );
             },
@@ -789,92 +984,103 @@ class _LinkTabContent extends StatelessWidget {
 
 class _LinkItemRow extends StatelessWidget {
   final LinkDto link;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
-  const _LinkItemRow({required this.link, required this.onMoreTap});
+  const _LinkItemRow({
+    required this.link,
+    required this.onTap,
+    required this.onMoreTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final dateText = _formatCreatedAt(link.createdAt);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      link.linksName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.gray900,
-                        letterSpacing: -0.025 * 18,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (link.textContent.isNotEmpty)
+    return _TapScale(
+      onTap: onTap,
+      pressedScale: 0.995,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.lg,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        link.textContent,
+                        link.linksName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.gray600,
-                          letterSpacing: -0.025 * 14,
-                          height: 1.5,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray900,
+                          letterSpacing: -0.025 * 18,
+                          height: 1.4,
                         ),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xxl),
-              _LinkThumbnail(thumbnailUrl: link.linksThumbnail),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                dateText,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.gray600,
-                  letterSpacing: -0.025 * 14,
-                  height: 1.5,
-                ),
-              ),
-              GestureDetector(
-                onTap: onMoreTap,
-                behavior: HitTestBehavior.opaque,
-                child: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: AppColors.gray600,
+                      const SizedBox(height: AppSpacing.sm),
+                      if (link.textContent.isNotEmpty)
+                        Text(
+                          link.textContent,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.gray600,
+                            letterSpacing: -0.025 * 14,
+                            height: 1.5,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: AppSpacing.xxl),
+                _LinkThumbnail(thumbnailUrl: link.linksThumbnail),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  dateText,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray600,
+                    letterSpacing: -0.025 * 14,
+                    height: 1.5,
+                  ),
+                ),
+                _TapScale(
+                  onTap: onMoreTap,
+                  pressedScale: 0.92,
+                  borderRadius: BorderRadius.circular(999),
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Icon(
+                      Icons.more_vert,
+                      size: 20,
+                      color: AppColors.gray600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1026,9 +1232,10 @@ class _NoteCard extends StatelessWidget {
         : content;
     final dateText = _formatCreatedAt(note.createdAt);
 
-    return GestureDetector(
+    return _TapScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      pressedScale: 0.99,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1082,9 +1289,10 @@ class _NoteCard extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
-              GestureDetector(
+              _TapScale(
                 onTap: onKebabTap,
-                behavior: HitTestBehavior.opaque,
+                pressedScale: 0.92,
+                borderRadius: BorderRadius.circular(999),
                 child: const SizedBox(
                   width: 20,
                   height: 20,
@@ -1164,62 +1372,69 @@ class _FileItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitle = _formatFileSubtitle(file.createdAt, file.attachmentsSize);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.neutral100,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+    return _TapScale(
+      onTap: () {},
+      pressedScale: 0.995,
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.neutral100,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm + 1),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  file.fileName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gray900,
-                    letterSpacing: -0.025 * 18,
-                    height: 1.4,
+            const SizedBox(width: AppSpacing.sm + 1),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    file.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray900,
+                      letterSpacing: -0.025 * 18,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.gray600,
-                    letterSpacing: -0.025 * 14,
-                    height: 1.5,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.gray600,
+                      letterSpacing: -0.025 * 14,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          GestureDetector(
-            onTap: onMoreTap,
-            child: const Icon(
-              Icons.more_horiz,
-              size: 20,
-              color: AppColors.gray600,
+            _TapScale(
+              onTap: onMoreTap,
+              pressedScale: 0.92,
+              borderRadius: BorderRadius.circular(999),
+              child: const Icon(
+                Icons.more_horiz,
+                size: 20,
+                color: AppColors.gray600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1275,10 +1490,11 @@ class _ImageTabContent extends StatelessWidget {
               runSpacing: AppSpacing.md,
               children: images
                   .map(
-                    (img) => GestureDetector(
+                    (img) => _TapScale(
                       onTap: () => onImageTap(img),
                       onLongPress: () => onImageLongPress(img),
-                      behavior: HitTestBehavior.opaque,
+                      pressedScale: 0.94,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                       child: SizedBox(
                         width: 161,
                         height: 163,

@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../core/deep_link/toit_deep_link.dart';
@@ -321,73 +320,65 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     final currentIndex = ref.watch(currentTabIndexProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: IndexedStack(
-        index: currentIndex,
-        children: const [HomeScreen(), CalendarScreen(), _ChatPlaceholder()],
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          if (index == 0) {
-            ref.read(homeProvider.notifier).refresh();
-          }
-          ref.read(currentTabIndexProvider.notifier).state = index;
-        },
-        onAddMenuTap: (menuIndex) {
-          switch (menuIndex) {
-            case 0:
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SaveLinkScreen()));
-              break;
-            case 1:
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SaveNoteScreen()));
-              break;
-            case 2:
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SaveFileScreen()));
-              break;
-            case 3:
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const SaveImageScreen()),
-              );
-              break;
-            case 4:
-              Navigator.of(context)
-                  .push(
-                    MaterialPageRoute(builder: (_) => const EventFormScreen()),
-                  )
-                  .then((result) {
-                    if (result != null) {
-                      ref.read(currentTabIndexProvider.notifier).state = 1;
-                    }
-                  });
-              break;
-          }
-        },
-      ),
-      extendBody: true,
-    );
-  }
-}
-
-/// 채팅 화면 플레이스홀더
-class _ChatPlaceholder extends StatelessWidget {
-  const _ChatPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          '채팅 화면\n(준비 중)',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, color: Colors.grey),
-        ),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: IndexedStack(
+              index: currentIndex,
+              children: const [HomeScreen(), CalendarScreen()],
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: CustomBottomNavBar(
+              currentIndex: currentIndex,
+              onTap: (index) {
+                if (index == 0) {
+                  ref.read(homeProvider.notifier).refresh();
+                }
+                ref.read(currentTabIndexProvider.notifier).state = index;
+              },
+              onAddMenuTap: (menuIndex) {
+                switch (menuIndex) {
+                  case 0:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SaveLinkScreen()),
+                    );
+                    break;
+                  case 1:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SaveNoteScreen()),
+                    );
+                    break;
+                  case 2:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SaveFileScreen()),
+                    );
+                    break;
+                  case 3:
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SaveImageScreen()),
+                    );
+                    break;
+                  case 4:
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => const EventFormScreen(),
+                          ),
+                        )
+                        .then((result) {
+                          if (result != null) {
+                            ref.read(currentTabIndexProvider.notifier).state = 1;
+                          }
+                        });
+                    break;
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

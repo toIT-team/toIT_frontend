@@ -11,7 +11,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
-import '../widgets/common/folder_picker_sheet.dart';
+import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
 /// 이미지 저장 화면 (POST /attachments/images API 연동)
@@ -155,10 +155,10 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
   }
 
   void _openFolderPicker() {
-    showFolderPickerSheet(
+    showMoveToFolderSheet(
       context,
       ref,
-      selectedFolder: _selectedFolder,
+      currentFoldersId: _selectedFolder?.foldersId ?? -1,
       onSelect: (folder) => setState(() => _selectedFolder = folder),
     );
   }
@@ -167,6 +167,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     if (_pickedImages.length >= _maxImages) return;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
+      backgroundColor: Colors.white,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -21,6 +21,9 @@ Schedule _$ScheduleFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$Schedule {
+  /// 서버 일정 ID (상세 화면 이동용)
+  int get schedulesId => throw _privateConstructorUsedError;
+
   /// 일정 제목
   String get title => throw _privateConstructorUsedError;
 
@@ -50,6 +53,7 @@ abstract class $ScheduleCopyWith<$Res> {
       _$ScheduleCopyWithImpl<$Res, Schedule>;
   @useResult
   $Res call({
+    int schedulesId,
     String title,
     String timeRangeText,
     String scheduleTime,
@@ -72,6 +76,7 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? schedulesId = null,
     Object? title = null,
     Object? timeRangeText = null,
     Object? scheduleTime = null,
@@ -79,6 +84,10 @@ class _$ScheduleCopyWithImpl<$Res, $Val extends Schedule>
   }) {
     return _then(
       _value.copyWith(
+            schedulesId: null == schedulesId
+                ? _value.schedulesId
+                : schedulesId // ignore: cast_nullable_to_non_nullable
+                      as int,
             title: null == title
                 ? _value.title
                 : title // ignore: cast_nullable_to_non_nullable
@@ -111,6 +120,7 @@ abstract class _$$ScheduleImplCopyWith<$Res>
   @override
   @useResult
   $Res call({
+    int schedulesId,
     String title,
     String timeRangeText,
     String scheduleTime,
@@ -132,6 +142,7 @@ class __$$ScheduleImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? schedulesId = null,
     Object? title = null,
     Object? timeRangeText = null,
     Object? scheduleTime = null,
@@ -139,6 +150,10 @@ class __$$ScheduleImplCopyWithImpl<$Res>
   }) {
     return _then(
       _$ScheduleImpl(
+        schedulesId: null == schedulesId
+            ? _value.schedulesId
+            : schedulesId // ignore: cast_nullable_to_non_nullable
+                  as int,
         title: null == title
             ? _value.title
             : title // ignore: cast_nullable_to_non_nullable
@@ -164,6 +179,7 @@ class __$$ScheduleImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$ScheduleImpl implements _Schedule {
   const _$ScheduleImpl({
+    this.schedulesId = 0,
     required this.title,
     required this.timeRangeText,
     required this.scheduleTime,
@@ -173,6 +189,11 @@ class _$ScheduleImpl implements _Schedule {
 
   factory _$ScheduleImpl.fromJson(Map<String, dynamic> json) =>
       _$$ScheduleImplFromJson(json);
+
+  /// 서버 일정 ID (상세 화면 이동용)
+  @override
+  @JsonKey()
+  final int schedulesId;
 
   /// 일정 제목
   @override
@@ -193,7 +214,7 @@ class _$ScheduleImpl implements _Schedule {
 
   @override
   String toString() {
-    return 'Schedule(title: $title, timeRangeText: $timeRangeText, scheduleTime: $scheduleTime, accentColor: $accentColor)';
+    return 'Schedule(schedulesId: $schedulesId, title: $title, timeRangeText: $timeRangeText, scheduleTime: $scheduleTime, accentColor: $accentColor)';
   }
 
   @override
@@ -201,6 +222,8 @@ class _$ScheduleImpl implements _Schedule {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$ScheduleImpl &&
+            (identical(other.schedulesId, schedulesId) ||
+                other.schedulesId == schedulesId) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.timeRangeText, timeRangeText) ||
                 other.timeRangeText == timeRangeText) &&
@@ -212,8 +235,14 @@ class _$ScheduleImpl implements _Schedule {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, title, timeRangeText, scheduleTime, accentColor);
+  int get hashCode => Object.hash(
+    runtimeType,
+    schedulesId,
+    title,
+    timeRangeText,
+    scheduleTime,
+    accentColor,
+  );
 
   /// Create a copy of Schedule
   /// with the given fields replaced by the non-null parameter values.
@@ -231,6 +260,7 @@ class _$ScheduleImpl implements _Schedule {
 
 abstract class _Schedule implements Schedule {
   const factory _Schedule({
+    final int schedulesId,
     required final String title,
     required final String timeRangeText,
     required final String scheduleTime,
@@ -240,6 +270,10 @@ abstract class _Schedule implements Schedule {
 
   factory _Schedule.fromJson(Map<String, dynamic> json) =
       _$ScheduleImpl.fromJson;
+
+  /// 서버 일정 ID (상세 화면 이동용)
+  @override
+  int get schedulesId;
 
   /// 일정 제목
   @override
