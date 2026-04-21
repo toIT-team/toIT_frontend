@@ -32,6 +32,9 @@ class ApiConstants {
   /// 통합 검색 (GET /page/search)
   static const String searchEndpoint = '/page/search';
 
+  /// 알림 목록 (GET /page/notifications)
+  static const String notificationsEndpoint = '/page/notifications';
+
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
 

@@ -13,6 +13,7 @@ part 'search_controller.freezed.dart';
 
 /// 검색 결과 필터 타입
 enum SearchFilterType {
+  archive,
   link,
   note,
   file,
@@ -212,6 +213,10 @@ List<SearchResultItem> _applyFilter(
 ) {
   if (filter == null) return items;
   switch (filter) {
+    case SearchFilterType.archive:
+      return items
+          .where((i) => i.type == SearchResultType.folder)
+          .toList();
     case SearchFilterType.link:
       return items.where((i) => i.isLink).toList();
     case SearchFilterType.note:
@@ -294,15 +299,16 @@ class SearchController extends Notifier<SearchState> {
     }
   }
 
-  /// 필터 변경
-  void setFilter(SearchFilterType? filter) {
-    state = state.copyWith(selectedFilter: filter);
+  /// 필터 변경. 이미 선택된 필터를 다시 누르면 해제된다.
+  void setFilter(SearchFilterType filter) {
+    final next = state.selectedFilter == filter ? null : filter;
+    state = state.copyWith(selectedFilter: next);
     if (state.query.trim().isEmpty) return;
 
-    final cached = _cache.get(state.query);
+    final cached = _cache.get(state.query.trim());
     if (cached != null) {
       state = state.copyWith(
-        items: _applyFilter(cached, filter),
+        items: _applyFilter(cached, next),
       );
     }
   }
