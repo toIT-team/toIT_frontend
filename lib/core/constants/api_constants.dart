@@ -1,13 +1,19 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// API 관련 상수 정의
-/// baseUrl은 .env의 API_BASE_URL에서 로드 (git에 노출되지 않음)
+/// baseUrl은 .env의 `API_BASE_URL`에서 로드 (git에 노출되지 않음)
 class ApiConstants {
   ApiConstants._();
 
-  /// 서버 기본 URL (.env 파일에서 읽음)
-  static String get baseUrl =>
-      dotenv.maybeGet('BASE_URL') ?? 'http://localhost:8080';
+  /// 서버 기본 URL (`.env`의 `API_BASE_URL`, 없으면 로컬 개발 기본값)
+  static String get baseUrl {
+    final raw = dotenv.maybeGet('API_BASE_URL');
+    final trimmed = raw?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      return trimmed;
+    }
+    return 'http://localhost:8080';
+  }
 
   /// 요청 타임아웃 (밀리초)
   static const int connectTimeout = 10000;
@@ -65,9 +71,6 @@ class ApiConstants {
   /// 액세스 토큰 재발급 (POST, body: { refreshToken })
   /// 응답: { accessToken: string }
   static const String reissueEndpoint = '/api/auth/reissue';
-
-  /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
-  static const String fcmEndpoint = '/fcm';
 
   /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
   static const String fcmEndpoint = '/fcm';
