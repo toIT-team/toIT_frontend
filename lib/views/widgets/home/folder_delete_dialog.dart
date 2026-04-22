@@ -7,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 Future<bool> showDeleteDialog(
   BuildContext context, {
   required String message,
+  String? warningMessage,
 }) async {
   final result = await showGeneralDialog<bool>(
     context: context,
@@ -18,7 +19,10 @@ Future<bool> showDeleteDialog(
         alignment: Alignment.bottomCenter,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 32),
-          child: _DeleteDialogContent(message: message),
+          child: _DeleteDialogContent(
+            message: message,
+            warningMessage: warningMessage,
+          ),
         ),
       );
     },
@@ -28,8 +32,9 @@ Future<bool> showDeleteDialog(
 
 class _DeleteDialogContent extends StatelessWidget {
   final String message;
+  final String? warningMessage;
 
-  const _DeleteDialogContent({required this.message});
+  const _DeleteDialogContent({required this.message, this.warningMessage});
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +69,20 @@ class _DeleteDialogContent extends StatelessWidget {
                 height: 1.4,
               ),
             ),
+            if (warningMessage != null &&
+                warningMessage!.trim().isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                warningMessage!,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.gray600,
+                  letterSpacing: -0.025 * 16,
+                  height: 1.4,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [

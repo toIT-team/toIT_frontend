@@ -176,6 +176,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         final confirmed = await showDeleteDialog(
           context,
           message: '[$_folderName]을 정말 삭제하시겠습니까?',
+          warningMessage: '보관함을 삭제하면 포함된 모든 자료가 같이 삭제됩니다.',
         );
         if (!confirmed || !mounted) return;
         final deleted = await ref
