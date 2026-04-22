@@ -26,6 +26,7 @@ class ApiConstants {
   // ─── 엔드포인트 ───
   static const String homePageEndpoint = '/page/home';
   static const String foldersEndpoint = '/folders';
+  static const String foldersFavoriteEndpoint = '/folders/favorite';
   static const String pageItemsEndpoint = '/page/items';
   static const String myPageEndpoint = '/page/my';
 

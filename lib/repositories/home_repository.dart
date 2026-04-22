@@ -41,6 +41,17 @@ class HomeRepository {
     );
   }
 
+  /// 보관함 즐겨찾기 토글
+  Future<bool> toggleFolderFavorite({
+    required int foldersId,
+    required bool isFavorite,
+  }) async {
+    return _remoteDatasource.toggleFolderFavorite(
+      foldersId: foldersId,
+      isFavorite: isFavorite,
+    );
+  }
+
   /// 링크 미리보기 추출 (POST /links/preview)
   Future<LinkPreviewResponseDto> fetchLinkPreview({
     required String linksUrl,

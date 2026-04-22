@@ -409,17 +409,34 @@ class HomeController extends Notifier<HomeState> {
     return _favoriteFolderIds.contains(foldersId);
   }
 
-  bool toggleFavoriteFolderLocal(int foldersId) {
-    final isNowFavorite = !_favoriteFolderIds.contains(foldersId);
-    if (isNowFavorite) {
+  Future<bool?> toggleFavoriteFolder({required int foldersId}) async {
+    final isCurrentFavorite = _favoriteFolderIds.contains(foldersId);
+    final targetFavorite = !isCurrentFavorite;
+
+    // 사용자 체감 지연을 줄이기 위해 UI는 먼저 반영하고, 실패 시 롤백한다.
+    _setFavoriteLocal(foldersId: foldersId, isFavorite: targetFavorite);
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final confirmedFavorite = await repository.toggleFolderFavorite(
+        foldersId: foldersId,
+        isFavorite: targetFavorite,
+      );
+      _setFavoriteLocal(foldersId: foldersId, isFavorite: confirmedFavorite);
+      return confirmedFavorite;
+    } catch (_) {
+      _setFavoriteLocal(foldersId: foldersId, isFavorite: isCurrentFavorite);
+      return null;
+    }
+  }
+
+  void _setFavoriteLocal({required int foldersId, required bool isFavorite}) {
+    if (isFavorite) {
       _favoriteFolderIds.add(foldersId);
     } else {
       _favoriteFolderIds.remove(foldersId);
     }
 
-    // API 미연동 상태이므로 로컬 UI 상태만 갱신한다.
     state = state.copyWith(folders: [...state.folders]);
-    return isNowFavorite;
   }
 
   String getFilterLabel(String filterToken) {

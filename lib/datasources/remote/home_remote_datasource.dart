@@ -48,6 +48,22 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 보관함 즐겨찾기 토글 (PATCH /folders/favorite)
+  Future<bool> toggleFolderFavorite({
+    required int foldersId,
+    required bool isFavorite,
+  }) async {
+    final response = await _apiClient.patch(
+      ApiConstants.foldersFavoriteEndpoint,
+      data: {'foldersId': foldersId, 'isFavorite': isFavorite},
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic> && data['isFavorite'] is bool) {
+      return data['isFavorite'] as bool;
+    }
+    return isFavorite;
+  }
+
   /// 링크 미리보기 추출 (POST /links/preview)
   /// [linksUrl]을 받아 링크 제목, 본문, 썸네일 추출
   Future<LinkPreviewResponseDto> fetchLinkPreview({
