@@ -205,6 +205,15 @@ class HomeController extends Notifier<HomeState> {
     // 사용자 세션(로그인/로그아웃/복구) 변경 시 홈 상태 캐시를 재생성
     ref.watch(authSessionRefreshTickProvider);
 
+    // 로그아웃/강제 로그아웃 상태에서 홈 데이터를 다시 가져오면
+    // 서버가 401 → 토큰 재발급 실패 → forceLogout → tick 증가 → 재빌드 로
+    // 이어지는 무한 루프가 발생한다. 비인증 상태에서는 네트워크 호출을 막는다.
+    final authStatus = ref.read(authProvider).status;
+    if (authStatus != AuthStatus.authenticated) {
+      _favoriteFolderIds = <int>{};
+      return const HomeState(isLoading: false);
+    }
+
     // 스플래시 부트스트랩 단계에서 선요청된 홈 데이터가 있으면 소비하고
     // 네트워크 재호출 없이 즉시 화면에 반영한다. (중복 요청 방지)
     final prefetched = ref.read(homePrefetchProvider);

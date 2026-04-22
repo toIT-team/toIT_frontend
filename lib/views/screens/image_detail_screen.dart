@@ -12,7 +12,11 @@ class ImageDetailScreen extends StatefulWidget {
   const ImageDetailScreen({super.key, required this.image, this.onMoreTap});
 
   final AttachmentImageDto image;
-  final ValueChanged<BuildContext>? onMoreTap;
+  final void Function(
+    BuildContext context,
+    AttachmentImageDto currentImage,
+    ValueChanged<AttachmentImageDto> onUpdated,
+  )? onMoreTap;
 
   @override
   State<ImageDetailScreen> createState() => _ImageDetailScreenState();
@@ -20,6 +24,13 @@ class ImageDetailScreen extends StatefulWidget {
 
 class _ImageDetailScreenState extends State<ImageDetailScreen> {
   bool _isExpanded = false;
+  late AttachmentImageDto _currentImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentImage = widget.image;
+  }
 
   String _formatDateWithWeekday(String? createdAt) {
     if (createdAt == null || createdAt.isEmpty) return '';
@@ -32,9 +43,11 @@ class _ImageDetailScreenState extends State<ImageDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dateText = _formatDateWithWeekday(widget.image.createdAt);
-    final memoText = '메모가 없습니다.';
-    final memoLength = 0;
+    final dateText = _formatDateWithWeekday(_currentImage.createdAt);
+    final memoText = _currentImage.textContent.trim().isEmpty
+        ? '메모가 없습니다.'
+        : _currentImage.textContent.trim();
+    final memoLength = _currentImage.textContent.trim().length;
     final imageHeight = _isExpanded ? 696.0 : 335.0;
 
     return Scaffold(
@@ -50,7 +63,18 @@ class _ImageDetailScreenState extends State<ImageDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
-            onPressed: () => widget.onMoreTap?.call(context),
+            onPressed: () {
+              widget.onMoreTap?.call(
+                context,
+                _currentImage,
+                (updatedImage) {
+                  if (!mounted) return;
+                  setState(() {
+                    _currentImage = updatedImage;
+                  });
+                },
+              );
+            },
           ),
         ],
       ),
@@ -69,9 +93,9 @@ class _ImageDetailScreenState extends State<ImageDetailScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 child: SizedBox(
                   height: imageHeight,
-                  child: widget.image.presignedUrl.isNotEmpty
+                  child: _currentImage.presignedUrl.isNotEmpty
                       ? Image.network(
-                          widget.image.presignedUrl,
+                          _currentImage.presignedUrl,
                           fit: BoxFit.cover,
                           loadingBuilder: (_, child, progress) {
                             if (progress == null) return child;

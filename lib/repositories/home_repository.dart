@@ -200,6 +200,21 @@ class HomeRepository {
     );
   }
 
+  /// 자료 파일 이름 수정 (PATCH /attachments/update)
+  Future<void> updateAttachmentFileName({
+    required int foldersId,
+    required int attachmentsId,
+    required String textContent,
+    required String fileName,
+  }) async {
+    await _remoteDatasource.updateAttachmentFileName(
+      foldersId: foldersId,
+      attachmentsId: attachmentsId,
+      textContent: textContent,
+      fileName: fileName,
+    );
+  }
+
   /// 자료 파일/이미지 삭제 (DELETE /attachments)
   Future<void> deleteAttachment({required int attachmentsId}) async {
     await _remoteDatasource.deleteAttachment(attachmentsId: attachmentsId);

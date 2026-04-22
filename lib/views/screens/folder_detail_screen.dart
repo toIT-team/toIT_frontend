@@ -12,6 +12,8 @@ import '../../core/constants/folder_tab_index.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_alert_dialog.dart';
+import '../widgets/common/file_info_edit_sheet.dart';
 import '../widgets/common/file_kebab_sheet.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
@@ -117,6 +119,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   }
 
   Future<void> _openFolderOptions() async {
+    FolderItem? currentFolder;
+    for (final folder in ref.read(homeProvider).folders) {
+      if (folder.foldersId == widget.foldersId) {
+        currentFolder = folder;
+        break;
+      }
+    }
+    final isDefaultFolder = currentFolder?.isDefault ?? false;
     final isFavoriteFolder = ref
         .read(homeProvider.notifier)
         .isFavoriteFolder(widget.foldersId);
@@ -126,13 +136,6 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     );
     if (option == null || !mounted) return;
 
-    FolderItem? currentFolder;
-    for (final folder in ref.read(homeProvider).folders) {
-      if (folder.foldersId == widget.foldersId) {
-        currentFolder = folder;
-        break;
-      }
-    }
     final currentMemo = currentFolder?.memo ?? '';
     final currentColorIndex = currentFolder?.colorIndex ?? 5;
     final currentIconIndex = currentFolder?.iconIndex ?? 0;
@@ -173,9 +176,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         });
         break;
       case FolderOption.delete:
+        if (isDefaultFolder) {
+          await showAppAlertDialog(context, message: '기본 보관함은 삭제할 수 없습니다.');
+          return;
+        }
         final confirmed = await showDeleteDialog(
           context,
           message: '[$_folderName]을 정말 삭제하시겠습니까?',
+          warningMessage: '보관함을 삭제하면 포함된 모든 자료가 같이 삭제됩니다.',
         );
         if (!confirmed || !mounted) return;
         final deleted = await ref
@@ -362,8 +370,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       MaterialPageRoute<void>(
         builder: (_) => ImageDetailScreen(
           image: image,
-          onMoreTap: (detailContext) =>
-              _showImageKebabSheet(image, contextOverride: detailContext),
+          onMoreTap: (detailContext, currentImage, onUpdated) =>
+              _showImageKebabSheet(
+                currentImage,
+                contextOverride: detailContext,
+                onImageUpdated: onUpdated,
+              ),
         ),
       ),
     );
@@ -495,9 +507,42 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         final messenger = ScaffoldMessenger.of(context);
         switch (action) {
           case FileKebabAction.editInfo:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('정보 수정 기능은 준비 중입니다.')),
-            );
+            showAttachmentInfoEditSheet(
+              context,
+              sheetTitle: '정보 수정',
+              titleLabel: '파일 제목',
+              descriptionLabel: '파일 설명',
+              initialTitle: file.fileName,
+              initialDescription: file.textContent,
+            ).then((edited) async {
+              if (edited == null) return;
+              try {
+                final repository = ref.read(homeRepositoryProvider);
+                await repository.updateAttachmentFileName(
+                  foldersId: widget.foldersId,
+                  attachmentsId: file.attachmentsId,
+                  textContent: edited.description,
+                  fileName: edited.title,
+                );
+                ref.invalidate(pageItemsProvider(widget.foldersId));
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('파일 정보가 수정되었습니다.')),
+                );
+              } on DioException catch (e) {
+                if (!mounted) return;
+                final data = e.response?.data;
+                final message = data is Map && data['message'] != null
+                    ? data['message'] as String
+                    : '수정에 실패했습니다. 다시 시도해 주세요.';
+                messenger.showSnackBar(SnackBar(content: Text(message)));
+              } catch (_) {
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')),
+                );
+              }
+            });
             break;
           case FileKebabAction.moveFolder:
             showMoveToFolderSheet(
@@ -524,6 +569,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   void _showImageKebabSheet(
     AttachmentImageDto image, {
     BuildContext? contextOverride,
+    ValueChanged<AttachmentImageDto>? onImageUpdated,
   }) {
     final baseContext = contextOverride ?? context;
     final shouldCloseDetailOnSuccess = contextOverride != null;
@@ -533,9 +579,46 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         final messenger = ScaffoldMessenger.of(baseContext);
         switch (action) {
           case FileKebabAction.editInfo:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('정보 수정 기능은 준비 중입니다.')),
-            );
+            showAttachmentInfoEditSheet(
+              baseContext,
+              sheetTitle: '정보 수정',
+              titleLabel: '이미지 제목',
+              descriptionLabel: '이미지 설명',
+              initialTitle: image.fileName,
+              initialDescription: image.textContent,
+              showTitleField: false,
+            ).then((edited) async {
+              if (edited == null) return;
+              try {
+                final repository = ref.read(homeRepositoryProvider);
+                await repository.updateAttachmentFileName(
+                  foldersId: widget.foldersId,
+                  attachmentsId: image.attachmentsId,
+                  textContent: edited.description,
+                  fileName: image.fileName,
+                );
+                ref.invalidate(pageItemsProvider(widget.foldersId));
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('이미지 정보가 수정되었습니다.')),
+                );
+                onImageUpdated?.call(
+                  image.copyWith(textContent: edited.description),
+                );
+              } on DioException catch (e) {
+                if (!mounted) return;
+                final data = e.response?.data;
+                final message = data is Map && data['message'] != null
+                    ? data['message'] as String
+                    : '수정에 실패했습니다. 다시 시도해 주세요.';
+                messenger.showSnackBar(SnackBar(content: Text(message)));
+              } catch (_) {
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')),
+                );
+              }
+            });
             break;
           case FileKebabAction.moveFolder:
             showMoveToFolderSheet(
@@ -892,44 +975,27 @@ class _TapScaleState extends State<_TapScale> {
   }
 }
 
-/// 상단 툴바: "전체 N개" / "최신순" 드롭다운
-Widget _buildSectionToolbar(int count) {
+/// 상단 툴바: "전체 N개"
+Widget _buildSectionToolbar(
+  int count, {
+  bool removeBottomPadding = false,
+}) {
   return Padding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.lg,
-      vertical: AppSpacing.sm,
+    padding: EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.xs + 2,
+      AppSpacing.lg,
+      removeBottomPadding ? 0 : AppSpacing.xxs,
     ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          '전체 ${count}개',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.gray600,
-            letterSpacing: -0.025 * 16,
-            height: 1.5,
-          ),
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '최신순',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: AppColors.gray900,
-                letterSpacing: -0.025 * 16,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xxs),
-            Icon(Icons.keyboard_arrow_down, size: 24, color: AppColors.gray900),
-          ],
-        ),
-      ],
+    child: Text(
+      '전체 ${count}개',
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: AppColors.gray600,
+        letterSpacing: -0.025 * 16,
+        height: 1.5,
+      ),
     ),
   );
 }
@@ -952,7 +1018,7 @@ class _LinkTabContent extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSectionToolbar(0),
+          _buildSectionToolbar(0, removeBottomPadding: true),
           const Expanded(
             child: Center(
               child: Text(
@@ -967,7 +1033,7 @@ class _LinkTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(links.length),
+        _buildSectionToolbar(links.length, removeBottomPadding: true),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
@@ -1013,7 +1079,7 @@ class _LinkItemRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.lg,
+          vertical: AppSpacing.sm,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1173,7 +1239,7 @@ class _NoteTabContent extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSectionToolbar(0),
+          _buildSectionToolbar(0, removeBottomPadding: true),
           const Expanded(
             child: Center(
               child: Text(
@@ -1349,7 +1415,7 @@ class _FileTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(files.length),
+        _buildSectionToolbar(files.length, removeBottomPadding: true),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
@@ -1389,7 +1455,7 @@ class _FileItemRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [

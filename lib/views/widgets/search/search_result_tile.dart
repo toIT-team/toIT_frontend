@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/search_assets.dart';
@@ -11,14 +10,11 @@ import '../../../models/search/search_result_item.dart';
 ///
 /// 타입별 좌측 아이콘 + 우측 제목/부제목
 class SearchResultTile extends StatelessWidget {
-  const SearchResultTile({
-    super.key,
-    required this.item,
-    this.onTap,
-  });
+  const SearchResultTile({super.key, required this.item, this.onTap});
 
   final SearchResultItem item;
   final VoidCallback? onTap;
+  static const String _searchFolderIconPath = 'assets/icons/FolderIcon/0.png';
 
   @override
   Widget build(BuildContext context) {
@@ -91,9 +87,9 @@ class SearchResultTile extends StatelessWidget {
     switch (item.type) {
       case SearchResultType.folder:
         return Image.asset(
-          AppAssets.folderIcon,
-          width: 28,
-          height: 28,
+          _searchFolderIconPath,
+          width: 44,
+          height: 44,
           fit: BoxFit.contain,
         );
       case SearchResultType.schedule:

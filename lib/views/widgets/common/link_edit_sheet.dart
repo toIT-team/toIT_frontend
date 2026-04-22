@@ -142,7 +142,7 @@ class _LinkEditSheetState extends ConsumerState<_LinkEditSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    '제목 수정',
+                    '정보 수정',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
