@@ -8,6 +8,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_gradients.dart';
 import 'my_screen.dart';
 import 'notification_screen.dart';
+import 'search_screen.dart';
 import '../widgets/home/home_app_bar.dart';
 import '../widgets/home/greeting_section.dart';
 import '../widgets/home/folder_section.dart';
@@ -31,6 +32,13 @@ class HomeScreen extends ConsumerWidget {
               Navigator.of(
                 context,
               ).push(MaterialPageRoute<void>(builder: (_) => const MyScreen()));
+            },
+            onSearchPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SearchScreen(),
+                ),
+              );
             },
             onNotificationPressed: () {
               Navigator.of(context).push(

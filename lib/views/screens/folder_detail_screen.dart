@@ -191,14 +191,18 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         Navigator.of(context).pop();
         break;
       case FolderOption.toggleFavorite:
-        final nextFavoriteState = ref
+        final nextFavoriteState = await ref
             .read(homeProvider.notifier)
-            .toggleFavoriteFolderLocal(widget.foldersId);
+            .toggleFavoriteFolder(foldersId: widget.foldersId);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              nextFavoriteState ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.',
+              nextFavoriteState == null
+                  ? '즐겨찾기 변경에 실패했습니다.'
+                  : nextFavoriteState
+                  ? '즐겨찾기에 추가되었습니다.'
+                  : '즐겨찾기가 해제되었습니다.',
             ),
           ),
         );
@@ -206,14 +210,20 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
   }
 
-  void _toggleFavoriteFromHeader() {
-    final isNowFavorite = ref
+  Future<void> _toggleFavoriteFromHeader() async {
+    final isNowFavorite = await ref
         .read(homeProvider.notifier)
-        .toggleFavoriteFolderLocal(widget.foldersId);
+        .toggleFavoriteFolder(foldersId: widget.foldersId);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(isNowFavorite ? '즐겨찾기에 추가되었습니다.' : '즐겨찾기가 해제되었습니다.'),
+        content: Text(
+          isNowFavorite == null
+              ? '즐겨찾기 변경에 실패했습니다.'
+              : isNowFavorite
+              ? '즐겨찾기에 추가되었습니다.'
+              : '즐겨찾기가 해제되었습니다.',
+        ),
       ),
     );
   }
@@ -656,7 +666,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 즐겨찾기 로컬 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
+    // 즐겨찾기 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
     ref.watch(homeProvider.select((state) => state.folders));
     final isFavoriteFolder = ref
         .read(homeProvider.notifier)

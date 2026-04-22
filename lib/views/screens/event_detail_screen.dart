@@ -14,6 +14,7 @@ import '../widgets/common/app_divider.dart';
 import '../widgets/common/schedule_folder_search_sheet.dart';
 import '../widgets/common/bottom_bar_button.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
+import '../widgets/common/app_alert_dialog.dart';
 import '../widgets/common/confirm_dialog.dart';
 import '../widgets/event/event_alarm_section.dart';
 import '../widgets/event/event_folder_section.dart';
@@ -480,20 +481,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _showInvalidDateRangeDialog() async {
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('알림'),
-          content: const Text('시작 날짜는 종료 날짜 이전이어야 합니다.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('확인'),
-            ),
-          ],
-        );
-      },
+    await showAppAlertDialog(
+      context,
+      message: '시작 날짜는 종료 날짜 이전이어야 합니다.',
     );
   }
 

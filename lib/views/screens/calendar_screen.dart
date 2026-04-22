@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import 'search_screen.dart';
 import 'my_screen.dart';
+import 'notification_screen.dart';
 import '../widgets/calendar/calendar_widget.dart';
 import '../widgets/home/home_app_bar.dart';
 
@@ -30,6 +31,13 @@ class CalendarScreen extends ConsumerWidget {
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const SearchScreen(),
+              ),
+            );
+          },
+          onNotificationPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NotificationScreen(),
               ),
             );
           },

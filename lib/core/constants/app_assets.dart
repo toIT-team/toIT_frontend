@@ -1,7 +1,4 @@
-/// 앱 공통 에셋 경로 상수.
-///
-/// 일정 화면 전용 SVG(`assets/icons/event/`)는
-/// `event_assets.dart`의 `EventAssets`를 사용합니다.
+/// 에셋 경로 상수
 class AppAssets {
   AppAssets._();
 
@@ -40,4 +37,12 @@ class AppAssets {
   static const String settingIcon = 'assets/icons/SettingIcon.svg';
   static const String navHomeIcon = 'assets/icons/NavHomeIcon.svg';
   static const String navCalendarIcon = 'assets/icons/NavCalendarIcon.svg';
+
+  /// 알림 유형 아이콘 (검색·알림 공통)
+  static const String searchResultEventIcon =
+      'assets/icons/search/searchResultEventIcon.svg';
+  static const String notificationFeedbackIcon =
+      'assets/icons/notice/feedbackIcon.svg';
+  static const String notificationNoticeIcon =
+      'assets/icons/notice/noticeIcon.svg';
 }

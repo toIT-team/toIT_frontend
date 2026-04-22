@@ -281,10 +281,10 @@ class _FolderTileState extends ConsumerState<FolderTile> {
                                           }
                                           break;
                                         case FolderOption.toggleFavorite:
-                                          final nextFavoriteState = ref
+                                          final nextFavoriteState = await ref
                                               .read(homeProvider.notifier)
-                                              .toggleFavoriteFolderLocal(
-                                                widget.foldersId,
+                                              .toggleFavoriteFolder(
+                                                foldersId: widget.foldersId,
                                               );
                                           if (context.mounted) {
                                             ScaffoldMessenger.of(
@@ -292,7 +292,10 @@ class _FolderTileState extends ConsumerState<FolderTile> {
                                             ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  nextFavoriteState
+                                                  nextFavoriteState == null
+                                                      ? '즐겨찾기 변경에 '
+                                                            '실패했습니다.'
+                                                      : nextFavoriteState
                                                       ? '즐겨찾기에 '
                                                             '추가되었습니다.'
                                                       : '즐겨찾기가 '

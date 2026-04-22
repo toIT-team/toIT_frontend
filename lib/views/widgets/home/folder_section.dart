@@ -24,11 +24,20 @@ class FolderSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeNotifier = ref.read(homeProvider.notifier);
+    final selectedFilterIndex = ref.watch(selectedFilterIndexProvider);
     final totalFolderCount = ref.watch(
       homeProvider.select((state) => state.folders.length),
     );
     final isFolderLimitReached =
         totalFolderCount >= HomeController.maxFolderCount;
+    final selectedFilterToken =
+        (selectedFilterIndex >= 0 && selectedFilterIndex < filters.length)
+        ? filters[selectedFilterIndex]
+        : HomeController.allFilterToken;
+    final filteredFolders = homeNotifier.getFilteredFolders(
+      folders: folders,
+      selectedFilterToken: selectedFilterToken,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,6 +112,7 @@ class FolderSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         _ChipsRow(
           filters: filters,
+          selectedIndex: selectedFilterIndex,
           onTapFilter: (index) {
             if (index < 0 || index >= filters.length) return;
             ref.read(homeProvider.notifier).selectFilter(index);
@@ -143,7 +153,7 @@ class FolderSection extends ConsumerWidget {
               mainAxisSpacing: AppSpacing.md,
               childAspectRatio: childAspectRatio,
               children: [
-                for (final f in folders)
+                for (final f in filteredFolders)
                   FolderTile(
                     foldersId: f.foldersId,
                     title: f.title,
@@ -164,11 +174,13 @@ class FolderSection extends ConsumerWidget {
 
 class _ChipsRow extends StatelessWidget {
   final List<String> filters;
+  final int selectedIndex;
   final ValueChanged<int> onTapFilter;
   final String Function(String filterToken) filterLabelBuilder;
 
   const _ChipsRow({
     required this.filters,
+    required this.selectedIndex,
     required this.onTapFilter,
     required this.filterLabelBuilder,
   });
@@ -182,6 +194,7 @@ class _ChipsRow extends StatelessWidget {
           for (int i = 0; i < filters.length; i++) ...[
             _FilterChip(
               label: filterLabelBuilder(filters[i]),
+              isSelected: selectedIndex == i,
               onTap: () => onTapFilter(i),
             ),
             if (i != filters.length - 1) const SizedBox(width: AppSpacing.xs),
@@ -194,9 +207,14 @@ class _ChipsRow extends StatelessWidget {
 
 class _FilterChip extends StatefulWidget {
   final String label;
+  final bool isSelected;
   final VoidCallback onTap;
 
-  const _FilterChip({required this.label, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   State<_FilterChip> createState() => _FilterChipState();
@@ -214,8 +232,15 @@ class _FilterChipState extends State<_FilterChip> {
 
   @override
   Widget build(BuildContext context) {
-    final baseTextColor = AppColors.gray600;
-    final baseBorderColor = baseTextColor.withOpacity(0.35);
+    final selectedTextColor = AppColors.blue500;
+    final unselectedTextColor = AppColors.gray600;
+    final baseTextColor = widget.isSelected
+        ? selectedTextColor
+        : unselectedTextColor;
+    final baseBorderColor = widget.isSelected
+        ? AppColors.blue500.withOpacity(0.55)
+        : unselectedTextColor.withOpacity(0.35);
+    final selectedBackgroundColor = AppColors.blue500.withOpacity(0.08);
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 110),
@@ -240,14 +265,16 @@ class _FilterChipState extends State<_FilterChip> {
             decoration: BoxDecoration(
               color: isPressed
                   ? AppColors.neutral100.withOpacity(0.55)
-                  : Colors.transparent,
+                  : (widget.isSelected
+                        ? selectedBackgroundColor
+                        : Colors.transparent),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(color: baseBorderColor),
             ),
             child: Text(
               widget.label,
-              style: const TextStyle(
-                color: AppColors.gray600,
+              style: TextStyle(
+                color: baseTextColor,
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
               ),

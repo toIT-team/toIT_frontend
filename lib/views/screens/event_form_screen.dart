@@ -9,6 +9,7 @@ import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
 import '../../models/calendar/calendar_event.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
+import '../widgets/common/app_alert_dialog.dart';
 import '../widgets/common/app_divider.dart';
 import '../widgets/common/schedule_folder_search_sheet.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
@@ -286,20 +287,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
   }
 
   Future<void> _showInvalidDateRangeDialog() async {
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('알림'),
-          content: const Text('시작 날짜는 종료 날짜 이전이어야 합니다.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('확인'),
-            ),
-          ],
-        );
-      },
+    await showAppAlertDialog(
+      context,
+      message: '시작 날짜는 종료 날짜 이전이어야 합니다.',
     );
   }
 

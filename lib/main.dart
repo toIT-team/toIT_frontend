@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'controllers/auth_controller.dart';
+import 'controllers/bootstrap_controller.dart';
 import 'core/deep_link/toit_deep_link.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
@@ -17,6 +18,7 @@ import 'services/fcm_registration_service.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/navigation_shell.dart'
     show NavigationShell, pendingDeepLinkUrlProvider;
+import 'views/screens/splash_retry_screen.dart';
 import 'views/screens/splash_screen.dart';
 
 Future<void> main() async {
@@ -65,7 +67,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initAuth();
+    // ProviderScope 첫 빌드가 안정화된 뒤 부트스트랩을 시작한다.
+    // initState 즉시 provider state를 변경하면 프레임워크 assert와 충돌할 수 있다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_initAuth());
+    });
     _bindFcmDeepLinks();
     _bindFcmTokenRefresh();
   }
@@ -124,6 +131,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   }
 
   Future<void> _initAuth() async {
+    if (!mounted) return;
+
     // ApiClient에 인증 인터셉터 연결
     final apiClient = ref.read(apiClientProvider);
     final authService = ref.read(authServiceProvider);
@@ -135,42 +144,105 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       },
     );
 
-    // 저장된 토큰 확인 → 인증 상태 복원.
-    // 스플래시 최소 노출 시간과 병렬 대기하여 빠른 부팅 시의 깜빡임을 방지한다.
-    // `checkAuthStatus`는 내부에서 state를 바로 바꾸기 때문에 지연만으로는
-    // 화면 전환을 막을 수 없어, 완료 플래그(_isSplashFinished)를 함께 운용한다.
+    // 부트스트랩(토큰 확인 + 선제 재발급 + 세션 복원)과 스플래시 최소
+    // 노출 시간을 병렬 대기한다. `BootstrapController` 가 실패/재시도 경로를
+    // 관리하므로 여기서는 "끝났는가" 여부만 플래그로 남긴다.
+    debugPrint(
+      '[BOOT] splash_start minDurationMs=${_minSplashDuration.inMilliseconds}',
+    );
+    final splashStopwatch = Stopwatch()..start();
     await Future.wait<void>([
-      ref.read(authProvider.notifier).checkAuthStatus(),
+      ref.read(bootstrapProvider.notifier).run(),
       Future<void>.delayed(_minSplashDuration),
     ]);
-    if (!mounted) return;
+    splashStopwatch.stop();
+    if (!mounted) {
+      debugPrint('[BOOT] splash_end aborted=unmounted');
+      return;
+    }
+    debugPrint(
+      '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
+    );
     setState(() => _isSplashFinished = true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final bootstrapStatus = ref.watch(
+      bootstrapProvider.select((state) => state.status),
+    );
+    final authStatus = ref.watch(authProvider.select((state) => state.status));
 
     return MaterialApp(
       title: 'toIT',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      home: _buildHome(authState),
+      home: _buildHome(bootstrapStatus, authStatus),
     );
   }
 
-  Widget _buildHome(AuthState authState) {
-    if (!_isSplashFinished || authState.status == AuthStatus.unknown) {
+  Widget _buildHome(BootstrapStatus status, AuthStatus authStatus) {
+    // 최소 노출 시간 또는 아직 부트스트랩 결과가 확정되지 않은 동안은
+    // 항상 스플래시를 유지해 화면 깜빡임을 방지한다.
+    if (!_isSplashFinished ||
+        status == BootstrapStatus.idle ||
+        status == BootstrapStatus.running) {
       return const SplashScreen();
     }
-    switch (authState.status) {
-      case AuthStatus.unauthenticated:
-        return const LoginScreen();
+    final route = _routeForStatus(
+      bootstrapStatus: status,
+      authStatus: authStatus,
+    );
+    _logRouteIfChanged(route);
+    return route;
+  }
+
+  /// 상태를 라우트로 매핑. `_buildHome` 의 분기와 로깅을 분리해
+  /// 재빌드마다 불필요한 로그가 쌓이지 않도록 한다.
+  Widget _routeForStatus({
+    required BootstrapStatus bootstrapStatus,
+    required AuthStatus authStatus,
+  }) {
+    // 재시도 필요 상태는 auth 상태보다 항상 우선한다.
+    // 부트스트랩 도중 `checkAuthStatus` 등이 `authStatus` 를 먼저 authenticated 로
+    // 바꾼 뒤 전체 타임아웃이 터지는 레이스가 있어서, 이 분기를 먼저 두지 않으면
+    // `SplashRetryScreen` 대신 `NavigationShell` 로 잘못 들어갈 수 있다.
+    if (bootstrapStatus == BootstrapStatus.retryable) {
+      return const SplashRetryScreen();
+    }
+
+    // 앱 진입 이후의 로그인/로그아웃 전환은 auth 상태를 우선한다.
+    switch (authStatus) {
       case AuthStatus.authenticated:
         return const NavigationShell();
+      case AuthStatus.unauthenticated:
+        return const LoginScreen();
       case AuthStatus.unknown:
+        break;
+    }
+
+    // authStatus 가 아직 확정되지 않았다면(= 부트스트랩이 checkAuthStatus 전에
+    // 종결됐거나, 디버그 훅으로 authStatus 갱신이 스킵된 경우) bootstrapStatus
+    // 로 라우팅을 마무리한다.
+    switch (bootstrapStatus) {
+      case BootstrapStatus.authenticated:
+        return const NavigationShell();
+      case BootstrapStatus.unauthenticated:
+        return const LoginScreen();
+      case BootstrapStatus.retryable:
+      case BootstrapStatus.idle:
+      case BootstrapStatus.running:
         return const SplashScreen();
     }
+  }
+
+  /// 동일 라우트 재빌드는 무시하고, 전환이 일어났을 때만 로그를 남긴다.
+  String? _lastRouteLog;
+  void _logRouteIfChanged(Widget route) {
+    final name = route.runtimeType.toString();
+    if (_lastRouteLog == name) return;
+    _lastRouteLog = name;
+    debugPrint('[BOOT] route_decided home=$name');
   }
 }

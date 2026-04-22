@@ -300,31 +300,57 @@ class _NavItemState extends State<_NavItem> {
 }
 
 /// 추가 버튼
-class _AddButton extends StatelessWidget {
+class _AddButton extends StatefulWidget {
   final VoidCallback onTap;
 
   const _AddButton({super.key, required this.onTap});
 
   @override
+  State<_AddButton> createState() => _AddButtonState();
+}
+
+class _AddButtonState extends State<_AddButton> {
+  bool isPressed = false;
+
+  void setPressedState(bool nextPressed) {
+    if (isPressed == nextPressed) return;
+    setState(() {
+      isPressed = nextPressed;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.blue500,
-          borderRadius: BorderRadius.circular(99),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.10),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Icon(Icons.add, color: Colors.white, size: 28),
+      onTapDown: (_) {
+        setPressedState(true);
+        HapticFeedback.lightImpact();
+      },
+      onTapUp: (_) => setPressedState(false),
+      onTapCancel: () => setPressedState(false),
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        scale: isPressed ? 0.92 : 1.0,
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.blue500,
+            borderRadius: BorderRadius.circular(99),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.10),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Icon(Icons.add, color: Colors.white, size: 28),
+          ),
         ),
       ),
     );

@@ -28,17 +28,11 @@ class CalendarEventIndex {
   static const int maxVisibleEvents = 3;
 
   /// 빈 인덱스
-  factory CalendarEventIndex.empty() => CalendarEventIndex(
-        eventsByDay: {},
-        eventSlots: {},
-        overflowByDay: {},
-      );
+  factory CalendarEventIndex.empty() =>
+      CalendarEventIndex(eventsByDay: {}, eventSlots: {}, overflowByDay: {});
 
   /// 월 단위로 이벤트 인덱스 생성
-  factory CalendarEventIndex.build(
-    DateTime month,
-    List<CalendarEvent> events,
-  ) {
+  factory CalendarEventIndex.build(DateTime month, List<CalendarEvent> events) {
     final days = CalendarUtils.getDaysInMonth(month);
     final eventsByDay = <String, List<CalendarEvent>>{};
     final eventSlots = <String, int>{};
@@ -148,12 +142,44 @@ class CalendarState with _$CalendarState {
 class CalendarController extends Notifier<CalendarState> {
   late final ScheduleApiClient _apiClient;
 
+  /// 스플래시 단계에서 주입된 프리패치를 이미 state 에 반영했음을 가리킨다.
+  /// 최초 `loadEvents` 한 번은 같은 달에 대해 스킵하기 위한 1회성 플래그.
+  ///
+  /// `CalendarWidget.initState` 가 `addPostFrameCallback` 에서 `loadEvents` 를
+  /// 호출하는 기존 동작을 유지하면서도, 프리패치 히트 시 네트워크 재호출이
+  /// 발생하지 않게 만들기 위한 장치다. 두 번째 loadEvents 부터는 정상 동작.
+  bool _primed = false;
+
   @override
   CalendarState build() {
     _apiClient = ref.watch(scheduleApiClientProvider);
     final now = DateTime.now();
+    final focusedMonth = DateTime(now.year, now.month, 1);
+
+    final prefetched = ref.read(calendarPrefetchProvider);
+    if (prefetched != null &&
+        prefetched.month.year == focusedMonth.year &&
+        prefetched.month.month == focusedMonth.month) {
+      debugPrint(
+        '[BOOT] calendar_build source=prefetch_cache '
+        'events=${prefetched.events.length}',
+      );
+      _primed = true;
+      // Riverpod 은 build() 도중 다른 Provider 의 state 수정을 금지하므로
+      // 캐시 초기화는 한 틱 뒤로 미룬다(홈 프리패치와 동일한 패턴).
+      Future<void>.microtask(() {
+        ref.read(calendarPrefetchProvider.notifier).state = null;
+      });
+      return CalendarState(
+        focusedMonth: focusedMonth,
+        selectedDate: now,
+        events: prefetched.events,
+      );
+    }
+
+    debugPrint('[BOOT] calendar_build source=network');
     return CalendarState(
-      focusedMonth: DateTime(now.year, now.month, 1),
+      focusedMonth: focusedMonth,
       selectedDate: now,
       events: [],
     );
@@ -162,6 +188,14 @@ class CalendarController extends Notifier<CalendarState> {
   /// API에서 일정 로드
   Future<void> loadEvents(DateTime month) async {
     final targetMonth = DateTime(month.year, month.month, 1);
+    // 프리패치로 이미 같은 달이 반영되어 있으면 초회 호출만 1회 스킵한다.
+    if (_primed &&
+        targetMonth.year == state.focusedMonth.year &&
+        targetMonth.month == state.focusedMonth.month) {
+      debugPrint('[BOOT] calendar_loadEvents_skipped reason=primed_same_month');
+      _primed = false;
+      return;
+    }
     state = state.copyWith(isLoading: true);
     try {
       final startDate = targetMonth;
@@ -231,9 +265,30 @@ class CalendarController extends Notifier<CalendarState> {
   }
 }
 
+/// 스플래시 부트스트랩에서 선요청해둔 현재월 일정 응답을 1회 주입하는 캐시.
+///
+/// - 스플래시 단계에서 `BootstrapController` 가 `(month, events)` 를 주입한다.
+/// - `CalendarController.build()` 가 기동될 때 해당 월이 `focusedMonth` 와
+///   일치하면 1회 소비되며 즉시 `null` 로 초기화된다.
+/// - 이 값이 반영되면 `CalendarWidget` 의 초기 `loadEvents` 는 1회 스킵된다.
+class CalendarPrefetchData {
+  const CalendarPrefetchData({required this.month, required this.events});
+
+  /// 이 프리패치가 담고 있는 월의 1일 (00:00).
+  final DateTime month;
+
+  /// `searchSchedules` 응답을 도메인 타입으로 변환한 결과.
+  final List<CalendarEvent> events;
+}
+
+final calendarPrefetchProvider = StateProvider<CalendarPrefetchData?>(
+  (ref) => null,
+);
+
 /// 캘린더 Provider
-final calendarProvider =
-    NotifierProvider<CalendarController, CalendarState>(CalendarController.new);
+final calendarProvider = NotifierProvider<CalendarController, CalendarState>(
+  CalendarController.new,
+);
 
 /// 선택된 날짜 Provider (셀 단위 리빌드 최적화용)
 final selectedDateProvider = Provider<DateTime?>((ref) {
@@ -246,8 +301,10 @@ final eventsProvider = Provider<List<CalendarEvent>>((ref) {
 });
 
 /// 월별 이벤트 인덱스 Provider (Family - 월별로 캐시됨)
-final eventIndexFamilyProvider =
-    Provider.family<CalendarEventIndex, String>((ref, monthKey) {
+final eventIndexFamilyProvider = Provider.family<CalendarEventIndex, String>((
+  ref,
+  monthKey,
+) {
   final events = ref.watch(eventsProvider);
   final parts = monthKey.split('-');
   final month = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
