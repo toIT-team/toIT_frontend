@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 import 'add_folder_bottom_sheet.dart';
+import '../common/app_alert_dialog.dart';
 import 'folder_memo_bottom_sheet.dart';
 import 'folder_delete_dialog.dart';
 import 'folder_options_bottom_sheet.dart';
@@ -24,6 +25,7 @@ class FolderTile extends ConsumerStatefulWidget {
   final Color accentColor;
   final int colorIndex;
   final int iconIndex;
+  final bool isDefault;
   final VoidCallback? onTap;
 
   const FolderTile({
@@ -35,6 +37,7 @@ class FolderTile extends ConsumerStatefulWidget {
     required this.accentColor,
     this.colorIndex = 5,
     this.iconIndex = 0,
+    this.isDefault = false,
     this.onTap,
   });
 
@@ -253,6 +256,13 @@ class _FolderTileState extends ConsumerState<FolderTile> {
                                           }
                                           break;
                                         case FolderOption.delete:
+                                          if (widget.isDefault) {
+                                            await showAppAlertDialog(
+                                              context,
+                                              message: '기본 보관함은 삭제할 수 없습니다.',
+                                            );
+                                            break;
+                                          }
                                           final confirmed =
                                               await showDeleteDialog(
                                                 context,

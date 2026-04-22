@@ -162,6 +162,7 @@ class FolderSection extends ConsumerWidget {
                     accentColor: f.accentColor,
                     colorIndex: f.colorIndex,
                     iconIndex: f.iconIndex,
+                    isDefault: f.isDefault,
                   ),
               ],
             );

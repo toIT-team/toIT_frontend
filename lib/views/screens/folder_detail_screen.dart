@@ -12,6 +12,7 @@ import '../../core/constants/folder_tab_index.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_alert_dialog.dart';
 import '../widgets/common/file_kebab_sheet.dart';
 import '../widgets/common/link_edit_sheet.dart';
 import '../widgets/common/link_kebab_sheet.dart';
@@ -117,6 +118,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   }
 
   Future<void> _openFolderOptions() async {
+    FolderItem? currentFolder;
+    for (final folder in ref.read(homeProvider).folders) {
+      if (folder.foldersId == widget.foldersId) {
+        currentFolder = folder;
+        break;
+      }
+    }
+    final isDefaultFolder = currentFolder?.isDefault ?? false;
     final isFavoriteFolder = ref
         .read(homeProvider.notifier)
         .isFavoriteFolder(widget.foldersId);
@@ -126,13 +135,6 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     );
     if (option == null || !mounted) return;
 
-    FolderItem? currentFolder;
-    for (final folder in ref.read(homeProvider).folders) {
-      if (folder.foldersId == widget.foldersId) {
-        currentFolder = folder;
-        break;
-      }
-    }
     final currentMemo = currentFolder?.memo ?? '';
     final currentColorIndex = currentFolder?.colorIndex ?? 5;
     final currentIconIndex = currentFolder?.iconIndex ?? 0;
@@ -173,6 +175,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         });
         break;
       case FolderOption.delete:
+        if (isDefaultFolder) {
+          await showAppAlertDialog(context, message: '기본 보관함은 삭제할 수 없습니다.');
+          return;
+        }
         final confirmed = await showDeleteDialog(
           context,
           message: '[$_folderName]을 정말 삭제하시겠습니까?',
