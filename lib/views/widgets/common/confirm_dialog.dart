@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 ///
 /// 사진 2 디자인: 흰색 배경, 둥근 모서리, 하단 중앙 배치
 /// 반환값: 확인 시 true, 취소 시 false
+///
+/// [cancelColor]이 null이면 취소 버튼은 기본 파란색이다.
 Future<bool?> showConfirmDialog({
   required BuildContext context,
   required String message,
   String cancelLabel = '취소',
   String confirmLabel = '삭제',
   Color? confirmColor,
+  Color? cancelColor,
 }) async {
   return showDialog<bool>(
     context: context,
@@ -58,8 +61,9 @@ Future<bool?> showConfirmDialog({
                           ),
                           child: Text(
                             cancelLabel,
-                            style: const TextStyle(
-                              color: Color(0xFF379BFB),
+                            style: TextStyle(
+                              color:
+                                  cancelColor ?? const Color(0xFF379BFB),
                               fontSize: 16,
                               height: 1.1,
                               fontWeight: FontWeight.w500,
