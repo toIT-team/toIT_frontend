@@ -58,6 +58,9 @@ class ApiConstants {
   /// 자료 이미지 추가 (POST, multipart)
   static const String attachmentsImagesEndpoint = '/attachments/images';
 
+  /// 자료 파일 이름 수정 (PATCH)
+  static const String attachmentsUpdateEndpoint = '/attachments/update';
+
   /// 자료 파일/이미지 보관함 이동 (PATCH)
   static const String attachmentsEndpoint = '/attachments';
   static const String usersNameEndpoint = '/users/name';

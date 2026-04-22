@@ -823,6 +823,7 @@ mixin _$AttachmentFileDto {
   @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get attachmentsType => throw _privateConstructorUsedError;
+  String get textContent => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
   String get presignedUrl => throw _privateConstructorUsedError;
   String get attachmentsExtension => throw _privateConstructorUsedError;
@@ -851,6 +852,7 @@ abstract class $AttachmentFileDtoCopyWith<$Res> {
     @JsonKey(fromJson: _intFromJson) int attachmentsId,
     @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
+    String textContent,
     String objectKey,
     String presignedUrl,
     String attachmentsExtension,
@@ -878,6 +880,7 @@ class _$AttachmentFileDtoCopyWithImpl<$Res, $Val extends AttachmentFileDto>
     Object? attachmentsId = null,
     Object? usersId = null,
     Object? attachmentsType = null,
+    Object? textContent = null,
     Object? objectKey = null,
     Object? presignedUrl = null,
     Object? attachmentsExtension = null,
@@ -898,6 +901,10 @@ class _$AttachmentFileDtoCopyWithImpl<$Res, $Val extends AttachmentFileDto>
             attachmentsType: null == attachmentsType
                 ? _value.attachmentsType
                 : attachmentsType // ignore: cast_nullable_to_non_nullable
+                      as String,
+            textContent: null == textContent
+                ? _value.textContent
+                : textContent // ignore: cast_nullable_to_non_nullable
                       as String,
             objectKey: null == objectKey
                 ? _value.objectKey
@@ -942,6 +949,7 @@ abstract class _$$AttachmentFileDtoImplCopyWith<$Res>
     @JsonKey(fromJson: _intFromJson) int attachmentsId,
     @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
+    String textContent,
     String objectKey,
     String presignedUrl,
     String attachmentsExtension,
@@ -968,6 +976,7 @@ class __$$AttachmentFileDtoImplCopyWithImpl<$Res>
     Object? attachmentsId = null,
     Object? usersId = null,
     Object? attachmentsType = null,
+    Object? textContent = null,
     Object? objectKey = null,
     Object? presignedUrl = null,
     Object? attachmentsExtension = null,
@@ -988,6 +997,10 @@ class __$$AttachmentFileDtoImplCopyWithImpl<$Res>
         attachmentsType: null == attachmentsType
             ? _value.attachmentsType
             : attachmentsType // ignore: cast_nullable_to_non_nullable
+                  as String,
+        textContent: null == textContent
+            ? _value.textContent
+            : textContent // ignore: cast_nullable_to_non_nullable
                   as String,
         objectKey: null == objectKey
             ? _value.objectKey
@@ -1025,6 +1038,7 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
     @JsonKey(fromJson: _intFromJson) this.attachmentsId = 0,
     @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.attachmentsType = '',
+    this.textContent = '',
     this.objectKey = '',
     this.presignedUrl = '',
     this.attachmentsExtension = '',
@@ -1047,6 +1061,9 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
   final String attachmentsType;
   @override
   @JsonKey()
+  final String textContent;
+  @override
+  @JsonKey()
   final String objectKey;
   @override
   @JsonKey()
@@ -1065,7 +1082,7 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
 
   @override
   String toString() {
-    return 'AttachmentFileDto(attachmentsId: $attachmentsId, usersId: $usersId, attachmentsType: $attachmentsType, objectKey: $objectKey, presignedUrl: $presignedUrl, attachmentsExtension: $attachmentsExtension, attachmentsSize: $attachmentsSize, fileName: $fileName, createdAt: $createdAt)';
+    return 'AttachmentFileDto(attachmentsId: $attachmentsId, usersId: $usersId, attachmentsType: $attachmentsType, textContent: $textContent, objectKey: $objectKey, presignedUrl: $presignedUrl, attachmentsExtension: $attachmentsExtension, attachmentsSize: $attachmentsSize, fileName: $fileName, createdAt: $createdAt)';
   }
 
   @override
@@ -1078,6 +1095,8 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
             (identical(other.usersId, usersId) || other.usersId == usersId) &&
             (identical(other.attachmentsType, attachmentsType) ||
                 other.attachmentsType == attachmentsType) &&
+            (identical(other.textContent, textContent) ||
+                other.textContent == textContent) &&
             (identical(other.objectKey, objectKey) ||
                 other.objectKey == objectKey) &&
             (identical(other.presignedUrl, presignedUrl) ||
@@ -1099,6 +1118,7 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
     attachmentsId,
     usersId,
     attachmentsType,
+    textContent,
     objectKey,
     presignedUrl,
     attachmentsExtension,
@@ -1129,6 +1149,7 @@ abstract class _AttachmentFileDto implements AttachmentFileDto {
     @JsonKey(fromJson: _intFromJson) final int attachmentsId,
     @JsonKey(fromJson: _intFromJson) final int usersId,
     final String attachmentsType,
+    final String textContent,
     final String objectKey,
     final String presignedUrl,
     final String attachmentsExtension,
@@ -1148,6 +1169,8 @@ abstract class _AttachmentFileDto implements AttachmentFileDto {
   int get usersId;
   @override
   String get attachmentsType;
+  @override
+  String get textContent;
   @override
   String get objectKey;
   @override
@@ -1180,6 +1203,7 @@ mixin _$AttachmentImageDto {
   @JsonKey(fromJson: _intFromJson)
   int get usersId => throw _privateConstructorUsedError;
   String get attachmentsType => throw _privateConstructorUsedError;
+  String get textContent => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
   String get presignedUrl => throw _privateConstructorUsedError;
   String get attachmentsExtension => throw _privateConstructorUsedError;
@@ -1210,6 +1234,7 @@ abstract class $AttachmentImageDtoCopyWith<$Res> {
     @JsonKey(fromJson: _intFromJson) int attachmentsId,
     @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
+    String textContent,
     String objectKey,
     String presignedUrl,
     String attachmentsExtension,
@@ -1239,6 +1264,7 @@ class _$AttachmentImageDtoCopyWithImpl<$Res, $Val extends AttachmentImageDto>
     Object? attachmentsId = null,
     Object? usersId = null,
     Object? attachmentsType = null,
+    Object? textContent = null,
     Object? objectKey = null,
     Object? presignedUrl = null,
     Object? attachmentsExtension = null,
@@ -1261,6 +1287,10 @@ class _$AttachmentImageDtoCopyWithImpl<$Res, $Val extends AttachmentImageDto>
             attachmentsType: null == attachmentsType
                 ? _value.attachmentsType
                 : attachmentsType // ignore: cast_nullable_to_non_nullable
+                      as String,
+            textContent: null == textContent
+                ? _value.textContent
+                : textContent // ignore: cast_nullable_to_non_nullable
                       as String,
             objectKey: null == objectKey
                 ? _value.objectKey
@@ -1313,6 +1343,7 @@ abstract class _$$AttachmentImageDtoImplCopyWith<$Res>
     @JsonKey(fromJson: _intFromJson) int attachmentsId,
     @JsonKey(fromJson: _intFromJson) int usersId,
     String attachmentsType,
+    String textContent,
     String objectKey,
     String presignedUrl,
     String attachmentsExtension,
@@ -1341,6 +1372,7 @@ class __$$AttachmentImageDtoImplCopyWithImpl<$Res>
     Object? attachmentsId = null,
     Object? usersId = null,
     Object? attachmentsType = null,
+    Object? textContent = null,
     Object? objectKey = null,
     Object? presignedUrl = null,
     Object? attachmentsExtension = null,
@@ -1363,6 +1395,10 @@ class __$$AttachmentImageDtoImplCopyWithImpl<$Res>
         attachmentsType: null == attachmentsType
             ? _value.attachmentsType
             : attachmentsType // ignore: cast_nullable_to_non_nullable
+                  as String,
+        textContent: null == textContent
+            ? _value.textContent
+            : textContent // ignore: cast_nullable_to_non_nullable
                   as String,
         objectKey: null == objectKey
             ? _value.objectKey
@@ -1408,6 +1444,7 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
     @JsonKey(fromJson: _intFromJson) this.attachmentsId = 0,
     @JsonKey(fromJson: _intFromJson) this.usersId = 0,
     this.attachmentsType = '',
+    this.textContent = '',
     this.objectKey = '',
     this.presignedUrl = '',
     this.attachmentsExtension = '',
@@ -1430,6 +1467,9 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
   @override
   @JsonKey()
   final String attachmentsType;
+  @override
+  @JsonKey()
+  final String textContent;
   @override
   @JsonKey()
   final String objectKey;
@@ -1456,7 +1496,7 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
 
   @override
   String toString() {
-    return 'AttachmentImageDto(attachmentsId: $attachmentsId, usersId: $usersId, attachmentsType: $attachmentsType, objectKey: $objectKey, presignedUrl: $presignedUrl, attachmentsExtension: $attachmentsExtension, attachmentsSize: $attachmentsSize, fileName: $fileName, imagesWidth: $imagesWidth, imagesHeight: $imagesHeight, createdAt: $createdAt)';
+    return 'AttachmentImageDto(attachmentsId: $attachmentsId, usersId: $usersId, attachmentsType: $attachmentsType, textContent: $textContent, objectKey: $objectKey, presignedUrl: $presignedUrl, attachmentsExtension: $attachmentsExtension, attachmentsSize: $attachmentsSize, fileName: $fileName, imagesWidth: $imagesWidth, imagesHeight: $imagesHeight, createdAt: $createdAt)';
   }
 
   @override
@@ -1469,6 +1509,8 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
             (identical(other.usersId, usersId) || other.usersId == usersId) &&
             (identical(other.attachmentsType, attachmentsType) ||
                 other.attachmentsType == attachmentsType) &&
+            (identical(other.textContent, textContent) ||
+                other.textContent == textContent) &&
             (identical(other.objectKey, objectKey) ||
                 other.objectKey == objectKey) &&
             (identical(other.presignedUrl, presignedUrl) ||
@@ -1494,6 +1536,7 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
     attachmentsId,
     usersId,
     attachmentsType,
+    textContent,
     objectKey,
     presignedUrl,
     attachmentsExtension,
@@ -1526,6 +1569,7 @@ abstract class _AttachmentImageDto implements AttachmentImageDto {
     @JsonKey(fromJson: _intFromJson) final int attachmentsId,
     @JsonKey(fromJson: _intFromJson) final int usersId,
     final String attachmentsType,
+    final String textContent,
     final String objectKey,
     final String presignedUrl,
     final String attachmentsExtension,
@@ -1547,6 +1591,8 @@ abstract class _AttachmentImageDto implements AttachmentImageDto {
   int get usersId;
   @override
   String get attachmentsType;
+  @override
+  String get textContent;
   @override
   String get objectKey;
   @override
