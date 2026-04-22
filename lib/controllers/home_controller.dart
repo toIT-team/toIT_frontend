@@ -204,8 +204,17 @@ class HomeController extends Notifier<HomeState> {
   HomeState build() {
     // 사용자 세션(로그인/로그아웃/복구) 변경 시 홈 상태 캐시를 재생성
     ref.watch(authSessionRefreshTickProvider);
-    // 초기 데이터 로드 시작
-    _loadHomeData();
+
+    // 스플래시 부트스트랩 단계에서 선요청된 홈 데이터가 있으면 소비하고
+    // 네트워크 재호출 없이 즉시 화면에 반영한다. (중복 요청 방지)
+    final prefetched = ref.read(homePrefetchProvider);
+    if (prefetched != null) {
+      debugPrint('[BOOT] home_build source=prefetch_cache');
+      _consumePrefetchedHomeData(prefetched);
+    } else {
+      debugPrint('[BOOT] home_build source=network');
+      _loadHomeData();
+    }
     return const HomeState(isLoading: true);
   }
 
@@ -213,58 +222,79 @@ class HomeController extends Notifier<HomeState> {
   Future<void> _loadHomeData() async {
     try {
       final repository = ref.read(homeRepositoryProvider);
-      final authService = ref.read(authServiceProvider);
       final now = DateTime.now();
       final today =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       final dto = await repository.fetchHomeData(todayDate: today);
-      final tokenNickname = await authService.getNicknameFromToken();
-      final resolvedUserName =
-          (tokenNickname != null && tokenNickname.trim().isNotEmpty)
-          ? tokenNickname.trim()
-          : '사용자';
-
-      // DTO → Domain 변환
-      final schedules = dto.schedules
-          .asMap()
-          .entries
-          .map((e) => _mapSchedule(e.value, e.key))
-          .toList();
-
-      final folders = dto.folders.asMap().entries.map((e) {
-        return _mapFolder(e.value, e.key, countText: '${e.value.itemsCount}개');
-      }).toList();
-
-      _favoriteFolderIds = dto.folders
-          .where((folder) => folder.isFavorite)
-          .map((folder) => folder.foldersId)
-          .toSet();
-
-      final filters = _buildFilterTokens(
-        folders: folders,
-        foldersViews: dto.foldersViews,
-      );
-      final nextSelectedIndex = state.selectedFilterIndex.clamp(
-        0,
-        filters.isEmpty ? 0 : filters.length - 1,
-      );
-
-      state = state.copyWith(
-        userName: resolvedUserName,
-        todayScheduleCount: schedules.length,
-        schedules: schedules,
-        folders: folders,
-        filters: filters,
-        selectedFilterIndex: nextSelectedIndex,
-        isLoading: false,
-        errorMessage: null,
-      );
+      await _applyHomeDataDto(dto);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: '데이터를 불러오지 못했습니다: $e',
       );
     }
+  }
+
+  /// 스플래시에서 선요청한 DTO 를 적용. 네트워크 재호출 없이 즉시 반영한다.
+  ///
+  /// 이 메서드는 `build()` 에서 fire-and-forget 으로 호출되므로
+  /// 첫 `microtask` 경계까지는 빌드 사이클 안에서 실행될 수 있다.
+  /// Riverpod 은 빌드 중 다른 Provider 의 state 수정을 금지하므로,
+  /// `homePrefetchProvider` 초기화는 한 틱 뒤로 미룬다.
+  Future<void> _consumePrefetchedHomeData(HomeResponseDto dto) async {
+    await Future<void>.microtask(() {});
+    ref.read(homePrefetchProvider.notifier).state = null;
+    try {
+      await _applyHomeDataDto(dto);
+    } catch (e) {
+      // 주입 중 변환 오류가 나면 안전하게 실데이터 재요청으로 폴백.
+      await _loadHomeData();
+    }
+  }
+
+  /// DTO → HomeState 반영 로직. `_loadHomeData` 와 프리페치 주입 경로가 공유한다.
+  Future<void> _applyHomeDataDto(HomeResponseDto dto) async {
+    final authService = ref.read(authServiceProvider);
+    final tokenNickname = await authService.getNicknameFromToken();
+    final resolvedUserName =
+        (tokenNickname != null && tokenNickname.trim().isNotEmpty)
+        ? tokenNickname.trim()
+        : '사용자';
+
+    final schedules = dto.schedules
+        .asMap()
+        .entries
+        .map((e) => _mapSchedule(e.value, e.key))
+        .toList();
+
+    final folders = dto.folders.asMap().entries.map((e) {
+      return _mapFolder(e.value, e.key, countText: '${e.value.itemsCount}개');
+    }).toList();
+
+    _favoriteFolderIds = dto.folders
+        .where((folder) => folder.isFavorite)
+        .map((folder) => folder.foldersId)
+        .toSet();
+
+    final filters = _buildFilterTokens(
+      folders: folders,
+      foldersViews: dto.foldersViews,
+    );
+    final nextSelectedIndex = state.selectedFilterIndex.clamp(
+      0,
+      filters.isEmpty ? 0 : filters.length - 1,
+    );
+
+    state = state.copyWith(
+      userName: resolvedUserName,
+      todayScheduleCount: schedules.length,
+      schedules: schedules,
+      folders: folders,
+      filters: filters,
+      selectedFilterIndex: nextSelectedIndex,
+      isLoading: false,
+      errorMessage: null,
+    );
   }
 
   /// 데이터 새로고침
@@ -451,6 +481,13 @@ class HomeController extends Notifier<HomeState> {
 final homeProvider = NotifierProvider<HomeController, HomeState>(
   HomeController.new,
 );
+
+/// 스플래시 부트스트랩에서 선요청해둔 `/page/home` 응답을 1회 주입하는 캐시.
+///
+/// - 스플래시 단계에서 `BootstrapController` 가 값을 세팅한다.
+/// - `HomeController.build()` 가 기동될 때 1회 소비되며 즉시 `null` 로 초기화된다.
+/// - 이 값이 존재하면 홈 화면은 네트워크 재호출 없이 즉시 렌더된다.
+final homePrefetchProvider = StateProvider<HomeResponseDto?>((ref) => null);
 
 /// 일정 목록 Provider (최적화용)
 final homeSchedulesProvider = Provider<List<Schedule>>((ref) {

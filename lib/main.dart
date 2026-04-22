@@ -204,8 +204,15 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     required BootstrapStatus bootstrapStatus,
     required AuthStatus authStatus,
   }) {
+    // 재시도 필요 상태는 auth 상태보다 항상 우선한다.
+    // 부트스트랩 도중 `checkAuthStatus` 등이 `authStatus` 를 먼저 authenticated 로
+    // 바꾼 뒤 전체 타임아웃이 터지는 레이스가 있어서, 이 분기를 먼저 두지 않으면
+    // `SplashRetryScreen` 대신 `NavigationShell` 로 잘못 들어갈 수 있다.
+    if (bootstrapStatus == BootstrapStatus.retryable) {
+      return const SplashRetryScreen();
+    }
+
     // 앱 진입 이후의 로그인/로그아웃 전환은 auth 상태를 우선한다.
-    // 부트스트랩 상태는 "초기 진입 중/재시도 필요" 화면만 보조적으로 결정한다.
     switch (authStatus) {
       case AuthStatus.authenticated:
         return const NavigationShell();
@@ -215,11 +222,15 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         break;
     }
 
+    // authStatus 가 아직 확정되지 않았다면(= 부트스트랩이 checkAuthStatus 전에
+    // 종결됐거나, 디버그 훅으로 authStatus 갱신이 스킵된 경우) bootstrapStatus
+    // 로 라우팅을 마무리한다.
     switch (bootstrapStatus) {
-      case BootstrapStatus.retryable:
-        return const SplashRetryScreen();
       case BootstrapStatus.authenticated:
+        return const NavigationShell();
       case BootstrapStatus.unauthenticated:
+        return const LoginScreen();
+      case BootstrapStatus.retryable:
       case BootstrapStatus.idle:
       case BootstrapStatus.running:
         return const SplashScreen();
