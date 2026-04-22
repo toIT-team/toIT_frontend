@@ -86,23 +86,6 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// state 쓰기 직전에 현재 세대와 일치하는지 확인한다.
   int _runGeneration = 0;
 
-  /// ---- DEBUG ONLY: 부트스트랩 시나리오 강제 주입 훅 ----
-  ///
-  /// `--dart-define=BOOT_SCENARIO=<id>` 로 켜며, `kDebugMode` 에서만 동작한다.
-  /// 검증이 끝나면 이 블록(필드/메서드 + 호출부)을 함께 제거할 예정.
-  ///
-  /// 지원 시나리오:
-  /// - `authenticated`     : 실네트워크 호출 없이 authenticated 로 종료
-  /// - `unauthenticated`   : 실네트워크 호출 없이 unauthenticated 로 종료
-  /// - `reissue_fail`      : 재발급을 강제로 실패(401 상당) 처리 → forceLogout → unauthenticated
-  /// - `reissue_timeout`   : 재발급 단계에서 전체 타임아웃 초과 → retryable
-  /// - `prefetch_timeout`  : 홈 prefetch 개별 타임아웃 초과(authenticated 유지)
-  /// - `prefetch_error`    : 홈 prefetch 에서 강제 예외(authenticated 유지)
-  /// - `calendar_timeout`  : 캘린더 prefetch 개별 타임아웃 초과(authenticated 유지)
-  /// - `calendar_error`    : 캘린더 prefetch 에서 강제 예외(authenticated 유지)
-  /// - `bootstrap_timeout` : 홈 prefetch 에서 전체 타임아웃 초과 → retryable
-  static const _debugScenario = String.fromEnvironment('BOOT_SCENARIO');
-
   @override
   BootstrapState build() => const BootstrapState();
 
@@ -187,12 +170,6 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// 단계별 `*_start/*_end` 로그를 남겨 외부에서 어느 구간이 느렸는지
   /// 즉시 식별할 수 있도록 한다.
   Future<void> _executeSequence(int generation) async {
-    // DEBUG ONLY: 시나리오가 지정되면 실제 경로 대신 강제 분기한다.
-    if (kDebugMode && _debugScenario.isNotEmpty) {
-      final handled = await _runDebugScenarioBeforeSequence(generation);
-      if (handled) return;
-    }
-
     debugPrint('[BOOT] checkTokenPair_start');
     final hasLocalTokens = await _authService.hasTokens();
     debugPrint('[BOOT] checkTokenPair_end hasTokens=$hasLocalTokens');
@@ -210,11 +187,7 @@ class BootstrapController extends Notifier<BootstrapState> {
 
     debugPrint('[BOOT] reissue_start');
     final reissueStopwatch = Stopwatch()..start();
-    // DEBUG ONLY: `reissue_fail` 시나리오는 실제 호출을 생략하고 401 상당(=null)을 반환해
-    // 이후 forceLogout → unauthenticated 경로를 검증한다.
-    final newAccessToken = (kDebugMode && _debugScenario == 'reissue_fail')
-        ? _forceReissueFailForDebug()
-        : await _authService.reissueAccessToken();
+    final newAccessToken = await _authService.reissueAccessToken();
     reissueStopwatch.stop();
     debugPrint(
       '[BOOT] reissue_end status=${newAccessToken == null ? 'fail' : 'success'} '
@@ -291,11 +264,6 @@ class BootstrapController extends Notifier<BootstrapState> {
     debugPrint('[BOOT] prefetch_home_start');
     final stopwatch = Stopwatch()..start();
     try {
-      // DEBUG ONLY: prefetch 단계에 시나리오를 주입한다.
-      if (kDebugMode && _debugScenario.isNotEmpty) {
-        await _runDebugScenarioInPrefetch();
-      }
-
       final now = DateTime.now();
       final todayDate =
           '${now.year}-'
@@ -346,11 +314,6 @@ class BootstrapController extends Notifier<BootstrapState> {
     debugPrint('[BOOT] prefetch_calendar_start');
     final stopwatch = Stopwatch()..start();
     try {
-      // DEBUG ONLY: 캘린더 전용 prefetch 시나리오 훅.
-      if (kDebugMode && _debugScenario.isNotEmpty) {
-        await _runDebugScenarioInCalendarPrefetch();
-      }
-
       final now = DateTime.now();
       // 캘린더 화면이 처음 보여줄 월 = 현재 월. 1일 ~ 말일 구간을 조회한다.
       final startDate = DateTime(now.year, now.month, 1);
@@ -391,98 +354,6 @@ class BootstrapController extends Notifier<BootstrapState> {
         'elapsedMs=${stopwatch.elapsedMilliseconds}',
       );
     }
-  }
-
-  /// DEBUG ONLY: `_executeSequence` 초입에 시나리오를 적용한다.
-  ///
-  /// - `authenticated` / `unauthenticated` 는 여기서 상태를 확정하고 `true` 반환(이후 절차 스킵).
-  /// - `reissue_timeout` 은 전체 타임아웃을 트리거하기 위해 충분히 긴 대기만 걸고 `false` 반환.
-  /// - 그 외(prefetch 계열)는 `_prefetchHomeData` 쪽 훅에서 처리한다.
-  Future<bool> _runDebugScenarioBeforeSequence(int generation) async {
-    debugPrint('[BOOT] debug_scenario=$_debugScenario phase=before_sequence');
-    switch (_debugScenario) {
-      case 'authenticated':
-        _setStateIfActive(
-          generation,
-          const BootstrapState(status: BootstrapStatus.authenticated),
-        );
-        return true;
-      case 'unauthenticated':
-        _setStateIfActive(
-          generation,
-          const BootstrapState(status: BootstrapStatus.unauthenticated),
-        );
-        return true;
-      case 'reissue_timeout':
-        await Future<void>.delayed(
-          _bootstrapTimeout + const Duration(seconds: 2),
-        );
-        return false;
-      default:
-        return false;
-    }
-  }
-
-  /// DEBUG ONLY: 홈 prefetch 단계에서 시나리오를 적용한다.
-  ///
-  /// - `prefetch_timeout` : `_prefetchTimeout` 을 초과하도록 대기 → 내부 timeout 발동
-  /// - `prefetch_error`   : 강제 예외 → 내부 catch 에서 fail 로그
-  /// - `bootstrap_timeout`: `_bootstrapTimeout` 을 초과하도록 대기 → 외부 run() timeout 발동
-  ///
-  /// 홈과 무관한 시나리오(`calendar_*` 등)는 여기서 아무 일도 하지 않는다. 혼동을
-  /// 막기 위해 매치 케이스에서만 phase 로그를 남긴다.
-  Future<void> _runDebugScenarioInPrefetch() async {
-    switch (_debugScenario) {
-      case 'prefetch_timeout':
-        debugPrint('[BOOT] debug_scenario=$_debugScenario phase=prefetch_home');
-        await Future<void>.delayed(
-          _prefetchTimeout + const Duration(seconds: 2),
-        ).timeout(_prefetchTimeout);
-        break;
-      case 'prefetch_error':
-        debugPrint('[BOOT] debug_scenario=$_debugScenario phase=prefetch_home');
-        throw StateError('forced prefetch error (BOOT_SCENARIO)');
-      case 'bootstrap_timeout':
-        debugPrint('[BOOT] debug_scenario=$_debugScenario phase=prefetch_home');
-        await Future<void>.delayed(
-          _bootstrapTimeout + const Duration(seconds: 2),
-        );
-        break;
-    }
-  }
-
-  /// DEBUG ONLY: 캘린더 prefetch 단계에서 시나리오를 적용한다.
-  ///
-  /// - `calendar_timeout` : `_prefetchTimeout` 을 초과하도록 대기 → 내부 timeout 발동
-  /// - `calendar_error`   : 강제 예외 → 내부 catch 에서 fail 로그
-  ///
-  /// 홈 prefetch 훅과 분리한 이유: 홈/캘린더를 병렬로 발행하므로 동일 훅이
-  /// 양쪽에 동시 걸리지 않도록 프리픽스로 대상 API 를 명시적으로 분기한다.
-  Future<void> _runDebugScenarioInCalendarPrefetch() async {
-    switch (_debugScenario) {
-      case 'calendar_timeout':
-        debugPrint(
-          '[BOOT] debug_scenario=$_debugScenario phase=prefetch_calendar',
-        );
-        await Future<void>.delayed(
-          _prefetchTimeout + const Duration(seconds: 2),
-        ).timeout(_prefetchTimeout);
-        break;
-      case 'calendar_error':
-        debugPrint(
-          '[BOOT] debug_scenario=$_debugScenario phase=prefetch_calendar',
-        );
-        throw StateError('forced calendar prefetch error (BOOT_SCENARIO)');
-    }
-  }
-
-  /// DEBUG ONLY: 재발급 실패를 시뮬레이션한다. 실제 네트워크 호출 없이 `null` 반환.
-  ///
-  /// 이후 `_executeSequence` 는 `reissue_end status=fail` 로그를 남기고
-  /// `forceLogout → unauthenticated` 경로를 그대로 재사용한다.
-  String? _forceReissueFailForDebug() {
-    debugPrint('[BOOT] debug_scenario=$_debugScenario phase=reissue');
-    return null;
   }
 }
 
