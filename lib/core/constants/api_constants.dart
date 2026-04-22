@@ -29,6 +29,7 @@ class ApiConstants {
   static const String foldersFavoriteEndpoint = '/folders/favorite';
   static const String pageItemsEndpoint = '/page/items';
   static const String myPageEndpoint = '/page/my';
+  static const String storageUsageEndpoint = '/api/storage/usage';
 
   /// 통합 검색 (GET /page/search)
   static const String searchEndpoint = '/page/search';

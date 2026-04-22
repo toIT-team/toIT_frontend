@@ -9,25 +9,40 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/my_page_response_dto.dart';
+import '../../models/dto/storage_usage_response_dto.dart';
 import 'account_management_screen.dart';
 import 'customer_support_screen.dart';
 import 'profile_edit_screen.dart';
 
 /// 마이페이지 데이터 조회 Provider
-final myPageProvider =
-    FutureProvider.family<MyPageResponseDto, (int, int)>((
-  ref,
-  key,
-) async {
-  final (userId, refreshTick) = key;
-  // 세션 변경 tick을 키에 포함해 사용자 전환 시 캐시 잔상 방지
-  if (refreshTick < 0) {
-    throw StateError('Invalid refresh tick: $refreshTick');
-  }
-  final apiClient = ref.read(apiClientProvider);
-  final response = await apiClient.get(ApiConstants.myPageEndpoint);
-  return MyPageResponseDto.fromJson(response.data as Map<String, dynamic>);
-});
+final myPageProvider = FutureProvider.autoDispose
+    .family<MyPageResponseDto, (int, int)>((ref, key) async {
+      final (userId, refreshTick) = key;
+      // 세션 변경 tick을 키에 포함해 사용자 전환 시 캐시 잔상 방지
+      if (refreshTick < 0) {
+        throw StateError('Invalid refresh tick: $refreshTick');
+      }
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.get(ApiConstants.myPageEndpoint);
+      return MyPageResponseDto.fromJson(response.data as Map<String, dynamic>);
+    });
+
+/// 스토리지 사용량 조회 Provider
+final storageUsageProvider = FutureProvider.autoDispose
+    .family<StorageUsageResponseDto, (int, int)>((ref, key) async {
+      final (userId, refreshTick) = key;
+      if (refreshTick < 0) {
+        throw StateError('Invalid refresh tick: $refreshTick');
+      }
+      if (userId <= 0) {
+        throw StateError('Invalid user id: $userId');
+      }
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.get(ApiConstants.storageUsageEndpoint);
+      return StorageUsageResponseDto.fromJson(
+        response.data as Map<String, dynamic>,
+      );
+    });
 
 /// 마이페이지 화면
 class MyScreen extends ConsumerWidget {
@@ -39,14 +54,13 @@ class MyScreen extends ConsumerWidget {
     if (userId == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Center(child: CircularProgressIndicator()),
-        ),
+        body: SafeArea(child: Center(child: CircularProgressIndicator())),
       );
     }
     final refreshTick = ref.watch(authSessionRefreshTickProvider);
     final cacheKey = (userId, refreshTick);
     final myPageAsync = ref.watch(myPageProvider(cacheKey));
+    final storageUsageAsync = ref.watch(storageUsageProvider(cacheKey));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -59,6 +73,7 @@ class MyScreen extends ConsumerWidget {
               child: myPageAsync.when(
                 data: (myPage) => _MyContent(
                   myPage: myPage,
+                  storageUsageAsync: storageUsageAsync,
                   onEditProfilePressed: () async {
                     final result = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(
@@ -137,10 +152,12 @@ class _MyHeader extends StatelessWidget {
 class _MyContent extends StatelessWidget {
   const _MyContent({
     required this.myPage,
+    required this.storageUsageAsync,
     required this.onEditProfilePressed,
   });
 
   final MyPageResponseDto myPage;
+  final AsyncValue<StorageUsageResponseDto> storageUsageAsync;
   final VoidCallback onEditProfilePressed;
 
   @override
@@ -181,7 +198,15 @@ class _MyContent extends StatelessWidget {
                     height: 1.25,
                   ),
                 ),
-                SizedBox(height: s(36)),
+                SizedBox(height: s(18)),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: s(20)),
+                  child: _StorageUsageSection(
+                    scale: scale,
+                    storageUsageAsync: storageUsageAsync,
+                  ),
+                ),
+                SizedBox(height: s(20)),
                 Container(height: s(10), color: AppColors.neutral300),
                 SizedBox(height: s(16)),
                 Padding(
@@ -245,7 +270,6 @@ class _MyContent extends StatelessWidget {
       },
     );
   }
-
 }
 
 class _ProfileAvatar extends StatelessWidget {
@@ -310,6 +334,264 @@ class _ProfileAvatar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StorageUsageSection extends StatelessWidget {
+  const _StorageUsageSection({
+    required this.scale,
+    required this.storageUsageAsync,
+  });
+
+  static const double _displayLimitMB = 5120; // 제품 정책: 5GB 고정 표기
+
+  final double scale;
+  final AsyncValue<StorageUsageResponseDto> storageUsageAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return storageUsageAsync.when(
+      data: (usage) => _buildUsageView(usage),
+      loading: () => _buildLoadingView(),
+      error: (_, __) => _buildFallbackView(),
+    );
+  }
+
+  Widget _buildUsageView(StorageUsageResponseDto usage) {
+    double s(double value) => value * scale;
+
+    final rawImageRatio = (usage.imageUsedMB / _displayLimitMB)
+        .clamp(0, 1)
+        .toDouble();
+    final rawFileRatio = (usage.fileUsedMB / _displayLimitMB)
+        .clamp(0, 1)
+        .toDouble();
+    final ratioSum = rawImageRatio + rawFileRatio;
+    final sum = ratioSum.clamp(0, 1);
+    final normalize = sum > 1 ? (1 / sum) : 1.0;
+    final imageRatio = rawImageRatio * normalize;
+    final fileRatio = rawFileRatio * normalize;
+
+    final totalUsedText = _formatUsedText(usage.totalUsedMB);
+    final limitText = _formatGB(_displayLimitMB);
+    final imageText = _formatMB(usage.imageUsedMB);
+    final fileText = _formatMB(usage.fileUsedMB);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            const minVisibleWidth = 3.0;
+            final hasImage = usage.imageUsedMB > 0;
+            final hasFile = usage.fileUsedMB > 0;
+            var imageWidth = width * imageRatio;
+            var fileWidth = width * fileRatio;
+
+            if (hasImage && imageWidth > 0 && imageWidth < minVisibleWidth) {
+              imageWidth = minVisibleWidth;
+            }
+            if (hasFile && fileWidth > 0 && fileWidth < minVisibleWidth) {
+              fileWidth = minVisibleWidth;
+            }
+            final totalWidth = imageWidth + fileWidth;
+            if (totalWidth > width && totalWidth > 0) {
+              final scaleDown = width / totalWidth;
+              imageWidth *= scaleDown;
+              fileWidth *= scaleDown;
+            }
+
+            return Stack(
+              children: [
+                Container(
+                  width: width,
+                  height: s(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.neutral100,
+                    borderRadius: BorderRadius.circular(s(6)),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: imageWidth,
+                      height: s(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.blue500,
+                        borderRadius: BorderRadius.horizontal(
+                          left: Radius.circular(s(6)),
+                          right: imageRatio == 0 && fileRatio == 0
+                              ? Radius.circular(s(6))
+                              : Radius.zero,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: fileWidth,
+                      height: s(12),
+                      color: AppColors.pink200,
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+        SizedBox(height: s(6)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              totalUsedText,
+              style: TextStyle(
+                color: AppColors.gray900,
+                fontSize: s(14),
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.025 * s(14),
+                height: 1.25,
+              ),
+            ),
+            Text(
+              limitText,
+              style: TextStyle(
+                color: AppColors.gray900,
+                fontSize: s(14),
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.025 * s(14),
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: s(10)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendDot(color: AppColors.blue500, scale: scale),
+            SizedBox(width: s(6)),
+            Text(
+              '이미지 $imageText',
+              style: TextStyle(
+                color: AppColors.gray900,
+                fontSize: s(12),
+                fontWeight: FontWeight.w400,
+                letterSpacing: -0.025 * s(12),
+                height: 1.25,
+              ),
+            ),
+            SizedBox(width: s(14)),
+            _LegendDot(color: AppColors.pink200, scale: scale),
+            SizedBox(width: s(6)),
+            Text(
+              '파일 $fileText',
+              style: TextStyle(
+                color: AppColors.gray900,
+                fontSize: s(12),
+                fontWeight: FontWeight.w400,
+                letterSpacing: -0.025 * s(12),
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingView() {
+    double s(double value) => value * scale;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: s(12),
+          decoration: BoxDecoration(
+            color: AppColors.neutral50,
+            borderRadius: BorderRadius.circular(s(6)),
+          ),
+        ),
+        SizedBox(height: s(8)),
+        Text(
+          '용량 정보를 불러오는 중...',
+          style: TextStyle(
+            color: AppColors.gray600,
+            fontSize: s(12),
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.025 * s(12),
+            height: 1.25,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFallbackView() {
+    double s(double value) => value * scale;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: s(12),
+          decoration: BoxDecoration(
+            color: AppColors.neutral100,
+            borderRadius: BorderRadius.circular(s(6)),
+          ),
+        ),
+        SizedBox(height: s(8)),
+        Text(
+          '용량 정보를 확인할 수 없어요.',
+          style: TextStyle(
+            color: AppColors.gray600,
+            fontSize: s(12),
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.025 * s(12),
+            height: 1.25,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatGB(double mb) {
+    final gb = (mb / 1024).clamp(0, double.infinity);
+    if ((gb - gb.roundToDouble()).abs() < 0.05) {
+      return '${gb.round()}GB';
+    }
+    return '${gb.toStringAsFixed(1)}GB';
+  }
+
+  String _formatUsedText(double mb) {
+    if (mb < 1024) {
+      return _formatMB(mb);
+    }
+    return _formatGB(mb);
+  }
+
+  String _formatMB(double mb) {
+    if (mb >= 1024) {
+      return _formatGB(mb);
+    }
+    if (mb < 1) {
+      return '${mb.toStringAsFixed(1)}MB';
+    }
+    return '${mb.toStringAsFixed(0)}MB';
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.scale});
+
+  final Color color;
+  final double scale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10 * scale,
+      height: 10 * scale,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
