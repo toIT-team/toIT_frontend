@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
@@ -11,6 +12,7 @@ import '../../models/calendar/calendar_event.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_alert_dialog.dart';
 import '../widgets/common/app_divider.dart';
+import '../widgets/common/confirm_dialog.dart';
 import '../widgets/common/schedule_folder_search_sheet.dart';
 import '../widgets/event/alarm_picker_sheet.dart';
 import '../widgets/event/color_context_menu.dart';
@@ -133,6 +135,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           ref.read(eventFormProvider.notifier).updateEndTime(value);
         },
         onFolderTap: _handleFolderTap,
+        onClearFolderLink: _handleClearFolderLink,
         onAlarmTap: _handleAlarmTap,
         onAlarmToggleOff: _handleAlarmToggleOff,
         onMemoChanged: _handleMemoChanged,
@@ -274,6 +277,24 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
     );
   }
 
+  Future<void> _handleClearFolderLink() async {
+    if (isCreateMode) {
+      ref.read(eventFormProvider.notifier).clearFolderLink();
+      return;
+    }
+    final confirmed = await showConfirmDialog(
+      context: context,
+      message: '선택된 보관함을 해제하시겠습니까?',
+      cancelLabel: '취소',
+      confirmLabel: '확인',
+      confirmColor: AppColors.blue500,
+      cancelColor: AppColors.red500,
+    );
+    if (confirmed == true && mounted) {
+      ref.read(eventFormProvider.notifier).clearFolderLink();
+    }
+  }
+
   void _handleAlarmTap() {
     // 알림 추가 시 기본값으로 '일정 시작'(0분) 설정
     if (ref.read(eventFormProvider).alarmMinutes == null) {
@@ -347,6 +368,7 @@ class _EventFormLayout extends StatelessWidget {
     required this.onStartTimeChanged,
     required this.onEndTimeChanged,
     required this.onFolderTap,
+    required this.onClearFolderLink,
     required this.onAlarmTap,
     required this.onAlarmToggleOff,
     required this.onMemoChanged,
@@ -365,6 +387,7 @@ class _EventFormLayout extends StatelessWidget {
   final ValueChanged<String> onStartTimeChanged;
   final ValueChanged<String> onEndTimeChanged;
   final VoidCallback onFolderTap;
+  final VoidCallback onClearFolderLink;
   final VoidCallback onAlarmTap;
   final VoidCallback onAlarmToggleOff;
   final ValueChanged<String> onMemoChanged;
@@ -436,6 +459,7 @@ class _EventFormLayout extends StatelessWidget {
                       folderName: formState.folderName,
                       isEditable: true,
                       onTap: onFolderTap,
+                      onClearFolderTap: onClearFolderLink,
                     ),
                   ),
                   const AppDivider(),

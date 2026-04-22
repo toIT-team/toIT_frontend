@@ -251,6 +251,14 @@ class EventFormController extends Notifier<EventFormState> {
     );
   }
 
+  /// 보관함 연결 해제 (API에는 [foldersId]·이름 null로 반영).
+  void clearFolderLink() {
+    state = state.copyWith(
+      foldersId: null,
+      folderName: null,
+    );
+  }
+
   /// 일정 색상 토큰 업데이트
   void updateAppColorToken(EventColorToken? token) {
     state = state.copyWith(appColorToken: token);
