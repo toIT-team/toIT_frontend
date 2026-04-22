@@ -14,18 +14,14 @@ class LoginScreen extends ConsumerWidget {
 
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
       }
       final previousToken = prev?.pendingRestoreToken;
       final nextToken = next.pendingRestoreToken;
       if (nextToken != null && nextToken != previousToken) {
-        _showRestoreDialog(
-          context: context,
-          ref: ref,
-          restoreToken: nextToken,
-        );
+        _showRestoreDialog(context: context, ref: ref, restoreToken: nextToken);
       }
     });
 
@@ -79,15 +75,9 @@ class LoginScreen extends ConsumerWidget {
                 const Spacer(flex: 3),
                 _buildLogoSection(),
                 const Spacer(flex: 4),
-                _buildKakaoButton(
-                  ref: ref,
-                  isLoading: authState.isLoading,
-                ),
+                _buildKakaoButton(ref: ref, isLoading: authState.isLoading),
                 const SizedBox(height: 12),
-                _buildAppleButton(
-                  ref: ref,
-                  isLoading: authState.isLoading,
-                ),
+                _buildAppleButton(ref: ref, isLoading: authState.isLoading),
                 const SizedBox(height: 24),
                 _buildSupportRow(),
                 const SizedBox(height: 40),
@@ -103,11 +93,7 @@ class LoginScreen extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image.asset(
-          'assets/icons/ToitLogoIcon.png',
-          width: 84,
-          height: 84,
-        ),
+        Image.asset('assets/icons/ToitLogoIcon.png', width: 84, height: 84),
         const SizedBox(height: 13),
         SvgPicture.asset(
           'assets/icons/ToitLogoText.svg',
@@ -130,10 +116,7 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildKakaoButton({
-    required WidgetRef ref,
-    required bool isLoading,
-  }) {
+  Widget _buildKakaoButton({required WidgetRef ref, required bool isLoading}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
@@ -142,9 +125,7 @@ class LoginScreen extends ConsumerWidget {
         child: GestureDetector(
           onTap: isLoading
               ? null
-              : () => ref
-                  .read(authProvider.notifier)
-                  .loginWithKakao(),
+              : () => ref.read(authProvider.notifier).loginWithKakao(),
           child: isLoading
               ? Container(
                   decoration: BoxDecoration(
@@ -165,7 +146,7 @@ class LoginScreen extends ConsumerWidget {
               : ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.asset(
-                    'assets/icons/KakaoLoginMedium.png',
+                    'assets/icons/kakaoLoginLargeWide.png',
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -174,10 +155,7 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAppleButton({
-    required WidgetRef ref,
-    required bool isLoading,
-  }) {
+  Widget _buildAppleButton({required WidgetRef ref, required bool isLoading}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
@@ -189,9 +167,7 @@ class LoginScreen extends ConsumerWidget {
           child: InkWell(
             onTap: isLoading
                 ? null
-                : () => ref
-                    .read(authProvider.notifier)
-                    .loginWithApple(),
+                : () => ref.read(authProvider.notifier).loginWithApple(),
             borderRadius: BorderRadius.circular(8),
             child: Center(
               child: isLoading
@@ -206,11 +182,7 @@ class LoginScreen extends ConsumerWidget {
                   : const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.apple,
-                          color: Colors.white,
-                          size: 22,
-                        ),
+                        Icon(Icons.apple, color: Colors.white, size: 22),
                         SizedBox(width: 8),
                         Text(
                           'Apple로 계속하기',
@@ -284,10 +256,7 @@ class LoginScreen extends ConsumerWidget {
                   height: 165,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.neutral50,
-                      width: 1,
-                    ),
+                    border: Border.all(color: AppColors.neutral50, width: 1),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x0F000D43),
@@ -384,9 +353,9 @@ class LoginScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     if (shouldRestore == true) {
-      await ref.read(authProvider.notifier).restoreDeletedAccount(
-            restoreToken: restoreToken,
-          );
+      await ref
+          .read(authProvider.notifier)
+          .restoreDeletedAccount(restoreToken: restoreToken);
       return;
     }
     ref.read(authProvider.notifier).clearPendingRestoreToken();
