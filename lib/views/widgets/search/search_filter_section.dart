@@ -7,6 +7,8 @@ import '../../../core/constants/app_spacing.dart';
 extension SearchFilterTypeExtension on SearchFilterType {
   String get label {
     switch (this) {
+      case SearchFilterType.archive:
+        return '보관함';
       case SearchFilterType.link:
         return '링크';
       case SearchFilterType.note:
@@ -33,6 +35,7 @@ class SearchFilterSection extends StatelessWidget {
   final ValueChanged<SearchFilterType>? onFilterChanged;
 
   static const List<SearchFilterType> _filters = [
+    SearchFilterType.archive,
     SearchFilterType.link,
     SearchFilterType.note,
     SearchFilterType.file,
@@ -46,23 +49,23 @@ class SearchFilterSection extends StatelessWidget {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
-      child: Row(
-        children: _filters
-            .map(
-              (filter) => Padding(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (var i = 0; i < _filters.length; i++)
+              Padding(
                 padding: EdgeInsets.only(
-                  right: filter != SearchFilterType.schedule
-                      ? AppSpacing.sm
-                      : 0,
+                  right: i < _filters.length - 1 ? AppSpacing.sm : 0,
                 ),
                 child: _FilterChip(
-                  label: filter.label,
-                  isSelected: selectedFilter == filter,
-                  onTap: () => onFilterChanged?.call(filter),
+                  label: _filters[i].label,
+                  isSelected: selectedFilter == _filters[i],
+                  onTap: () => onFilterChanged?.call(_filters[i]),
                 ),
               ),
-            )
-            .toList(),
+          ],
+        ),
       ),
     );
   }
