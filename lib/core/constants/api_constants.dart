@@ -37,6 +37,10 @@ class ApiConstants {
   /// 알림 목록 (GET /page/notifications)
   static const String notificationsEndpoint = '/page/notifications';
 
+  /// 알림 읽음 (PATCH /api/notifications/{id}/read)
+  static String notificationReadPath(int notificationId) =>
+      '/api/notifications/$notificationId/read';
+
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
 
