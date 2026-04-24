@@ -18,12 +18,12 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
     with SingleTickerProviderStateMixin {
   static const int _maxContentLength = 1000;
   static const int _maxTitleLength = 30;
+  static const int _historyProviderKey = 0;
 
   late final TabController _tabController;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   bool _isSubmitting = false;
-  int _historyRefreshKey = 0;
 
   @override
   void initState() {
@@ -34,18 +34,28 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
       vsync: this,
       initialIndex: initialIndex,
     );
+    _tabController.addListener(_onTabChanged);
     _titleController.addListener(_onInputChanged);
     _contentController.addListener(_onContentChanged);
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _titleController.removeListener(_onInputChanged);
     _titleController.dispose();
     _contentController.removeListener(_onContentChanged);
     _contentController.dispose();
     super.dispose();
+  }
+
+  void _onTabChanged() {
+    // 문의 내용 탭 진입 시 최신 서버 상태를 다시 조회한다.
+    // 관리자 답변 반영처럼 외부에서 상태가 바뀌는 케이스를 놓치지 않기 위함.
+    if (_tabController.index == 1 && !_tabController.indexIsChanging) {
+      ref.invalidate(feedbackHistoryProvider(_historyProviderKey));
+    }
   }
 
   void _onInputChanged() {
@@ -94,9 +104,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
       ).showSnackBar(const SnackBar(content: Text('문의가 등록되었습니다.')));
       _titleController.clear();
       _contentController.clear();
-      setState(() {
-        _historyRefreshKey += 1;
-      });
+      ref.invalidate(feedbackHistoryProvider(_historyProviderKey));
       _tabController.animateTo(1);
     } catch (e) {
       if (!mounted) return;
@@ -115,7 +123,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   @override
   Widget build(BuildContext context) {
     final contentLength = _contentController.text.length;
-    final historyAsync = ref.watch(feedbackHistoryProvider(_historyRefreshKey));
+    final historyAsync = ref.watch(feedbackHistoryProvider(_historyProviderKey));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -207,9 +215,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                   _FeedbackHistoryTab(
                     historyAsync: historyAsync,
                     onRetry: () {
-                      setState(() {
-                        _historyRefreshKey += 1;
-                      });
+                      ref.invalidate(feedbackHistoryProvider(_historyProviderKey));
                     },
                   ),
                 ],
@@ -364,7 +370,7 @@ class FeedbackHistoryItem {
 }
 
 final feedbackHistoryProvider =
-    FutureProvider.family<List<FeedbackHistoryItem>, int>((
+    FutureProvider.autoDispose.family<List<FeedbackHistoryItem>, int>((
       ref,
       refreshKey,
     ) async {
@@ -372,16 +378,33 @@ final feedbackHistoryProvider =
       final response = await apiClient.get(ApiConstants.myFeedbackEndpoint);
       final data = response.data;
 
-      if (data is Map<String, dynamic>) {
-        final items = data['content'];
-        if (items is List) {
-          return items
-              .whereType<Map<String, dynamic>>()
-              .map(_parseFeedbackItem)
-              .toList()
-              .reversed
-              .toList();
+      List<dynamic>? items;
+      if (data is List) {
+        items = data;
+      } else if (data is Map<String, dynamic>) {
+        final rootContent = data['content'];
+        if (rootContent is List) {
+          items = rootContent;
+        } else {
+          final nestedData = data['data'];
+          if (nestedData is List) {
+            items = nestedData;
+          } else if (nestedData is Map<String, dynamic>) {
+            final nestedContent = nestedData['content'];
+            if (nestedContent is List) {
+              items = nestedContent;
+            }
+          }
         }
+      }
+
+      if (items != null) {
+        return items
+            .whereType<Map<String, dynamic>>()
+            .map(_parseFeedbackItem)
+            .toList()
+            .reversed
+            .toList();
       }
       return const [];
     });
@@ -421,6 +444,7 @@ class _FeedbackHistoryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return historyAsync.when(
+      skipLoadingOnRefresh: true,
       data: (items) {
         if (items.isEmpty) {
           return const Center(
