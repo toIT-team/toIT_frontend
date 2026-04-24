@@ -99,13 +99,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
         data: {'title': title, 'content': content},
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('문의가 등록되었습니다.')));
-      _titleController.clear();
-      _contentController.clear();
-      ref.invalidate(feedbackHistoryProvider(_historyProviderKey));
-      _tabController.animateTo(1);
+      Navigator.of(context).pop('문의가 정상적으로 등록되었습니다.');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -123,7 +117,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   @override
   Widget build(BuildContext context) {
     final contentLength = _contentController.text.length;
-    final historyAsync = ref.watch(feedbackHistoryProvider(_historyProviderKey));
+    final historyAsync = ref.watch(
+      feedbackHistoryProvider(_historyProviderKey),
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -153,8 +149,8 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                     letterSpacing: -0.4,
                   ),
                   tabs: const [
-                    Tab(text: '문의하기'),
-                    Tab(text: '문의 내용'),
+                    Tab(text: '문의 등록'),
+                    Tab(text: '문의 내역'),
                   ],
                 ),
               ),
@@ -215,7 +211,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                   _FeedbackHistoryTab(
                     historyAsync: historyAsync,
                     onRetry: () {
-                      ref.invalidate(feedbackHistoryProvider(_historyProviderKey));
+                      ref.invalidate(
+                        feedbackHistoryProvider(_historyProviderKey),
+                      );
                     },
                   ),
                 ],
@@ -245,7 +243,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                           ),
                         )
                       : const Text(
-                          '확인',
+                          '등록하기',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -369,11 +367,8 @@ class FeedbackHistoryItem {
   });
 }
 
-final feedbackHistoryProvider =
-    FutureProvider.autoDispose.family<List<FeedbackHistoryItem>, int>((
-      ref,
-      refreshKey,
-    ) async {
+final feedbackHistoryProvider = FutureProvider.autoDispose
+    .family<List<FeedbackHistoryItem>, int>((ref, refreshKey) async {
       final apiClient = ref.read(apiClientProvider);
       final response = await apiClient.get(ApiConstants.myFeedbackEndpoint);
       final data = response.data;
@@ -432,7 +427,7 @@ String _formatDisplayDateTime(String raw) {
   return '$year.$month.$day $hour:$minute';
 }
 
-class _FeedbackHistoryTab extends StatelessWidget {
+class _FeedbackHistoryTab extends StatefulWidget {
   const _FeedbackHistoryTab({
     required this.historyAsync,
     required this.onRetry,
@@ -442,8 +437,40 @@ class _FeedbackHistoryTab extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
+  State<_FeedbackHistoryTab> createState() => _FeedbackHistoryTabState();
+}
+
+class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
+  int? _expandedId;
+  final Map<int, GlobalKey> _expandedAnswerKeys = <int, GlobalKey>{};
+
+  void _toggleExpanded(int id) {
+    var didExpand = false;
+    setState(() {
+      if (_expandedId == id) {
+        _expandedId = null;
+      } else {
+        _expandedId = id;
+        didExpand = true;
+      }
+    });
+
+    if (!didExpand) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final targetContext = _expandedAnswerKeys[id]?.currentContext;
+      if (targetContext == null) return;
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        alignment: 0.92,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return historyAsync.when(
+    return widget.historyAsync.when(
       skipLoadingOnRefresh: true,
       data: (items) {
         if (items.isEmpty) {
@@ -458,88 +485,148 @@ class _FeedbackHistoryTab extends StatelessWidget {
             ),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        return ListView.builder(
+          padding: EdgeInsets.zero,
           itemCount: items.length,
-          separatorBuilder: (_, index) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final item = items[index];
-            return Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.neutral300,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: const TextStyle(
-                      color: AppColors.gray900,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  if (item.createdAt != null && item.createdAt!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '문의일 ${_formatDisplayDateTime(item.createdAt!)}',
-                        style: const TextStyle(
-                          color: AppColors.gray600,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+            final hasAnswer = (item.answer ?? '').trim().isNotEmpty;
+            final isExpanded = _expandedId == item.id;
+            final title = item.title.trim().isEmpty ? '문의' : item.title.trim();
+            final dateText = item.createdAt == null || item.createdAt!.isEmpty
+                ? ''
+                : _formatDisplayDateTime(item.createdAt!).split(' ').first;
+            final repliedAtText =
+                item.repliedAt == null || item.repliedAt!.isEmpty
+                ? ''
+                : _formatDisplayDateTime(item.repliedAt!);
+
+            return Column(
+              children: [
+                Material(
+                  color: Colors.white,
+                  child: InkWell(
+                    onTap: hasAnswer ? () => _toggleExpanded(item.id) : null,
+                    child: Container(
+                      height: 80,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: AppColors.neutral50, width: 1),
                         ),
                       ),
-                    ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.content,
-                    style: const TextStyle(
-                      color: AppColors.gray900,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (item.repliedAt != null && item.repliedAt!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        '답변일 ${_formatDisplayDateTime(item.repliedAt!)}',
-                        style: const TextStyle(
-                          color: AppColors.gray600,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    _StatusBadge(hasAnswer: hasAnswer),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.gray900,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: -0.025 * 18,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  dateText,
+                                  style: const TextStyle(
+                                    color: AppColors.gray600,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: -0.025 * 14,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (hasAnswer)
+                            AnimatedRotation(
+                              turns: isExpanded ? 0.25 : 0.75,
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeOut,
+                              child: const Icon(
+                                Icons.chevron_left,
+                                size: 20,
+                                color: AppColors.gray600,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
+                  ),
+                ),
+                if (hasAnswer && isExpanded)
                   Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                    key: _expandedAnswerKeys.putIfAbsent(
+                      item.id,
+                      () => GlobalKey(),
                     ),
-                    child: Text(
-                      (item.answer ?? '').trim().isEmpty
-                          ? '답변 대기 중입니다.'
-                          : item.answer!,
-                      style: TextStyle(
-                        color: (item.answer ?? '').trim().isEmpty
-                            ? AppColors.gray600
-                            : AppColors.gray900,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.neutral50, width: 1),
+                      ),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(13, 13, 13, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.neutral300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.answer!.trim(),
+                            style: const TextStyle(
+                              color: AppColors.gray900,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: -0.025 * 16,
+                              height: 1.5,
+                            ),
+                          ),
+                          if (repliedAtText.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                repliedAtText,
+                                style: const TextStyle(
+                                  color: AppColors.gray600,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: -0.025 * 14,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
+              ],
             );
           },
         );
@@ -562,12 +649,41 @@ class _FeedbackHistoryTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+                TextButton(onPressed: widget.onRetry, child: const Text('다시 시도')),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.hasAnswer});
+
+  final bool hasAnswer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: hasAnswer ? const Color(0xFFF1F7FF) : AppColors.neutral300,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        hasAnswer ? '답변완료' : '답변대기',
+        style: TextStyle(
+          color: hasAnswer ? AppColors.blue500 : AppColors.gray900,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          letterSpacing: -0.025 * 14,
+          height: 1.5,
+        ),
+      ),
     );
   }
 }
