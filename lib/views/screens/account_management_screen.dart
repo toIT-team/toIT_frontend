@@ -114,6 +114,11 @@ class AccountManagementScreen extends ConsumerWidget {
                                 '[AccountManagement] 로그아웃 확인 팝업 결과: $confirmed',
                               );
                               if (!confirmed) return;
+                              // 확인 모달 dismiss 애니메이션 프레임이
+                              // 완전히 정리된 뒤 라우팅 전환을 진행한다.
+                              await Future<void>.delayed(
+                                const Duration(milliseconds: 10),
+                              );
                               debugPrint('[AccountManagement] 로그아웃 실행 시작');
                               await ref.read(authProvider.notifier).logout();
                               debugPrint('[AccountManagement] 로그아웃 실행 완료');
@@ -123,6 +128,7 @@ class AccountManagementScreen extends ConsumerWidget {
                                 );
                                 Navigator.of(
                                   context,
+                                  rootNavigator: true,
                                 ).popUntil((route) => route.isFirst);
                               }
                             },
@@ -135,6 +141,11 @@ class AccountManagementScreen extends ConsumerWidget {
                                 context,
                               );
                               if (!confirmed) return;
+                              // 확인 모달 dismiss 애니메이션 프레임이
+                              // 완전히 정리된 뒤 라우팅 전환을 진행한다.
+                              await Future<void>.delayed(
+                                const Duration(milliseconds: 10),
+                              );
 
                               try {
                                 final apiClient = ref.read(apiClientProvider);
@@ -145,6 +156,7 @@ class AccountManagementScreen extends ConsumerWidget {
                                 if (context.mounted) {
                                   Navigator.of(
                                     context,
+                                    rootNavigator: true,
                                   ).popUntil((route) => route.isFirst);
                                 }
                               } catch (e) {
