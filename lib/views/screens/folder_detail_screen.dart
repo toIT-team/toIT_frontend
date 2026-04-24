@@ -1448,6 +1448,10 @@ class _FileItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitle = _formatFileSubtitle(file.createdAt, file.attachmentsSize);
+    final fileIconPath = _resolveFileIconAssetPath(
+      fileName: file.fileName,
+      attachmentsExtension: file.attachmentsExtension,
+    );
     return _TapScale(
       onTap: () {},
       pressedScale: 0.995,
@@ -1459,14 +1463,7 @@ class _FileItemRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.neutral100,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-            ),
+            _buildFileIconBox(fileIconPath),
             const SizedBox(width: AppSpacing.sm + 1),
             Expanded(
               child: Column(
@@ -1514,6 +1511,103 @@ class _FileItemRow extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildFileIconBox(String? fileIconPath) {
+    if (fileIconPath == null) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.neutral100,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: Image.asset(
+        fileIconPath,
+        width: 44,
+        height: 44,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
+String? _resolveFileIconAssetPath({
+  required String fileName,
+  required String attachmentsExtension,
+}) {
+  final extensionFromField = _normalizeFileExtension(attachmentsExtension);
+  final extensionFromName = _normalizeFileExtension(_extractExtension(fileName));
+  final normalized = extensionFromField.isNotEmpty
+      ? extensionFromField
+      : extensionFromName;
+
+  const supportedExtensions = <String>{
+    'docx',
+    'hwp',
+    'pdf',
+    'ppt',
+    'xlsx',
+  };
+  if (!supportedExtensions.contains(normalized)) return null;
+
+  return 'assets/icons/File/$normalized.png';
+}
+
+String _normalizeFileExtension(String raw) {
+  if (raw.trim().isEmpty) return '';
+
+  var value = raw.trim().toLowerCase();
+  if (value.contains(';')) {
+    value = value.split(';').first.trim();
+  }
+
+  if (value.startsWith('.')) {
+    value = value.substring(1);
+  }
+
+  // MIME 타입으로 내려오는 케이스 지원
+  const mimeToExtension = <String, String>{
+    'application/pdf': 'pdf',
+    'application/haansofthwp': 'hwp',
+    'application/x-hwp': 'hwp',
+    'application/msword': 'docx',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'docx',
+    'application/vnd.ms-powerpoint': 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        'ppt',
+    'application/vnd.ms-excel': 'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        'xlsx',
+  };
+  if (mimeToExtension.containsKey(value)) {
+    return mimeToExtension[value]!;
+  }
+
+  // 혹시 전체 파일명 형태가 들어오면 마지막 확장자만 사용
+  if (value.contains('.')) {
+    value = value.split('.').last;
+  }
+
+  // 확장자 별칭 정규화
+  const extensionAliases = <String, String>{
+    'doc': 'docx',
+    'pptx': 'ppt',
+    'xls': 'xlsx',
+    'xlsm': 'xlsx',
+  };
+  return extensionAliases[value] ?? value;
+}
+
+String _extractExtension(String fileName) {
+  final normalized = fileName.trim().toLowerCase();
+  final dotIndex = normalized.lastIndexOf('.');
+  if (dotIndex == -1 || dotIndex == normalized.length - 1) return '';
+  return normalized.substring(dotIndex + 1);
 }
 
 String _formatFileSubtitle(String? createdAt, double attachmentsSize) {

@@ -91,6 +91,7 @@ flutter:
   assets:
     - .env
     - assets/icons/
+    - assets/icons/File/
     - assets/icons/FolderIcon/
     - assets/icons/event/
     - assets/icons/search/

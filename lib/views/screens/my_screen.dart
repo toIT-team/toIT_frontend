@@ -246,12 +246,18 @@ class _MyContent extends StatelessWidget {
                   subtitle: '고객센터, 의견, 공지사항',
                   showChevron: true,
                   scale: scale,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
+                  onTap: () async {
+                    final result = await Navigator.of(context).push<String>(
+                      MaterialPageRoute<String>(
                         builder: (_) => const SupportScreen(),
                       ),
                     );
+                    if (!context.mounted) return;
+                    if (result != null && result.isNotEmpty) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(result)));
+                    }
                   },
                 ),
                 Container(height: s(10), color: AppColors.neutral300),
