@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../widgets/home/folder_delete_dialog.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
   const SupportScreen({super.key, this.initialTabIndex = 0});
@@ -51,6 +52,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   }
 
   void _onTabChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+
     // 문의 내용 탭 진입 시 최신 서버 상태를 다시 조회한다.
     // 관리자 답변 반영처럼 외부에서 상태가 바뀌는 케이스를 놓치지 않기 위함.
     if (_tabController.index == 1 && !_tabController.indexIsChanging) {
@@ -129,30 +134,25 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _SupportHeader(onBackPressed: () => Navigator.of(context).pop()),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
+            Container(
+              margin: const EdgeInsets.only(top: 16),
+              height: 44,
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: AppColors.blue500,
+                indicatorWeight: 2,
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: AppColors.gray900,
+                unselectedLabelColor: AppColors.gray600,
+                labelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.4,
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorColor: AppColors.blue500,
-                  indicatorWeight: 2,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  labelColor: AppColors.gray900,
-                  unselectedLabelColor: AppColors.gray600,
-                  labelStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.4,
-                  ),
-                  tabs: const [
-                    Tab(text: '문의 등록'),
-                    Tab(text: '문의 내역'),
-                  ],
-                ),
+                tabs: const [
+                  Tab(text: '문의 등록'),
+                  Tab(text: '문의 내역'),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -215,46 +215,56 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                         feedbackHistoryProvider(_historyProviderKey),
                       );
                     },
+                    onDelete: (feedbackId) async {
+                      final apiClient = ref.read(apiClientProvider);
+                      await apiClient.delete(
+                        '${ApiConstants.feedbackEndpoint}/$feedbackId',
+                      );
+                      ref.invalidate(
+                        feedbackHistoryProvider(_historyProviderKey),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: SizedBox(
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _canSubmit ? _submitFeedback : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue500,
-                    disabledBackgroundColor: AppColors.neutral100,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            if (_tabController.index == 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SizedBox(
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _canSubmit ? _submitFeedback : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue500,
+                      disabledBackgroundColor: AppColors.neutral100,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            '등록하기',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.45,
+                              height: 1.4,
+                            ),
+                          ),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          '등록하기',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.45,
-                            height: 1.4,
-                          ),
-                        ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -397,8 +407,6 @@ final feedbackHistoryProvider = FutureProvider.autoDispose
         return items
             .whereType<Map<String, dynamic>>()
             .map(_parseFeedbackItem)
-            .toList()
-            .reversed
             .toList();
       }
       return const [];
@@ -431,10 +439,12 @@ class _FeedbackHistoryTab extends StatefulWidget {
   const _FeedbackHistoryTab({
     required this.historyAsync,
     required this.onRetry,
+    required this.onDelete,
   });
 
   final AsyncValue<List<FeedbackHistoryItem>> historyAsync;
   final VoidCallback onRetry;
+  final Future<void> Function(int feedbackId) onDelete;
 
   @override
   State<_FeedbackHistoryTab> createState() => _FeedbackHistoryTabState();
@@ -443,6 +453,7 @@ class _FeedbackHistoryTab extends StatefulWidget {
 class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
   int? _expandedId;
   final Map<int, GlobalKey> _expandedAnswerKeys = <int, GlobalKey>{};
+  bool _isDeleting = false;
 
   void _toggleExpanded(int id) {
     var didExpand = false;
@@ -466,6 +477,44 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
         alignment: 0.92,
       );
     });
+  }
+
+  Future<void> _deleteFeedback(FeedbackHistoryItem item) async {
+    if (_isDeleting) return;
+    setState(() {
+      _isDeleting = true;
+    });
+    try {
+      await widget.onDelete(item.id);
+      if (!mounted) return;
+      setState(() {
+        if (_expandedId == item.id) {
+          _expandedId = null;
+        }
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('문의가 삭제되었습니다.')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('삭제에 실패했습니다: $e')));
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isDeleting = false;
+      });
+    }
+  }
+
+  Future<bool> _confirmDeleteFeedback() async {
+    final confirmed = await showDeleteDialog(
+      context,
+      message: '문의를 삭제하시겠습니까?',
+      warningMessage: '답변 대기 중인 문의만 삭제할 수 있습니다.',
+    );
+    return confirmed;
   }
 
   @override
@@ -506,7 +555,7 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                 Material(
                   color: Colors.white,
                   child: InkWell(
-                    onTap: hasAnswer ? () => _toggleExpanded(item.id) : null,
+                    onTap: () => _toggleExpanded(item.id),
                     child: Container(
                       height: 80,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -556,17 +605,16 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                               ],
                             ),
                           ),
-                          if (hasAnswer)
-                            AnimatedRotation(
-                              turns: isExpanded ? 0.25 : 0.75,
-                              duration: const Duration(milliseconds: 180),
-                              curve: Curves.easeOut,
-                              child: const Icon(
-                                Icons.chevron_left,
-                                size: 20,
-                                color: AppColors.gray600,
-                              ),
+                          AnimatedRotation(
+                            turns: isExpanded ? 0.25 : 0.75,
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOut,
+                            child: const Icon(
+                              Icons.chevron_left,
+                              size: 20,
+                              color: AppColors.gray600,
                             ),
+                          ),
                         ],
                       ),
                     ),
@@ -623,6 +671,60 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                             ),
                           ],
                         ],
+                      ),
+                    ),
+                  ),
+                if (!hasAnswer && isExpanded)
+                  Container(
+                    key: _expandedAnswerKeys.putIfAbsent(
+                      item.id,
+                      () => GlobalKey(),
+                    ),
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        bottom: BorderSide(color: AppColors.neutral50, width: 1),
+                      ),
+                    ),
+                    child: SizedBox(
+                      height: 44,
+                      child: OutlinedButton(
+                        onPressed: _isDeleting
+                            ? null
+                            : () async {
+                                final shouldDelete =
+                                    await _confirmDeleteFeedback();
+                                if (!shouldDelete) return;
+                                await _deleteFeedback(item);
+                              },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: AppColors.neutral50,
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          backgroundColor: Colors.white,
+                        ),
+                        child: _isDeleting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text(
+                                '삭제',
+                                style: TextStyle(
+                                  color: AppColors.red500,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.025 * 16,
+                                  height: 1.4,
+                                ),
+                              ),
                       ),
                     ),
                   ),
