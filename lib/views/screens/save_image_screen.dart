@@ -175,13 +175,33 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('갤러리에서 선택'),
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.gray900,
+              ),
+              title: const Text(
+                '갤러리에서 선택',
+                style: TextStyle(
+                  color: AppColors.gray900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('카메라로 촬영'),
+              leading: const Icon(
+                Icons.camera_alt_outlined,
+                color: AppColors.gray900,
+              ),
+              title: const Text(
+                '카메라로 촬영',
+                style: TextStyle(
+                  color: AppColors.gray900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
           ],
