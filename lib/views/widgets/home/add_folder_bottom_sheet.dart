@@ -179,16 +179,21 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          widget.isEditMode ? '보관함 수정' : '새로운 보관함',
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: AppColors.gray900,
-            letterSpacing: -0.025 * 22,
-            height: 1.5,
+        Expanded(
+          child: Text(
+            widget.isEditMode ? '보관함 수정' : '새로운 보관함',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.gray900,
+              letterSpacing: -0.025 * 22,
+              height: 1.5,
+            ),
           ),
         ),
+        const SizedBox(width: 8),
         GestureDetector(
           onTap: _onSave,
           child: const Text(
@@ -325,74 +330,87 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
   }
 
   Widget _buildIconModal() {
-    return Container(
-      width: 335,
-      height: 153,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.neutral50),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(0, 13, 67, 0.06),
-            blurRadius: 16,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '아이콘',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColors.gray600,
-              letterSpacing: -0.025 * 16,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: GridView.builder(
-              itemCount: 12,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 1,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final modalW = constraints.maxWidth;
+        return Container(
+          width: modalW,
+          height: 153,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.neutral50),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 13, 67, 0.06),
+                blurRadius: 16,
+                offset: Offset(0, 2),
               ),
-              itemBuilder: (context, index) {
-                final isSelected = _selectedIconIndex == index;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedIconIndex = index;
-                      _isIconModalVisible = false;
-                    });
-                  },
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: isSelected
-                          ? Border.all(color: AppColors.blue500)
-                          : null,
-                    ),
-                    child: Center(
-                      child: _buildFolderIconImage(index, size: 44),
-                    ),
-                  ),
-                );
-              },
-            ),
+            ],
           ),
-        ],
-      ),
+          padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '아이콘',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.gray600,
+                  letterSpacing: -0.025 * 16,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: GridView.builder(
+                  itemCount: 12,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 6,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1,
+                  ),
+                  itemBuilder: (context, index) {
+                    final isSelected = _selectedIconIndex == index;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedIconIndex = index;
+                          _isIconModalVisible = false;
+                        });
+                      },
+                      child: LayoutBuilder(
+                        builder: (context, cell) {
+                          final side = cell.maxWidth < cell.maxHeight
+                              ? cell.maxWidth
+                              : cell.maxHeight;
+                          final iconSize = (side * 0.78).clamp(22.0, 44.0);
+                          return Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: isSelected
+                                  ? Border.all(color: AppColors.blue500)
+                                  : null,
+                            ),
+                            child: _buildFolderIconImage(
+                              index,
+                              size: iconSize,
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -526,39 +544,39 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
           ],
         ),
         const SizedBox(height: 13),
-        _buildColorRow(0, 6),
-        const SizedBox(height: 16),
-        _buildColorRow(6, 10),
-      ],
-    );
-  }
-
-  /// 색상 원 한 줄
-  Widget _buildColorRow(int start, int end) {
-    return Row(
-      children: [
-        for (int i = start; i < end; i++) ...[
-          if (i > start) const SizedBox(width: 24),
-          GestureDetector(
-            onTap: () => setState(() => _selectedColorIndex = i),
-            child: Container(
-              width: 35,
-              height: 35,
-              decoration: BoxDecoration(
-                color: AppColors.folderColors[i],
-                shape: BoxShape.circle,
-                border: _selectedColorIndex == i
-                    ? Border.all(color: AppColors.blue500, width: 2.5)
-                    : null,
+        Wrap(
+          spacing: 12,
+          runSpacing: 16,
+          children: [
+            for (var i = 0; i < AppColors.folderColors.length; i++)
+              GestureDetector(
+                onTap: () => setState(() => _selectedColorIndex = i),
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: AppColors.folderColors[i],
+                    shape: BoxShape.circle,
+                    border: _selectedColorIndex == i
+                        ? Border.all(
+                            color: AppColors.blue500,
+                            width: 2.5,
+                          )
+                        : null,
+                  ),
+                  child: _selectedColorIndex == i
+                      ? const Center(
+                          child: Icon(
+                            Icons.check,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
+                ),
               ),
-              child: _selectedColorIndex == i
-                  ? const Center(
-                      child: Icon(Icons.check, size: 18, color: Colors.white),
-                    )
-                  : null,
-            ),
-          ),
-        ],
+          ],
+        ),
       ],
     );
   }
