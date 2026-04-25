@@ -254,8 +254,12 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
               children: const [HomeScreen(), CalendarScreen()],
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
+          // Stack에 non-positioned Align만 두면 기본 topStart에 붙어
+          // '하단'이 아닌 화면 위쪽에 뜬다. 반드시 bottom 고정.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: CustomBottomNavBar(
               currentIndex: currentIndex,
               onTap: (index) {

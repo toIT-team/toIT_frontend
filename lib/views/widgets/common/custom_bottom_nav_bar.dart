@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -31,41 +32,70 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   @override
   Widget build(BuildContext context) {
     final isAndroid = Theme.of(context).platform == TargetPlatform.android;
-    final bottomInset = isAndroid ? 12.0 : 8.0;
+    final mq = MediaQuery.of(context);
+    // 갤럭시 제스처 내비 등: padding.bottom은 0인데 viewPadding만 있는 경우
+    final systemBottom = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+    final comfort = isAndroid ? 12.0 : 8.0;
+    final bottomMin = math.max(systemBottom, comfort);
 
     return SafeArea(
       top: false,
-      minimum: EdgeInsets.only(bottom: bottomInset),
+      minimum: EdgeInsets.only(bottom: bottomMin),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
         child: Row(
           children: [
-            _GlassNavPill(
-              width: 259,
-              height: 52,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _NavItem(
-                    icon: _NavSvgIcon(
-                      assetPath: AppAssets.navHomeIcon,
-                      isSelected: widget.currentIndex == 0,
+            // FAB(52) + 간격(16)을 뺀 나머지를 Expanded로 고정 → 합이 Row를 넘지 않음
+            // (플립 등 제약·가시영역 불일치로 LayoutBuilder만 쓸 때 생기던 오버 방지)
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, inner) {
+                  const maxDesign = 259.0;
+                  const innerMinW = 240.0;
+                  final pillW = math.min(maxDesign, inner.maxWidth);
+                  final navRow = Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _NavItem(
+                        icon: _NavSvgIcon(
+                          assetPath: AppAssets.navHomeIcon,
+                          isSelected: widget.currentIndex == 0,
+                        ),
+                        isSelected: widget.currentIndex == 0,
+                        onTap: () => widget.onTap(0),
+                      ),
+                      _NavItem(
+                        icon: _NavSvgIcon(
+                          assetPath: AppAssets.navCalendarIcon,
+                          isSelected: widget.currentIndex == 1,
+                        ),
+                        isSelected: widget.currentIndex == 1,
+                        onTap: () => widget.onTap(1),
+                      ),
+                    ],
+                  );
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: _GlassNavPill(
+                      width: pillW,
+                      height: 52,
+                      child: pillW < innerMinW
+                          ? FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: innerMinW,
+                                height: 52,
+                                child: navRow,
+                              ),
+                            )
+                          : navRow,
                     ),
-                    isSelected: widget.currentIndex == 0,
-                    onTap: () => widget.onTap(0),
-                  ),
-                  _NavItem(
-                    icon: _NavSvgIcon(
-                      assetPath: AppAssets.navCalendarIcon,
-                      isSelected: widget.currentIndex == 1,
-                    ),
-                    isSelected: widget.currentIndex == 1,
-                    onTap: () => widget.onTap(1),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 16),
             _AddButton(
               key: _addButtonKey,
               onTap: () async {

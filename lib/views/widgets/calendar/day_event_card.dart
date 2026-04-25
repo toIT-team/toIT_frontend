@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../models/calendar/calendar_event.dart';
 import '../../screens/event_detail_screen.dart';
 import '../event/event_card_context_menu.dart';
@@ -108,6 +109,7 @@ class _DayEventCardState extends State<DayEventCard> {
                       Text(
                         widget.event.title,
                         style: const TextStyle(
+                          color: AppColors.gray900,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -115,7 +117,10 @@ class _DayEventCardState extends State<DayEventCard> {
                       const SizedBox(height: 4),
                       Text(
                         _getTimeText(),
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.gray600,
+                        ),
                       ),
                     ],
                   ),

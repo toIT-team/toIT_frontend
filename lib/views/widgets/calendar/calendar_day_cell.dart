@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/calendar_utils.dart';
 
@@ -30,8 +31,8 @@ class CalendarDayCell extends StatelessWidget {
     final isSaturday = CalendarUtils.isSaturday(date);
 
     Color textColor = isCurrentMonth
-        ? Theme.of(context).colorScheme.onSurface
-        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3);
+        ? AppColors.gray900
+        : AppColors.gray400;
 
     if (isSunday && isCurrentMonth) {
       textColor = AppTheme.sundayColor;
@@ -68,7 +69,7 @@ class CalendarDayCell extends StatelessWidget {
                     child: Text(
                       '${date.day}',
                       style: TextStyle(
-                        color: isToday ? Colors.white : textColor,
+                        color: isToday ? AppColors.surface : textColor,
                         fontSize: 14,
                         fontWeight: isToday ? FontWeight.bold : null,
                       ),
@@ -94,7 +95,7 @@ class CalendarDayCell extends StatelessWidget {
                           '+$overflowCount',
                           style: TextStyle(
                             fontSize: 10,
-                            color: Colors.grey[600],
+                            color: AppColors.gray600,
                           ),
                         ),
                       ),

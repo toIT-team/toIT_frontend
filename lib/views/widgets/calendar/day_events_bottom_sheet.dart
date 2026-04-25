@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../controllers/calendar_controller.dart';
 import '../../../models/calendar/calendar_event.dart';
 import '../../../services/schedule_api_client.dart'
@@ -130,7 +131,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
             width: 32,
             height: 3,
             decoration: BoxDecoration(
-              color: Colors.grey[350],
+              color: AppColors.neutral100,
               borderRadius: BorderRadius.circular(1.5),
             ),
           ),
@@ -143,6 +144,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
               Text(
                 '${widget.date.day}($weekday)',
                 style: const TextStyle(
+                  color: AppColors.gray900,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -150,7 +152,10 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
               const SizedBox(width: 8),
               Text(
                 lunarDate,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.gray600,
+                ),
               ),
             ],
           ),
@@ -230,11 +235,18 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_note_outlined, size: 64, color: Colors.grey[400]),
+          Icon(
+            Icons.event_note_outlined,
+            size: 64,
+            color: AppColors.gray400,
+          ),
           const SizedBox(height: 16),
           Text(
             '일정이 없습니다',
-            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColors.gray600,
+            ),
           ),
         ],
       ),

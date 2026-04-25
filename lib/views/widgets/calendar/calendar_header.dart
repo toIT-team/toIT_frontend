@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/calendar_utils.dart';
 
 /// 캘린더 헤더 위젯 (월/년 표시 및 네비게이션)
@@ -33,12 +34,17 @@ class CalendarHeader extends StatelessWidget {
                 Text(
                   CalendarUtils.formatMonth(focusedMonth),
                   style: const TextStyle(
+                    color: AppColors.gray900,
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down, size: 20),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  size: 20,
+                  color: AppColors.gray900,
+                ),
               ],
             ),
           ),
