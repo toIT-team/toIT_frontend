@@ -23,6 +23,7 @@ import '../widgets/event/event_folder_section.dart';
 import '../widgets/event/event_memo_section.dart';
 import '../widgets/event/event_section.dart';
 import '../widgets/event/event_time_section.dart';
+import '../widgets/event/color_context_menu.dart';
 import 'folder_detail_screen.dart';
 
 /// 알림 분 단위를 표시 텍스트로 변환
@@ -51,6 +52,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   late TextEditingController _titleController;
   late TextEditingController _memoController;
   final FocusNode _titleFocusNode = FocusNode();
+  final GlobalKey _colorButtonKey = GlobalKey();
 
   ScheduleDetailResponse? _detail;
   bool _isLoading = true;
@@ -246,8 +248,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         titleController: _titleController,
         titleFocusNode: _titleFocusNode,
         memoController: _memoController,
+        colorButtonKey: _colorButtonKey,
         formState: formState,
         onTitleChanged: _handleTitleChanged,
+        onColorTap: _handleColorTap,
         onStartDateChanged: (value) {
           ref.read(eventFormProvider.notifier).updateStartDate(value);
         },
@@ -441,6 +445,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   void _handleTitleChanged(String value) {
     ref.read(eventFormProvider.notifier).updateTitle(value);
+  }
+
+  void _handleColorTap() {
+    final state = ref.read(eventFormProvider);
+    showColorContextMenu(
+      context: context,
+      anchorKey: _colorButtonKey,
+      selectedToken: state.appColorToken ?? EventColorToken.blue300,
+      onSelected: (EventColorToken token) {
+        ref.read(eventFormProvider.notifier).updateAppColorToken(token);
+      },
+    );
   }
 
   void _handleTimeSettingChanged(bool value) {
@@ -644,8 +660,10 @@ class _EventEditLayout extends StatelessWidget {
     required this.titleController,
     required this.titleFocusNode,
     required this.memoController,
+    required this.colorButtonKey,
     required this.formState,
     required this.onTitleChanged,
+    required this.onColorTap,
     required this.onStartDateChanged,
     required this.onEndDateChanged,
     required this.onStartTimeChanged,
@@ -661,8 +679,10 @@ class _EventEditLayout extends StatelessWidget {
   final TextEditingController titleController;
   final FocusNode titleFocusNode;
   final TextEditingController memoController;
+  final GlobalKey colorButtonKey;
   final EventFormState formState;
   final ValueChanged<String> onTitleChanged;
+  final VoidCallback onColorTap;
   final ValueChanged<DateTime> onStartDateChanged;
   final ValueChanged<DateTime> onEndDateChanged;
   final ValueChanged<String> onStartTimeChanged;
@@ -681,27 +701,59 @@ class _EventEditLayout extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 제목 입력 (편집 가능)
+            // 제목 입력 + 일정 색상 (추가/수정 폼과 동일 위치)
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: TextField(
-                controller: titleController,
-                focusNode: titleFocusNode,
-                onChanged: onTitleChanged,
-                style: const TextStyle(
-                  color: AppColors.gray900,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '제목을 입력하세요',
-                  hintStyle: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: titleController,
+                      focusNode: titleFocusNode,
+                      onChanged: onTitleChanged,
+                      cursorColor: AppColors.blue500,
+                      style: const TextStyle(
+                        color: AppColors.gray900,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: '제목을 입력하세요',
+                        hintStyle: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
                   ),
-                  border: InputBorder.none,
-                ),
+                  IconButton(
+                    key: colorButtonKey,
+                    onPressed: onColorTap,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    tooltip: '일정 색상',
+                    icon: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: formState.appColorToken != null
+                            ? EventColorTokens.of(formState.appColorToken!)
+                            : EventColorTokens.defaultColor,
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const AppDivider(),

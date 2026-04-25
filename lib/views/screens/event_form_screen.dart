@@ -429,10 +429,16 @@ class _EventFormLayout extends StatelessWidget {
                     ),
                   ),
                 ),
-                GestureDetector(
+                IconButton(
                   key: colorButtonKey,
-                  onTap: onColorTap,
-                  child: Container(
+                  onPressed: onColorTap,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  tooltip: '일정 색상',
+                  icon: Container(
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
