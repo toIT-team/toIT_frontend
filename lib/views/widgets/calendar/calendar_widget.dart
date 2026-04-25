@@ -278,7 +278,9 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
           Container(
             color: Colors.black26,
             child: const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: AppColors.blue500,
+              ),
             ),
           ),
       ],
@@ -366,7 +368,9 @@ class _YearMonthWheelPickerState extends State<_YearMonthWheelPicker> {
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isSelected ? Colors.black : Colors.grey,
+                        color: isSelected
+                            ? AppColors.gray900
+                            : AppColors.gray600,
                       ),
                     ),
                   );
@@ -400,7 +404,9 @@ class _YearMonthWheelPickerState extends State<_YearMonthWheelPicker> {
                         fontWeight: isSelected
                             ? FontWeight.bold
                             : FontWeight.normal,
-                        color: isSelected ? Colors.black : Colors.grey,
+                        color: isSelected
+                            ? AppColors.gray900
+                            : AppColors.gray600,
                       ),
                     ),
                   );

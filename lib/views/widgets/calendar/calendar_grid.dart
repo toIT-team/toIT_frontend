@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../controllers/calendar_controller.dart';
+import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/calendar_utils.dart';
 import '../../../models/calendar/calendar_event.dart';
@@ -47,7 +48,7 @@ class CalendarGrid extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: List.generate(7, (index) {
-          Color textColor = Colors.grey[600]!;
+          Color textColor = AppColors.gray600;
           if (index == 0) {
             textColor = AppTheme.sundayColor;
           } else if (index == 6) {
