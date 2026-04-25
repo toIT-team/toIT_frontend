@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/setting_layout_tokens.dart';
 import '../common/custom_toggle.dart';
 
@@ -49,7 +50,7 @@ class EventAlarmSection extends StatelessWidget {
       displayText,
       style: TextStyle(
         fontSize: SettingLayout1Tokens.fontSize,
-        color: alarmEnabled ? Colors.black : Colors.grey,
+        color: alarmEnabled ? AppColors.gray900 : AppColors.gray600,
       ),
     );
 
