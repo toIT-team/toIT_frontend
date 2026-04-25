@@ -187,6 +187,7 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
     colorIndex: ci,
     iconIndex: dto.iconIdx,
     isDefault: dto.isDefault,
+    isFavorite: dto.isFavorite,
     accentColor: AppColors.folderColors[ci],
   );
 }
@@ -404,9 +405,7 @@ class HomeController extends Notifier<HomeState> {
     }
 
     if (selectedFilterToken == favoriteFilterToken) {
-      return folders
-          .where((folder) => _favoriteFolderIds.contains(folder.foldersId))
-          .toList();
+      return folders.where((folder) => folder.isFavorite).toList();
     }
 
     final folderId = _tryParseFolderFilterId(selectedFilterToken);
@@ -445,7 +444,14 @@ class HomeController extends Notifier<HomeState> {
       _favoriteFolderIds.remove(foldersId);
     }
 
-    state = state.copyWith(folders: [...state.folders]);
+    final nextFolders = state.folders
+        .map(
+          (f) => f.foldersId == foldersId
+              ? f.copyWith(isFavorite: isFavorite)
+              : f,
+        )
+        .toList();
+    state = state.copyWith(folders: nextFolders);
   }
 
   String getFilterLabel(String filterToken) {

@@ -69,6 +69,9 @@ class _ScheduleFolderSearchSheetState
 
   static const List<String> _filterChipLabels = ['전체', '즐겨찾기'];
 
+  /// 0: 전체, 1: 즐겨찾기
+  int _filterChipIndex = 0;
+
   bool _isSearching = false;
   List<FolderItem> _searchFolders = [];
 
@@ -134,10 +137,13 @@ class _ScheduleFolderSearchSheetState
 
   List<FolderItem> get _displayFolders {
     final q = _searchController.text.trim();
-    if (q.isEmpty) {
-      return ref.watch(homeProvider).folders;
+    final List<FolderItem> base = q.isEmpty
+        ? ref.watch(homeProvider).folders
+        : _searchFolders;
+    if (_filterChipIndex == 1) {
+      return base.where((f) => f.isFavorite).toList();
     }
-    return _searchFolders;
+    return base;
   }
 
   @override
@@ -258,7 +264,11 @@ class _ScheduleFolderSearchSheetState
               for (int i = 0; i < _filterChipLabels.length; i++) ...[
                 _ScheduleFolderChip(
                   label: _filterChipLabels[i],
-                  selected: i == 0,
+                  selected: i == _filterChipIndex,
+                  onTap: () {
+                    if (_filterChipIndex == i) return;
+                    setState(() => _filterChipIndex = i);
+                  },
                 ),
                 if (i != _filterChipLabels.length - 1) const SizedBox(width: 8),
               ],
@@ -340,33 +350,42 @@ class _ScheduleFolderChip extends StatelessWidget {
   const _ScheduleFolderChip({
     required this.label,
     required this.selected,
+    required this.onTap,
   });
 
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.blue500 : AppColors.borderLight,
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          color: selected ? AppColors.blue500 : AppColors.gray600,
-          letterSpacing: -0.025 * 16,
-          height: 1.5,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(
+              color: selected ? AppColors.blue500 : AppColors.borderLight,
+            ),
+            borderRadius: BorderRadius.circular(99),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? AppColors.blue500 : AppColors.gray600,
+              letterSpacing: -0.025 * 16,
+              height: 1.5,
+            ),
+          ),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
 import '../home/folder_tile.dart';
+import '../search/search_field_widget.dart';
 
 /// 보관함 이동 바텀시트 표시 (링크/노트/파일/이미지 탭 케밥 메뉴에서 공통 사용)
 ///
@@ -64,6 +65,9 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
   final TextEditingController _searchController = TextEditingController();
   static const List<String> _filterChipLabels = ['전체', '즐겨찾기'];
 
+  /// 0: 전체, 1: 즐겨찾기
+  int _filterChipIndex = 0;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -72,10 +76,15 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
 
   List<FolderItem> get _filteredFolders {
     final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return widget.folders;
-    return widget.folders
-        .where((f) => f.title.toLowerCase().contains(query))
-        .toList();
+    var list = query.isEmpty
+        ? widget.folders
+        : widget.folders
+            .where((f) => f.title.toLowerCase().contains(query))
+            .toList();
+    if (_filterChipIndex == 1) {
+      list = list.where((f) => f.isFavorite).toList();
+    }
+    return list;
   }
 
   @override
@@ -151,35 +160,9 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
   }
 
   Widget _buildSearchBar() {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: AppColors.neutral300,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-      ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (_) => setState(() {}),
-        decoration: const InputDecoration(
-          hintText: '검색',
-          hintStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            color: AppColors.gray600,
-            letterSpacing: -0.025 * 18,
-            height: 1.25,
-          ),
-          prefixIcon: Icon(Icons.search, color: AppColors.gray900, size: 20),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        ),
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
-          color: AppColors.gray900,
-          letterSpacing: -0.025 * 18,
-        ),
-      ),
+    return SearchFieldWidget(
+      controller: _searchController,
+      onChanged: (_) => setState(() {}),
     );
   }
 
@@ -211,7 +194,14 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
           child: Row(
             children: [
               for (int i = 0; i < _filterChipLabels.length; i++) ...[
-                _MoveSheetChip(label: _filterChipLabels[i], selected: i == 0),
+                _MoveSheetChip(
+                  label: _filterChipLabels[i],
+                  selected: i == _filterChipIndex,
+                  onTap: () {
+                    if (_filterChipIndex == i) return;
+                    setState(() => _filterChipIndex = i);
+                  },
+                ),
                 if (i != _filterChipLabels.length - 1) const SizedBox(width: 8),
               ],
             ],
@@ -298,33 +288,45 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
 
 /// 피그마: 전체(선택 시 main border+text), 그 외 border #D9D9D9, color #80839C
 class _MoveSheetChip extends StatelessWidget {
-  const _MoveSheetChip({required this.label, required this.selected});
+  const _MoveSheetChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.blue500 : AppColors.borderLight,
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          color: selected ? AppColors.blue500 : AppColors.gray600,
-          letterSpacing: -0.025 * 16,
-          height: 1.5,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(
+              color: selected ? AppColors.blue500 : AppColors.borderLight,
+            ),
+            borderRadius: BorderRadius.circular(99),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? AppColors.blue500 : AppColors.gray600,
+              letterSpacing: -0.025 * 16,
+              height: 1.5,
+            ),
+          ),
         ),
       ),
     );
