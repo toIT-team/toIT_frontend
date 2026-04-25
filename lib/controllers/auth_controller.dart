@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../services/fcm_registration_service.dart';
 
+/// 소셜 로그인 진행 중인 공급자. [AuthState.activeSocialLogin]에 사용한다.
+enum SocialLoginKind { kakao, apple }
+
 /// 인증 상태
 enum AuthStatus {
   /// 아직 토큰 확인 전
@@ -29,6 +32,9 @@ class AuthState {
   final String? errorMessage;
   final String? pendingRestoreToken;
 
+  /// 카카오/애플 중 실제로 진행 중인 로그인. 복구 등 그 외 busy는 null.
+  final SocialLoginKind? activeSocialLogin;
+
   /// JWT에서 추출한 실제 사용자 ID
   final int? userId;
 
@@ -37,6 +43,7 @@ class AuthState {
     this.isLoading = false,
     this.errorMessage,
     this.pendingRestoreToken,
+    this.activeSocialLogin,
     this.userId,
   });
 
@@ -45,6 +52,7 @@ class AuthState {
     bool? isLoading,
     String? errorMessage,
     String? pendingRestoreToken,
+    SocialLoginKind? activeSocialLogin,
     int? userId,
   }) {
     return AuthState(
@@ -52,6 +60,7 @@ class AuthState {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       pendingRestoreToken: pendingRestoreToken,
+      activeSocialLogin: activeSocialLogin,
       userId: userId ?? this.userId,
     );
   }
@@ -99,18 +108,29 @@ class AuthController extends Notifier<AuthState> {
 
   /// 카카오 로그인 (백엔드 OAuth → 동일 콜백 규약)
   Future<void> loginWithKakao() async {
-    await _runSocialLogin(_authService.loginWithKakao);
+    await _runSocialLogin(
+      SocialLoginKind.kakao,
+      _authService.loginWithKakao,
+    );
   }
 
   /// 애플 로그인 (백엔드 OAuth → 동일 콜백 규약)
   Future<void> loginWithApple() async {
-    await _runSocialLogin(_authService.loginWithApple);
+    await _runSocialLogin(
+      SocialLoginKind.apple,
+      _authService.loginWithApple,
+    );
   }
 
   Future<void> _runSocialLogin(
+    SocialLoginKind kind,
     Future<AuthCallbackData> Function() login,
   ) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(
+      isLoading: true,
+      activeSocialLogin: kind,
+      errorMessage: null,
+    );
 
     try {
       final callbackData = await login();
@@ -212,6 +232,7 @@ class AuthController extends Notifier<AuthState> {
       errorMessage: state.errorMessage,
       userId: state.userId,
       pendingRestoreToken: null,
+      activeSocialLogin: state.activeSocialLogin,
     );
   }
 
