@@ -607,6 +607,7 @@ class _EventDetailLayout extends StatelessWidget {
             child: Text(
               title,
               style: const TextStyle(
+                color: AppColors.gray900,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -688,6 +689,7 @@ class _EventEditLayout extends StatelessWidget {
                 focusNode: titleFocusNode,
                 onChanged: onTitleChanged,
                 style: const TextStyle(
+                  color: AppColors.gray900,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
