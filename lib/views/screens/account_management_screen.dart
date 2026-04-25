@@ -432,21 +432,12 @@ class _KakaoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFAE54D),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        '카',
-        style: TextStyle(
-          color: Color(0xFF191603),
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
+    return ClipOval(
+      child: Image.asset(
+        'assets/icons/KakaoLogoIcon.png',
+        width: 28,
+        height: 28,
+        fit: BoxFit.cover,
       ),
     );
   }
@@ -457,15 +448,13 @@ class _AppleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: const BoxDecoration(
-        color: Colors.black,
-        shape: BoxShape.circle,
+    return ClipOval(
+      child: Image.asset(
+        'assets/icons/AppleLogoIcon.png',
+        width: 28,
+        height: 28,
+        fit: BoxFit.cover,
       ),
-      alignment: Alignment.center,
-      child: const Icon(Icons.apple, color: Colors.white, size: 16),
     );
   }
 }
