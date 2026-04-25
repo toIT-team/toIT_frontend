@@ -120,7 +120,7 @@ class _RetryButton extends StatelessWidget {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.blue500),
+                  color: AppColors.loadingIndicator,
                 ),
               )
             : const Text(SplashRetryScreen._buttonLabel),

@@ -32,6 +32,9 @@ class AppTheme {
       dialogTheme: const DialogThemeData(
         surfaceTintColor: Colors.transparent,
       ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.loadingIndicator,
+      ),
     );
   }
 
@@ -41,6 +44,9 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: Colors.deepPurple,
         brightness: Brightness.dark,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.loadingIndicator,
       ),
     );
   }
