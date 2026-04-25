@@ -51,6 +51,10 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
   }
 
   void _onTabChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+
     // 문의 내용 탭 진입 시 최신 서버 상태를 다시 조회한다.
     // 관리자 답변 반영처럼 외부에서 상태가 바뀌는 케이스를 놓치지 않기 위함.
     if (_tabController.index == 1 && !_tabController.indexIsChanging) {
@@ -219,42 +223,43 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              child: SizedBox(
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _canSubmit ? _submitFeedback : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue500,
-                    disabledBackgroundColor: AppColors.neutral100,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+            if (_tabController.index == 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: SizedBox(
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _canSubmit ? _submitFeedback : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue500,
+                      disabledBackgroundColor: AppColors.neutral100,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            '등록하기',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.45,
+                              height: 1.4,
+                            ),
+                          ),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          '등록하기',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.45,
-                            height: 1.4,
-                          ),
-                        ),
                 ),
               ),
-            ),
           ],
         ),
       ),
