@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../models/calendar/calendar_event.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_alert_dialog.dart';
@@ -396,8 +397,7 @@ class _EventFormLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
+    return SystemSafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

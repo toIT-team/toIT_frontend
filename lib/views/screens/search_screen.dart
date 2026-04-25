@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/folder_tab_index.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../controllers/search_controller.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../models/search/search_result_item.dart';
@@ -143,22 +144,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SearchBarWidget(
-            controller: _searchController,
-            onChanged: _onQueryChanged,
-          ),
-          SearchFilterSection(
-            selectedFilter: searchState.selectedFilter,
-            onFilterChanged: (f) =>
-                ref.read(searchProvider.notifier).setFilter(f),
-          ),
-          Expanded(
-            child: _buildBody(searchState),
-          ),
-        ],
+      body: SystemSafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchBarWidget(
+              controller: _searchController,
+              onChanged: _onQueryChanged,
+            ),
+            SearchFilterSection(
+              selectedFilter: searchState.selectedFilter,
+              onFilterChanged: (f) =>
+                  ref.read(searchProvider.notifier).setFilter(f),
+            ),
+            Expanded(
+              child: _buildBody(searchState),
+            ),
+          ],
+        ),
       ),
     );
   }

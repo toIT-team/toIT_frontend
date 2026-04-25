@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../core/utils/search_folder_mapper.dart';
 import '../../../models/dto/search_response_dto.dart';
 import '../../../models/home/folder_item.dart';
@@ -174,9 +175,8 @@ class _ScheduleFolderSearchSheetState
         constraints: BoxConstraints(
           maxHeight: screenH * 0.9,
         ),
-        child: SafeArea(
+        child: SystemSafeArea(
           top: false,
-          bottom: false,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

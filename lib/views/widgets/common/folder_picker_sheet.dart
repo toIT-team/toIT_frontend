@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
 
 /// 보관함 선택 바텀시트 표시 (링크/노트/파일/이미지 저장 화면 등에서 공통 사용)
@@ -56,7 +57,7 @@ class FolderPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SystemSafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

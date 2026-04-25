@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -69,7 +70,7 @@ class LoginScreen extends ConsumerWidget {
               ),
             ),
           ),
-          SafeArea(
+          SystemSafeArea(
             child: Column(
               children: [
                 const Spacer(flex: 3),
@@ -243,7 +244,7 @@ class LoginScreen extends ConsumerWidget {
       barrierColor: const Color(0x33222222),
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (dialogContext, _, __) {
-        return SafeArea(
+        return SystemSafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Padding(

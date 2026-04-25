@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/system_ui_insets.dart';
 import '../widgets/common/add_action_button.dart';
 import '../widgets/common/add_context_menu.dart';
 import '../widgets/common/glass_nav_bar.dart';
@@ -32,7 +33,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final currentTab = ref.watch(currentTabProvider);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomPadding = systemBottomBarPadding(context);
 
     return Scaffold(
       body: Stack(

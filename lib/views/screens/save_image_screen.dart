@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/system_ui_insets.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
@@ -168,7 +170,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.white,
-      builder: (context) => SafeArea(
+      builder: (context) => SystemSafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -248,7 +250,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           child: _buildAppBar(),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20 + systemBottomBarPadding(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -279,7 +286,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
   }
 
   Widget _buildAppBar() {
-    return SafeArea(
+    return SystemSafeArea(
       bottom: false,
       child: Container(
         height: 44,

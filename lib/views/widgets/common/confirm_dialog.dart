@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/system_safe_area.dart';
+
 /// 재사용 가능한 확인 다이얼로그
 ///
 /// 사진 2 디자인: 흰색 배경, 둥근 모서리, 하단 중앙 배치
@@ -23,7 +25,7 @@ Future<bool?> showConfirmDialog({
         data: media.copyWith(textScaler: const TextScaler.linear(1.0)),
         child: Align(
           alignment: Alignment.bottomCenter,
-          child: SafeArea(
+          child: SystemSafeArea(
             minimum: const EdgeInsets.fromLTRB(20, 0, 20, 24),
             child: Container(
             decoration: BoxDecoration(

@@ -5,6 +5,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/system_ui_insets.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
@@ -135,7 +137,12 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
           child: _buildAppBar(),
         ),
         body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            systemBottomBarPadding(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -157,7 +164,7 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
   }
 
   Widget _buildAppBar() {
-    return SafeArea(
+    return SystemSafeArea(
       bottom: false,
       child: Container(
         height: 44,

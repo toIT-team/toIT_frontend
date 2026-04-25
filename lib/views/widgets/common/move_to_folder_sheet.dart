@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
 import '../home/folder_tile.dart';
 
@@ -101,7 +102,7 @@ class _MoveToFolderSheetState extends ConsumerState<MoveToFolderSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.76,
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,

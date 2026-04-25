@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/system_ui_insets.dart';
 import '../../../controllers/calendar_controller.dart';
 import '../../../models/calendar/calendar_event.dart';
 import '../../../services/schedule_api_client.dart'
@@ -52,7 +53,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomPadding = systemBottomBarPadding(context);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,

@@ -6,6 +6,7 @@ import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
@@ -403,7 +404,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ),
         ),
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
@@ -596,7 +597,7 @@ class _EventDetailLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SystemSafeArea(
       bottom: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,8 +675,7 @@ class _EventEditLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
+    return SystemSafeArea(
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

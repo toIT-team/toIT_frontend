@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
 
 class AccountManagementScreen extends ConsumerWidget {
@@ -21,8 +22,7 @@ class AccountManagementScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        bottom: false,
+      body: SystemSafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -233,7 +233,7 @@ class AccountManagementScreen extends ConsumerWidget {
       barrierColor: const Color(0x33222222),
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (dialogContext, _, __) {
-        return SafeArea(
+        return SystemSafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Padding(

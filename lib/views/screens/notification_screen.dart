@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/notifications_page_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../widgets/notification/notification_list.dart';
 import 'notification_settings_screen.dart';
 
@@ -19,7 +20,7 @@ class NotificationScreen extends ConsumerWidget {
     if (userId == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: SafeArea(child: Center(child: CircularProgressIndicator())),
+        body: SystemSafeArea(child: Center(child: CircularProgressIndicator())),
       );
     }
     final refreshTick = ref.watch(authSessionRefreshTickProvider);
@@ -28,7 +29,7 @@ class NotificationScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
+      body: SystemSafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

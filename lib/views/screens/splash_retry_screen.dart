@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../controllers/bootstrap_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../widgets/splash/splash_background.dart';
 import '../widgets/splash/splash_logo_block.dart';
 
@@ -32,7 +33,7 @@ class SplashRetryScreen extends ConsumerWidget {
     );
 
     return SplashBackground(
-      child: SafeArea(
+      child: SystemSafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: _contentHorizontalPadding,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/alarm_constants.dart';
 import '../../../core/constants/app_color_tokens.dart';
+import '../../../core/widgets/system_safe_area.dart';
 
 /// 알림 옵션 선택 바텀시트 (사진 디자인 기준)
 ///
@@ -29,7 +30,7 @@ class AlarmPickerSheet extends StatelessWidget {
     final isCustomSelected = currentMinutes != null &&
         !AlarmUtils.predefinedMinutes.contains(currentMinutes);
 
-    return SafeArea(
+    return SystemSafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -172,7 +173,7 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SystemSafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
         child: Column(
