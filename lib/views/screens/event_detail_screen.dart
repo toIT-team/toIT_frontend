@@ -364,6 +364,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       EventSectionItem(
         iconSvgAsset: EventAssets.sectionNotification,
         iconColor: SettingLayout1Tokens.sectionIconColor,
+        rowCrossAxisAlignment: CrossAxisAlignment.center,
         child: EventAlarmSection(
           alarmText: alarmText,
           alarmEnabled: detail.alarmState,
@@ -619,6 +620,8 @@ class _EventDetailLayout extends StatelessWidget {
                     EventSection(
                       iconSvgAsset: sections[i].iconSvgAsset,
                       iconColor: sections[i].iconColor,
+                      rowCrossAxisAlignment:
+                          sections[i].rowCrossAxisAlignment,
                       child: sections[i].child,
                     ),
                     if (i != sections.length - 1) const AppDivider(),
@@ -743,6 +746,7 @@ class _EventEditLayout extends StatelessWidget {
             EventSection(
               iconSvgAsset: EventAssets.sectionNotification,
               iconColor: SettingLayout1Tokens.sectionIconColor,
+              rowCrossAxisAlignment: CrossAxisAlignment.center,
               child: EventAlarmSection(
                 alarmText: formState.alarmText,
                 alarmEnabled: formState.alarmMinutes != null,

@@ -23,11 +23,16 @@ class EventSectionItem {
     required this.iconSvgAsset,
     required this.iconColor,
     required this.child,
+    this.rowCrossAxisAlignment = CrossAxisAlignment.start,
   });
 
   final String iconSvgAsset;
   final Color iconColor;
   final Widget child;
+
+  /// 단일 행(알림 등)은 [center]로 선행 아이콘과 세로 중앙을 맞춘다.
+  /// 시간 블록처럼 높은 본문은 [start] 유지.
+  final CrossAxisAlignment rowCrossAxisAlignment;
 }
 
 /// 이벤트 섹션 위젯 (SVG 리드 아이콘 + 컨텐츠)
@@ -39,11 +44,15 @@ class EventSection extends StatelessWidget {
     required this.iconSvgAsset,
     required this.iconColor,
     required this.child,
+    this.rowCrossAxisAlignment = CrossAxisAlignment.start,
   });
 
   final String iconSvgAsset;
   final Color iconColor;
   final Widget child;
+
+  /// [center]: 토글 등 본문 높이 > 아이콘일 때 선행 SVG와 세로 중앙 정렬
+  final CrossAxisAlignment rowCrossAxisAlignment;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +62,7 @@ class EventSection extends StatelessWidget {
         vertical: EventSectionConstants.verticalPadding,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: rowCrossAxisAlignment,
         children: [
           _buildLeading(),
           const SizedBox(width: EventSectionConstants.iconGap),

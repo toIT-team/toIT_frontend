@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
+
 /// 시간 행 위젯 (날짜 + 시간 표시)
 class EventTimeRow extends StatelessWidget {
   const EventTimeRow({
@@ -43,7 +45,7 @@ class EventTimeRow extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppColors.gray600,
             ),
           ),
         ),
@@ -80,14 +82,14 @@ class EventTimeRow extends StatelessWidget {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: AppColors.chipBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: TextStyle(
           fontSize: 14,
-          color: isActive ? Colors.blue : Colors.black87,
+          color: isActive ? AppColors.blue500 : AppColors.gray900,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
         ),
       ),

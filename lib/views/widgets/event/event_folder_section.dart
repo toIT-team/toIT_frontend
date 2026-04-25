@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/setting_layout_tokens.dart';
 
 /// 보관함(폴더) 섹션
@@ -36,19 +37,20 @@ class EventFolderSection extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Text(
                 _hasFolder ? folderName! : '보관함 선택',
                 style: TextStyle(
                   fontSize: SettingLayout1Tokens.fontSize,
-                  color: _hasFolder ? Colors.black : Colors.grey,
+                  color: _hasFolder ? AppColors.gray900 : AppColors.gray600,
                 ),
               ),
             ),
             Icon(
               Icons.chevron_right,
-              color: Colors.grey[400],
+              color: AppColors.gray400,
               size: SettingLayout1Tokens.trailingIconSize,
             ),
           ],
@@ -56,10 +58,11 @@ class EventFolderSection extends StatelessWidget {
       );
     }
 
-    final trailingColor = Colors.grey[400];
+    const trailingColor = AppColors.gray400;
     final iconSize = SettingLayout1Tokens.trailingIconSize;
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: GestureDetector(
@@ -69,7 +72,7 @@ class EventFolderSection extends StatelessWidget {
               _hasFolder ? folderName! : '보관함 선택',
               style: TextStyle(
                 fontSize: SettingLayout1Tokens.fontSize,
-                color: _hasFolder ? Colors.black : Colors.grey,
+                color: _hasFolder ? AppColors.gray900 : AppColors.gray600,
               ),
             ),
           ),
@@ -78,7 +81,8 @@ class EventFolderSection extends StatelessWidget {
           onTap: _hasFolder ? onClearFolderTap : onTap,
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            // 상단 패딩 없음: 선행 SVG(24px)와 첫 텍스트 줄 상단을 맞춤
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
             child: Icon(
               _hasFolder ? Icons.close : Icons.add,
               color: trailingColor,

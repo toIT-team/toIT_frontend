@@ -87,13 +87,13 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: const Icon(Icons.close, color: AppColors.gray900),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           screenTitle,
           style: const TextStyle(
-            color: Colors.black,
+            color: AppColors.gray900,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -105,7 +105,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
             child: Text(
               '저장',
               style: TextStyle(
-                color: formState.isValid ? Colors.blue : Colors.grey,
+                color: formState.isValid
+                    ? AppColors.blue500
+                    : AppColors.gray400,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -410,14 +412,16 @@ class _EventFormLayout extends StatelessWidget {
                     controller: titleController,
                     focusNode: titleFocusNode,
                     onChanged: onTitleChanged,
+                    cursorColor: AppColors.blue500,
                     style: const TextStyle(
+                      color: AppColors.gray900,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                     decoration: const InputDecoration(
                       hintText: '제목을 입력하세요',
                       hintStyle: TextStyle(
-                        color: Colors.grey,
+                        color: AppColors.gray600,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -487,6 +491,7 @@ class _EventFormLayout extends StatelessWidget {
                   EventSection(
                     iconSvgAsset: EventAssets.sectionNotification,
                     iconColor: SettingLayout1Tokens.sectionIconColor,
+                    rowCrossAxisAlignment: CrossAxisAlignment.center,
                     child: EventAlarmSection(
                       alarmText: formState.alarmText,
                       alarmEnabled: formState.alarmMinutes != null,

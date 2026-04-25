@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../common/custom_toggle.dart';
 import 'event_time_row.dart';
 
@@ -81,11 +82,13 @@ class _EventTimeSectionState extends State<EventTimeSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
               '시간 설정',
               style: TextStyle(
+                color: AppColors.gray900,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -237,6 +240,7 @@ class _EventTimeSectionState extends State<EventTimeSection> {
                       Text(
                         '${_displayedMonth.year}.${_displayedMonth.month.toString().padLeft(2, '0')}',
                         style: const TextStyle(
+                          color: AppColors.gray900,
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
@@ -296,24 +300,24 @@ class _EventTimeSectionState extends State<EventTimeSection> {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isSelected ? Colors.blue : null,
+                            color: isSelected ? AppColors.blue500 : null,
                           ),
                           child: Text(
                             '${day.date.day}',
                             style: TextStyle(
                               fontSize: 16,
                               color: isSelected
-                                  ? Colors.white
+                                  ? AppColors.surface
                                   : (day.isCurrentMonth
-                                      ? Colors.black87
-                                      : Colors.grey.shade400),
+                                      ? AppColors.gray900
+                                      : AppColors.gray400),
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : (isToday ? FontWeight.w700 : FontWeight.w500),
                               decoration: isToday && !isSelected
                                   ? TextDecoration.underline
                                   : TextDecoration.none,
-                              decorationColor: Colors.blue,
+                              decorationColor: AppColors.blue500,
                             ),
                           ),
                         ),
@@ -361,7 +365,7 @@ class _EventTimeSectionState extends State<EventTimeSection> {
                   label,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.grey.shade600,
+                    color: AppColors.gray600,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -584,6 +588,7 @@ class _InlineTimeWheelPickerState extends State<_InlineTimeWheelPicker> {
               child: Text(
                 ':',
                 style: TextStyle(
+                  color: AppColors.gray900,
                   fontSize: 34,
                   fontWeight: FontWeight.w700,
                 ),
@@ -635,7 +640,7 @@ class _InlineTimeWheelPickerState extends State<_InlineTimeWheelPicker> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Colors.black87 : Colors.grey.shade400,
+                color: isSelected ? AppColors.gray900 : AppColors.gray400,
               ),
             ),
           );
@@ -798,7 +803,7 @@ class _MonthYearWheelPickerState extends State<_MonthYearWheelPicker> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Colors.black87 : Colors.grey.shade400,
+                color: isSelected ? AppColors.gray900 : AppColors.gray400,
               ),
             ),
           );

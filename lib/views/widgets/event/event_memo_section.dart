@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/setting_layout_tokens.dart';
 
 /// 메모 섹션
@@ -34,7 +35,9 @@ class EventMemoSection extends StatelessWidget {
       return TextField(
         controller: memoController,
         onChanged: onChanged,
+        cursorColor: AppColors.blue500,
         style: const TextStyle(
+          color: AppColors.gray900,
           fontSize: SettingLayout1Tokens.fontSize,
         ),
         maxLines: 3,
@@ -42,7 +45,7 @@ class EventMemoSection extends StatelessWidget {
         decoration: const InputDecoration(
           hintText: '메모 추가',
           hintStyle: TextStyle(
-            color: Colors.grey,
+            color: AppColors.gray600,
             fontSize: SettingLayout1Tokens.fontSize,
           ),
           border: InputBorder.none,
@@ -65,13 +68,14 @@ class EventMemoSection extends StatelessWidget {
 
   Widget _buildReadOnlyContent(bool hasMemo) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
             hasMemo ? memo! : '메모 추가',
             style: TextStyle(
               fontSize: SettingLayout1Tokens.fontSize,
-              color: hasMemo ? Colors.black : Colors.grey,
+              color: hasMemo ? AppColors.gray900 : AppColors.gray600,
             ),
           ),
         ),
@@ -80,7 +84,7 @@ class EventMemoSection extends StatelessWidget {
             memoDate!,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: AppColors.textSecondary,
             ),
           ),
       ],
