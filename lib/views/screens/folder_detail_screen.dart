@@ -1539,12 +1539,6 @@ String? _resolveFileIconAssetPath({
   required String fileName,
   required String attachmentsExtension,
 }) {
-  final extensionFromField = _normalizeFileExtension(attachmentsExtension);
-  final extensionFromName = _normalizeFileExtension(_extractExtension(fileName));
-  final normalized = extensionFromField.isNotEmpty
-      ? extensionFromField
-      : extensionFromName;
-
   const supportedExtensions = <String>{
     'docx',
     'hwp',
@@ -1552,7 +1546,21 @@ String? _resolveFileIconAssetPath({
     'ppt',
     'xlsx',
   };
-  if (!supportedExtensions.contains(normalized)) return null;
+
+  final extensionFromField = _normalizeFileExtension(attachmentsExtension);
+  final extensionFromName = _normalizeFileExtension(_extractExtension(fileName));
+
+  // 서버 확장자 필드가 일반 MIME(예: application/octet-stream)인 경우를
+  // 대비해, 지원 가능한 확장자를 순서대로 탐색한다.
+  final candidates = <String>[extensionFromField, extensionFromName];
+  String? normalized;
+  for (final candidate in candidates) {
+    if (supportedExtensions.contains(candidate)) {
+      normalized = candidate;
+      break;
+    }
+  }
+  if (normalized == null) return null;
 
   return 'assets/icons/File/$normalized.png';
 }
@@ -1596,6 +1604,7 @@ String _normalizeFileExtension(String raw) {
   // 확장자 별칭 정규화
   const extensionAliases = <String, String>{
     'doc': 'docx',
+    'hwpx': 'hwp',
     'pptx': 'ppt',
     'xls': 'xlsx',
     'xlsm': 'xlsx',
