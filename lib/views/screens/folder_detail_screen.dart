@@ -1229,8 +1229,8 @@ class _NoteTabContent extends StatelessWidget {
 
   static const double _cardWidth = 104;
 
-  /// 제목(1줄) + 간격 + 날짜행 높이 여유 포함해 셀 높이 확보 (오버플로우 방지)
-  static const double _cardTotalHeight = 214;
+  /// 제목(1줄) + 간격 + 날짜행 + 기기별 폰트 메트릭 여유
+  static const double _cardTotalHeight = 230;
   static const double _gridSpacing = 12;
 
   @override
@@ -1269,10 +1269,17 @@ class _NoteTabContent extends StatelessWidget {
               itemCount: texts.length,
               itemBuilder: (context, index) {
                 final note = texts[index];
-                return _NoteCard(
-                  note: note,
-                  onTap: () => onNoteTap(note),
-                  onKebabTap: () => onNoteKebabTap(note),
+                return LayoutBuilder(
+                  builder: (context, cellConstraints) {
+                    final cellW = cellConstraints.maxWidth;
+                    final displayW = cellW < _cardWidth ? cellW : _cardWidth;
+                    return _NoteCard(
+                      note: note,
+                      displayWidth: displayW,
+                      onTap: () => onNoteTap(note),
+                      onKebabTap: () => onNoteKebabTap(note),
+                    );
+                  },
                 );
               },
             ),
@@ -1286,20 +1293,24 @@ class _NoteTabContent extends StatelessWidget {
 /// 노트 카드 1개 (Figma: 104x150 내용 + 제목·날짜·케밥). 카드 탭 시 상세 화면 이동.
 class _NoteCard extends StatelessWidget {
   final TextDto note;
+  final double displayWidth;
   final VoidCallback onTap;
   final VoidCallback onKebabTap;
 
   const _NoteCard({
     required this.note,
+    required this.displayWidth,
     required this.onTap,
     required this.onKebabTap,
   });
 
-  static const double _boxWidth = 104;
-  static const double _boxHeight = 150;
+  static const double _designBoxWidth = 104;
+  static const double _designBoxHeight = 150;
 
   @override
   Widget build(BuildContext context) {
+    final boxW = displayWidth;
+    final boxH = _designBoxHeight * (boxW / _designBoxWidth);
     final content = note.textContent;
     final title = content.length > 20
         ? '${content.substring(0, 20)}...'
@@ -1317,8 +1328,8 @@ class _NoteCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: _boxWidth,
-            height: _boxHeight,
+            width: boxW,
+            height: boxH,
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -1355,14 +1366,18 @@ class _NoteCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                dateText,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.gray600,
-                  letterSpacing: -0.025 * 14,
-                  height: 1.5,
+              Expanded(
+                child: Text(
+                  dateText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray600,
+                    letterSpacing: -0.025 * 14,
+                    height: 1.5,
+                  ),
                 ),
               ),
               _TapScale(
@@ -1639,6 +1654,18 @@ class _ImageTabContent extends StatelessWidget {
     required this.onImageTap,
   });
 
+  /// Figma 기준 타일 비율 (가로 / 세로)
+  static const double _tileAspect = 161 / 163;
+
+  /// 폰은 2열 유지, 매우 좁을 때만 1열, 태블릿 폭에서만 3열.
+  static int _columnCountForWidth(double maxWidth, double gap) {
+    if (maxWidth <= 0) return 1;
+    if (maxWidth < 210) return 1;
+    if (maxWidth < 520) return 2;
+    final thirdW = (maxWidth - gap * 2) / 3;
+    return thirdW >= 120 ? 3 : 2;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (images.isEmpty) {
@@ -1657,72 +1684,95 @@ class _ImageTabContent extends StatelessWidget {
         ],
       );
     }
+    const gap = AppSpacing.sm + 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSectionToolbar(images.length),
         Expanded(
-          child: SingleChildScrollView(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Wrap(
-              spacing: AppSpacing.sm + 1,
-              runSpacing: AppSpacing.md,
-              children: images
-                  .map(
-                    (img) => _TapScale(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final maxW = constraints.maxWidth;
+                final count = _columnCountForWidth(maxW, gap);
+                final tileW = (maxW - gap * (count - 1)) / count;
+                final tileH = tileW / _tileAspect;
+                return GridView.builder(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: count,
+                    crossAxisSpacing: gap,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: _tileAspect,
+                  ),
+                  itemCount: images.length,
+                  itemBuilder: (context, index) {
+                    final img = images[index];
+                    return _TapScale(
                       onTap: () => onImageTap(img),
                       onLongPress: () => onImageLongPress(img),
                       pressedScale: 0.94,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                      child: SizedBox(
-                        width: 161,
-                        height: 163,
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusSm,
-                              ),
-                              child: SizedBox(
-                                width: 161,
-                                height: 163,
-                                child: img.presignedUrl.isNotEmpty
-                                    ? Image.network(
-                                        img.presignedUrl,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (_, child, progress) {
-                                          if (progress == null) return child;
-                                          return Container(
-                                            color: AppColors.neutral100,
-                                            child: const Center(
-                                              child: SizedBox(
-                                                width: 24,
-                                                height: 24,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder: (_, __, ___) => Container(
-                                          color: AppColors.borderLight,
-                                        ),
-                                      )
-                                    : Container(color: AppColors.borderLight),
-                              ),
-                            ),
-                          ],
-                        ),
+                      child: _FolderImageCell(
+                        width: tileW,
+                        height: tileH,
+                        image: img,
                       ),
-                    ),
-                  )
-                  .toList(),
+                    );
+                  },
+                );
+              },
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 보관함 이미지 탭 셀
+class _FolderImageCell extends StatelessWidget {
+  const _FolderImageCell({
+    required this.width,
+    required this.height,
+    required this.image,
+  });
+
+  final double width;
+  final double height;
+  final AttachmentImageDto image;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: image.presignedUrl.isNotEmpty
+            ? Image.network(
+                image.presignedUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    color: AppColors.neutral100,
+                    child: const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.borderLight,
+                ),
+              )
+            : Container(color: AppColors.borderLight),
+      ),
     );
   }
 }
