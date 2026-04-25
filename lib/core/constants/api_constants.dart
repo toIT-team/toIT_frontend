@@ -69,6 +69,9 @@ class ApiConstants {
   static const String attachmentsEndpoint = '/attachments';
   static const String usersNameEndpoint = '/users/name';
   static const String usersWithdrawEndpoint = '/users/withdraw';
+
+  /// 앱 전체 알림 on/off (PATCH, body: { appAlarmEnabled: bool })
+  static const String usersAlarmSettingEndpoint = '/users/alarmSetting';
   static const String feedbackEndpoint = '/api/feedback';
   static const String myFeedbackEndpoint = '/api/feedback/my';
 

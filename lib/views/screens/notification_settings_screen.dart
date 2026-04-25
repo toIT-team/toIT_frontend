@@ -1,20 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 
-/// 알림 설정 화면 (UI + 토글 동작)
-class NotificationSettingsScreen extends StatefulWidget {
+/// 알림 설정 화면 (앱 전체 알림 ↔ 서버 동기화)
+class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() =>
+  ConsumerState<NotificationSettingsScreen> createState() =>
       _NotificationSettingsScreenState();
 }
 
 class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
+    extends ConsumerState<NotificationSettingsScreen> {
   bool isAppNotificationEnabled = true;
-  bool isScheduleNotificationEnabled = true;
+  bool isPatchingAlarmSetting = false;
+
+  Future<void> patchAppAlarmEnabled(bool nextValue) async {
+    if (isPatchingAlarmSetting) return;
+
+    final previous = isAppNotificationEnabled;
+    setState(() {
+      isAppNotificationEnabled = nextValue;
+      isPatchingAlarmSetting = true;
+    });
+
+    try {
+      await ref.read(apiClientProvider).patch<void>(
+            ApiConstants.usersAlarmSettingEndpoint,
+            data: {'appAlarmEnabled': nextValue},
+          );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        isAppNotificationEnabled = previous;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('알림 설정 저장에 실패했습니다: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isPatchingAlarmSetting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,24 +59,16 @@ class _NotificationSettingsScreenState
           children: [
             const _NotificationSettingsHeader(),
             const SizedBox(height: 16),
-            _NotificationSettingRow(
-              title: '앱 전체 알림',
-              value: isAppNotificationEnabled,
-              hasBottomDivider: true,
-              onChanged: (nextValue) {
-                setState(() {
-                  isAppNotificationEnabled = nextValue;
-                });
-              },
-            ),
-            _NotificationSettingRow(
-              title: '일정 알림',
-              value: isScheduleNotificationEnabled,
-              onChanged: (nextValue) {
-                setState(() {
-                  isScheduleNotificationEnabled = nextValue;
-                });
-              },
+            IgnorePointer(
+              ignoring: isPatchingAlarmSetting,
+              child: Opacity(
+                opacity: isPatchingAlarmSetting ? 0.5 : 1,
+                child: _NotificationSettingRow(
+                  title: '앱 전체 알림',
+                  value: isAppNotificationEnabled,
+                  onChanged: patchAppAlarmEnabled,
+                ),
+              ),
             ),
           ],
         ),
@@ -88,24 +114,17 @@ class _NotificationSettingRow extends StatelessWidget {
     required this.title,
     required this.value,
     required this.onChanged,
-    this.hasBottomDivider = false,
   });
 
   final String title;
   final bool value;
   final ValueChanged<bool> onChanged;
-  final bool hasBottomDivider;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 54,
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        border: hasBottomDivider
-            ? const Border(bottom: BorderSide(color: AppColors.neutral50))
-            : null,
-      ),
       child: Row(
         children: [
           Text(
