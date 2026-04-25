@@ -397,8 +397,6 @@ final feedbackHistoryProvider = FutureProvider.autoDispose
         return items
             .whereType<Map<String, dynamic>>()
             .map(_parseFeedbackItem)
-            .toList()
-            .reversed
             .toList();
       }
       return const [];
