@@ -46,6 +46,12 @@ class _AddFolderSheet extends StatefulWidget {
 }
 
 class _AddFolderSheetState extends State<_AddFolderSheet> {
+  /// 우하단 글자 수(예: 999/1000)와 본문이 겹치지 않도록 확보
+  static const EdgeInsets _memoFieldContentPadding = EdgeInsets.only(
+    right: 96,
+    bottom: 28,
+  );
+
   late final TextEditingController _nameController;
   late final TextEditingController _memoController;
   late int _selectedColorIndex;
@@ -497,7 +503,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
                     height: 1.4,
                   ),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: _memoFieldContentPadding,
                   counterText: '',
                 ),
               ),
