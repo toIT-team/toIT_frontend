@@ -698,6 +698,8 @@ class _EventEditLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return SystemSafeArea(
       child: SingleChildScrollView(
+        keyboardDismissBehavior:
+            ScrollViewKeyboardDismissBehavior.onDrag,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -712,6 +714,7 @@ class _EventEditLayout extends StatelessWidget {
                       controller: titleController,
                       focusNode: titleFocusNode,
                       onChanged: onTitleChanged,
+                      onTapOutside: (_) => titleFocusNode.unfocus(),
                       cursorColor: AppColors.blue500,
                       style: const TextStyle(
                         color: AppColors.gray900,

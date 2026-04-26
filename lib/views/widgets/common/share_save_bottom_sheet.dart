@@ -213,6 +213,9 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
                   padding: const EdgeInsets.all(13),
                   child: TextField(
                     controller: memoController,
+                    onTapOutside: (_) {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
                     maxLines: null,
                     maxLength: memoMaxLength,
                     expands: true,
@@ -276,6 +279,9 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
           Expanded(
             child: TextField(
               controller: folderSearchController,
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

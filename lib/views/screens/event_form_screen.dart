@@ -412,6 +412,7 @@ class _EventFormLayout extends StatelessWidget {
                     controller: titleController,
                     focusNode: titleFocusNode,
                     onChanged: onTitleChanged,
+                    onTapOutside: (_) => titleFocusNode.unfocus(),
                     cursorColor: AppColors.blue500,
                     style: const TextStyle(
                       color: AppColors.gray900,
@@ -459,6 +460,8 @@ class _EventFormLayout extends StatelessWidget {
           const AppDivider(),
           Expanded(
             child: SingleChildScrollView(
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
               child: Column(
                 children: [
                   // 보관함 섹션

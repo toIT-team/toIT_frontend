@@ -85,6 +85,12 @@ class _SearchFieldWidgetState extends State<SearchFieldWidget> {
               controller: widget.controller,
               onChanged: widget.onChanged,
               autofocus: widget.autofocus,
+              // 모바일 네이티브는 기본 onTapOutside가 터치에서 포커스를
+              // 풀지 않음(EditableTextTapOutsideIntent). 갤럭시 등에서 바깥
+              // 탭 시 키보드 내리기 위해 명시한다.
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               textAlignVertical: TextAlignVertical.center,
               decoration: const InputDecoration(
                 isCollapsed: true,

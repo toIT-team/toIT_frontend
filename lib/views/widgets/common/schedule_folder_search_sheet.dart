@@ -155,69 +155,64 @@ class _ScheduleFolderSearchSheetState
     final showLoading = q.isNotEmpty && _isSearching;
     final folders = _displayFolders;
     final count = folders.length;
-    final viewInsets = MediaQuery.viewInsetsOf(context);
     final screenH = MediaQuery.sizeOf(context).height;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: AppColors.neutral50),
-            left: BorderSide(color: AppColors.neutral50),
-            right: BorderSide(color: AppColors.neutral50),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.neutral50),
+          left: BorderSide(color: AppColors.neutral50),
+          right: BorderSide(color: AppColors.neutral50),
+        ),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radius),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSheet,
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppSpacing.radius),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadowSheet,
-              blurRadius: 4,
-              offset: Offset(0, 2),
+        ],
+      ),
+      constraints: BoxConstraints(
+        maxHeight: screenH * 0.9,
+      ),
+      child: SystemSafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildDragHandle(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: SearchFieldWidget(
+                controller: _searchController,
+                onChanged: _onQueryChanged,
+                // 시트 오픈 직후 자동 포커스면 키보드+시트가 함께 올라간다.
+                autofocus: false,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: _buildCountAndChips(count),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Flexible(
+              child: showLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : (q.isNotEmpty && folders.isEmpty)
+                      ? _buildEmptyState()
+                      : _buildFolderGrid(folders),
             ),
           ],
-        ),
-        constraints: BoxConstraints(
-          maxHeight: screenH * 0.9,
-        ),
-        child: SystemSafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildDragHandle(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
-                child: SearchFieldWidget(
-                  controller: _searchController,
-                  onChanged: _onQueryChanged,
-                  autofocus: true,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: _buildCountAndChips(count),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Flexible(
-                child: showLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : (q.isNotEmpty && folders.isEmpty)
-                        ? _buildEmptyState()
-                        : _buildFolderGrid(folders),
-              ),
-            ],
-          ),
         ),
       ),
     );
