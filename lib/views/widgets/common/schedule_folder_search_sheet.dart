@@ -35,6 +35,9 @@ Future<void> showScheduleFolderSearchSheet(
     return;
   }
 
+  // 타이틀 등 상위 폼 포커스가 남으면 시트 위에 키보드가 겹친다.
+  FocusManager.instance.primaryFocus?.unfocus();
+
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
