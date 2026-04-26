@@ -1,20 +1,20 @@
 import Foundation
 
 /// Share Extension 전용 경량 API 클라이언트.
-/// App Group UserDefaults에서 인증 정보를 읽어 URLSession으로 호출한다.
+/// App Group `UserDefaults`에서 인증 정보를 읽는다.
 final class ShareApiClient {
   private let accessToken: String
   private let baseUrl: String
   let userId: Int
 
-  private static let suiteName =
-    "group.com.example.pojTodo.share"
-
   init?(fromAppGroup: Void = ()) {
-    guard let defaults = UserDefaults(
-      suiteName: ShareApiClient.suiteName
-    ) else {
-      NSLog("[ShareApiClient] UserDefaults 생성 실패 - suiteName: \(ShareApiClient.suiteName)")
+    guard
+      let defaults = AppGroupConfig.sharedUserDefaults
+    else {
+      NSLog(
+        "[ShareApiClient] App Group UserDefaults nil — AppGroupId: "
+        + "\(String(describing: AppGroupConfig.identifier))"
+      )
       return nil
     }
 
@@ -22,10 +22,9 @@ final class ShareApiClient {
     let url = defaults.string(forKey: "api_base_url")
     let uid = defaults.integer(forKey: "user_id")
 
-    NSLog("[ShareApiClient] App Group 읽기 결과 - token: \(token != nil ? "있음(\(token!.prefix(10))...)" : "nil"), url: \(url ?? "nil"), userId: \(uid)")
-
-    guard let token, let url,
-          !token.isEmpty, !url.isEmpty
+    guard
+      let token, let url,
+      !token.isEmpty, !url.isEmpty
     else { return nil }
 
     self.accessToken = token

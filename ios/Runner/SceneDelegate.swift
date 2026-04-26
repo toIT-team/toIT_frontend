@@ -9,7 +9,6 @@ class SceneDelegate: FlutterSceneDelegate {
     options connectionOptions: UIScene.ConnectionOptions
   ) {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
-    registerTokenBridge()
   }
 
   override func scene(
@@ -18,14 +17,6 @@ class SceneDelegate: FlutterSceneDelegate {
   ) {
     guard let url = URLContexts.first?.url else { return }
     handleDeepLink(url)
-  }
-
-  private func registerTokenBridge() {
-    guard let window = self.window,
-          let controller = window.rootViewController
-            as? FlutterViewController
-    else { return }
-    TokenBridge.register(with: controller.binaryMessenger)
   }
 
   private func handleDeepLink(_ url: URL) {
