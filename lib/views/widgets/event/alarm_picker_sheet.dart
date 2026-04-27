@@ -279,6 +279,8 @@ class BottomSheetStyle {
       context: context,
       backgroundColor: Colors.white,
       shape: shape,
+      useSafeArea: true,
+      isScrollControlled: true,
       showDragHandle: showDragHandle,
       builder: (context) => child,
     );

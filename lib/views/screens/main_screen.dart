@@ -29,6 +29,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   /// 하단 바 높이 (네비게이션 바 + SafeArea 하단 여백)
   static const _bottomBarHeight = 56.0;
   static const _bottomBarPadding = 16.0;
+  static const _bottomBarLiftPadding = 10.0;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           // 탭 화면들
           Padding(
             padding: EdgeInsets.only(
-              bottom: _bottomBarHeight + _bottomBarPadding * 2 + bottomPadding,
+              bottom: _bottomBarHeight +
+                  _bottomBarPadding * 2 +
+                  _bottomBarLiftPadding +
+                  bottomPadding,
             ),
             child: IndexedStack(
               index: currentTab,
@@ -59,6 +63,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               onTabChanged: _handleTabChanged,
               onFabTap: _handleFabTap,
               bottomPadding: bottomPadding,
+              liftPadding: _bottomBarLiftPadding,
             ),
           ),
         ],
@@ -102,6 +107,7 @@ class _BottomBarArea extends StatelessWidget {
     required this.onTabChanged,
     required this.onFabTap,
     required this.bottomPadding,
+    required this.liftPadding,
   });
 
   final GlobalKey fabKey;
@@ -109,11 +115,16 @@ class _BottomBarArea extends StatelessWidget {
   final ValueChanged<int> onTabChanged;
   final VoidCallback onFabTap;
   final double bottomPadding;
+  final double liftPadding;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: 16, right: 16, bottom: bottomPadding + 16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: bottomPadding + 16 + liftPadding,
+      ),
       child: Row(
         children: [
           // 글래스모피즘 네비게이션 바 (좌측 ~70%)

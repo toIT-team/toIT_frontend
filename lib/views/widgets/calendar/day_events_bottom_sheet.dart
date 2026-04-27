@@ -24,6 +24,7 @@ void showDayEventsBottomSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (context) => DayEventsBottomSheet(date: date, events: events),
   );
