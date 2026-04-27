@@ -24,6 +24,8 @@ void showDayEventsBottomSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    isDismissible: true,
+    enableDrag: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (context) => DayEventsBottomSheet(date: date, events: events),
@@ -57,41 +59,52 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
   Widget build(BuildContext context) {
     final bottomPadding = systemBottomBarPadding(context);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.65,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) {
-        return Stack(
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: widget.events.isEmpty
-                        ? _buildEmptyState()
-                        : _buildEventsList(scrollController),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: const SizedBox.expand(),
+          ),
+        ),
+        DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return Stack(
+              children: [
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
                   ),
-                ],
-              ),
-            ),
-            // 오른쪽 하단 버튼 positon 고정.
-            Positioned(
-              right: 20,
-              bottom: bottomPadding + _fabBottomPadding,
-              child: AddActionButton(key: _fabKey, onTap: _handleFabTap),
-            ),
-          ],
-        );
-      },
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: widget.events.isEmpty
+                            ? _buildEmptyState()
+                            : _buildEventsList(scrollController),
+                      ),
+                    ],
+                  ),
+                ),
+                // 오른쪽 하단 버튼 positon 고정.
+                Positioned(
+                  right: 20,
+                  bottom: bottomPadding + _fabBottomPadding,
+                  child: AddActionButton(key: _fabKey, onTap: _handleFabTap),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 
