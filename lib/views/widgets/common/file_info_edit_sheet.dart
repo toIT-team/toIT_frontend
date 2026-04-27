@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 
 class AttachmentEditSheetResult {
   const AttachmentEditSheetResult({
@@ -131,7 +132,7 @@ class _AttachmentInfoEditSheetState extends State<_AttachmentInfoEditSheet> {
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 
 /// 노트 케밥(미트볼) 메뉴 선택 액션 (Figma: 노트 미트볼메뉴)
@@ -51,9 +52,8 @@ class _NoteKebabSheet extends StatelessWidget {
           ),
         ],
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         top: false,
-        bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(

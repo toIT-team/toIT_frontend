@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 import '../../../repositories/home_repository.dart';
 
@@ -119,7 +120,7 @@ class _LinkEditSheetState extends ConsumerState<_LinkEditSheet> {
         ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),

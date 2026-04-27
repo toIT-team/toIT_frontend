@@ -24,7 +24,7 @@ FolderItem folderItemFromSearchFolderDto(
 ) {
   for (final f in homeFolders) {
     if (f.foldersId == dto.foldersId) {
-      return f;
+      return f.copyWith(isFavorite: dto.isFavorite);
     }
   }
   final ci = resolveFolderColorIndex(dto.color, dto.iconIdx);
@@ -37,6 +37,8 @@ FolderItem folderItemFromSearchFolderDto(
     countText: '0개',
     colorIndex: safeIdx,
     isDefault: dto.isDefault,
+    isFavorite: dto.isFavorite,
+    iconIndex: dto.iconIdx,
     accentColor: AppColors.folderColors[safeIdx],
   );
 }

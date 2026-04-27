@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 
 /// 링크 케밥(미트볼) 메뉴 선택 액션
@@ -54,9 +55,8 @@ class _LinkKebabSheet extends StatelessWidget {
           ),
         ],
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         top: false,
-        bottom: false,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Column(

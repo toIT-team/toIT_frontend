@@ -7,6 +7,7 @@ import '../../controllers/auth_controller.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
 import '../../models/dto/my_page_response_dto.dart';
 import '../../models/dto/storage_usage_response_dto.dart';
@@ -54,7 +55,7 @@ class MyScreen extends ConsumerWidget {
     if (userId == null) {
       return const Scaffold(
         backgroundColor: Colors.white,
-        body: SafeArea(child: Center(child: CircularProgressIndicator())),
+        body: SystemSafeArea(child: Center(child: CircularProgressIndicator())),
       );
     }
     final refreshTick = ref.watch(authSessionRefreshTickProvider);
@@ -64,8 +65,7 @@ class MyScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        bottom: false,
+      body: SystemSafeArea(
         child: Column(
           children: [
             _MyHeader(onBackPressed: () => Navigator.of(context).pop()),

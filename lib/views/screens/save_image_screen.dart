@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/system_ui_insets.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
@@ -168,18 +170,38 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.white,
-      builder: (context) => SafeArea(
+      builder: (context) => SystemSafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('갤러리에서 선택'),
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.gray900,
+              ),
+              title: const Text(
+                '갤러리에서 선택',
+                style: TextStyle(
+                  color: AppColors.gray900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('카메라로 촬영'),
+              leading: const Icon(
+                Icons.camera_alt_outlined,
+                color: AppColors.gray900,
+              ),
+              title: const Text(
+                '카메라로 촬영',
+                style: TextStyle(
+                  color: AppColors.gray900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
           ],
@@ -248,7 +270,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           child: _buildAppBar(),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20 + systemBottomBarPadding(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -279,7 +306,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
   }
 
   Widget _buildAppBar() {
-    return SafeArea(
+    return SystemSafeArea(
       bottom: false,
       child: Container(
         height: 44,

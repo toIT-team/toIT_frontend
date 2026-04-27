@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../core/utils/search_folder_mapper.dart';
 import '../../../models/dto/search_response_dto.dart';
 import '../../../models/home/folder_item.dart';
@@ -33,6 +34,9 @@ Future<void> showScheduleFolderSearchSheet(
     }
     return;
   }
+
+  // 타이틀 등 상위 폼 포커스가 남으면 시트 위에 키보드가 겹친다.
+  FocusManager.instance.primaryFocus?.unfocus();
 
   await showModalBottomSheet<void>(
     context: context,
@@ -67,6 +71,9 @@ class _ScheduleFolderSearchSheetState
   Timer? _debounce;
 
   static const List<String> _filterChipLabels = ['전체', '즐겨찾기'];
+
+  /// 0: 전체, 1: 즐겨찾기
+  int _filterChipIndex = 0;
 
   bool _isSearching = false;
   List<FolderItem> _searchFolders = [];
@@ -133,10 +140,13 @@ class _ScheduleFolderSearchSheetState
 
   List<FolderItem> get _displayFolders {
     final q = _searchController.text.trim();
-    if (q.isEmpty) {
-      return ref.watch(homeProvider).folders;
+    final List<FolderItem> base = q.isEmpty
+        ? ref.watch(homeProvider).folders
+        : _searchFolders;
+    if (_filterChipIndex == 1) {
+      return base.where((f) => f.isFavorite).toList();
     }
-    return _searchFolders;
+    return base;
   }
 
   @override
@@ -145,70 +155,64 @@ class _ScheduleFolderSearchSheetState
     final showLoading = q.isNotEmpty && _isSearching;
     final folders = _displayFolders;
     final count = folders.length;
-    final viewInsets = MediaQuery.viewInsetsOf(context);
     final screenH = MediaQuery.sizeOf(context).height;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: AppColors.neutral50),
-            left: BorderSide(color: AppColors.neutral50),
-            right: BorderSide(color: AppColors.neutral50),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: AppColors.neutral50),
+          left: BorderSide(color: AppColors.neutral50),
+          right: BorderSide(color: AppColors.neutral50),
+        ),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radius),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowSheet,
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppSpacing.radius),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadowSheet,
-              blurRadius: 4,
-              offset: Offset(0, 2),
+        ],
+      ),
+      constraints: BoxConstraints(
+        maxHeight: screenH * 0.9,
+      ),
+      child: SystemSafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildDragHandle(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: SearchFieldWidget(
+                controller: _searchController,
+                onChanged: _onQueryChanged,
+                // 시트 오픈 직후 자동 포커스면 키보드+시트가 함께 올라간다.
+                autofocus: false,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: _buildCountAndChips(count),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Flexible(
+              child: showLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : (q.isNotEmpty && folders.isEmpty)
+                      ? _buildEmptyState()
+                      : _buildFolderGrid(folders),
             ),
           ],
-        ),
-        constraints: BoxConstraints(
-          maxHeight: screenH * 0.9,
-        ),
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildDragHandle(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
-                child: SearchFieldWidget(
-                  controller: _searchController,
-                  onChanged: _onQueryChanged,
-                  autofocus: true,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: _buildCountAndChips(count),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Flexible(
-                child: showLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : (q.isNotEmpty && folders.isEmpty)
-                        ? _buildEmptyState()
-                        : _buildFolderGrid(folders),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -258,7 +262,11 @@ class _ScheduleFolderSearchSheetState
               for (int i = 0; i < _filterChipLabels.length; i++) ...[
                 _ScheduleFolderChip(
                   label: _filterChipLabels[i],
-                  selected: i == 0,
+                  selected: i == _filterChipIndex,
+                  onTap: () {
+                    if (_filterChipIndex == i) return;
+                    setState(() => _filterChipIndex = i);
+                  },
                 ),
                 if (i != _filterChipLabels.length - 1) const SizedBox(width: 8),
               ],
@@ -340,33 +348,42 @@ class _ScheduleFolderChip extends StatelessWidget {
   const _ScheduleFolderChip({
     required this.label,
     required this.selected,
+    required this.onTap,
   });
 
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.blue500 : AppColors.borderLight,
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(99),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          color: selected ? AppColors.blue500 : AppColors.gray600,
-          letterSpacing: -0.025 * 16,
-          height: 1.5,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(
+              color: selected ? AppColors.blue500 : AppColors.borderLight,
+            ),
+            borderRadius: BorderRadius.circular(99),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? AppColors.blue500 : AppColors.gray600,
+              letterSpacing: -0.025 * 16,
+              height: 1.5,
+            ),
+          ),
         ),
       ),
     );

@@ -35,6 +35,9 @@ class EventMemoSection extends StatelessWidget {
       return TextField(
         controller: memoController,
         onChanged: onChanged,
+        onTapOutside: (_) {
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
         cursorColor: AppColors.blue500,
         style: const TextStyle(
           color: AppColors.gray900,

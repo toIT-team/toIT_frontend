@@ -29,8 +29,17 @@ class AppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.surface,
       colorScheme: colorScheme,
+      // deepPurple 시드의 primary가 커서·선택 UI에 쓰이지 않도록 고정
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.blue500,
+        selectionHandleColor: AppColors.blue500,
+        selectionColor: AppColors.blue500.withValues(alpha: 0.22),
+      ),
       dialogTheme: const DialogThemeData(
         surfaceTintColor: Colors.transparent,
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.loadingIndicator,
       ),
     );
   }
@@ -41,6 +50,14 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: Colors.deepPurple,
         brightness: Brightness.dark,
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AppColors.blue500,
+        selectionHandleColor: AppColors.blue500,
+        selectionColor: AppColors.blue500.withValues(alpha: 0.35),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.loadingIndicator,
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
 
 /// 외부 공유 진입 시 저장 바텀시트를 표시
@@ -125,9 +126,8 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
+    return SystemSafeArea(
       top: false,
-      bottom: false,
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: SizedBox(
@@ -213,6 +213,9 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
                   padding: const EdgeInsets.all(13),
                   child: TextField(
                     controller: memoController,
+                    onTapOutside: (_) {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
                     maxLines: null,
                     maxLength: memoMaxLength,
                     expands: true,
@@ -276,6 +279,9 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
           Expanded(
             child: TextField(
               controller: folderSearchController,
+              onTapOutside: (_) {
+                FocusManager.instance.primaryFocus?.unfocus();
+              },
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

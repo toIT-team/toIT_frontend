@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../core/widgets/system_safe_area.dart';
 
 /// 알림 설정 화면 (앱 전체 알림 ↔ 서버 동기화)
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -54,7 +55,7 @@ class _NotificationSettingsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
+      body: SystemSafeArea(
         child: Column(
           children: [
             const _NotificationSettingsHeader(),

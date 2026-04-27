@@ -28,6 +28,9 @@ class FolderItem with _$FolderItem {
     /// 기본 보관함 여부 (자동 선택용)
     @Default(false) bool isDefault,
 
+    /// 즐겨찾기 여부 (홈·검색 응답과 동기)
+    @Default(false) bool isFavorite,
+
     /// 강조 색상 (JSON 제외)
     @Default(Color(0xFFA2CAFF))
     Color accentColor,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
@@ -12,19 +13,31 @@ class HomeAppBar extends StatelessWidget {
     this.onMenuPressed,
     this.onSearchPressed,
     this.onNotificationPressed,
+    this.useLightStatusBar = false,
   });
 
   final String title;
+  /// `true`면 희미한 아이콘(흰색) — 그라데이션/어두운 상단 배경용(홈).
+  /// `false`면 어두운 아이콘 — 밝은 배경용(캘린더).
+  final bool useLightStatusBar;
   final VoidCallback? onMenuPressed;
   final VoidCallback? onSearchPressed;
   final VoidCallback? onNotificationPressed;
 
   @override
   Widget build(BuildContext context) {
+    final systemOverlay = useLightStatusBar
+        ? SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent,
+          )
+        : SystemUiOverlayStyle.dark.copyWith(
+            statusBarColor: Colors.transparent,
+          );
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.transparent,
       scrolledUnderElevation: 0,
+      systemOverlayStyle: systemOverlay,
       titleSpacing: AppSpacing.md,
       title: Row(
         children: [

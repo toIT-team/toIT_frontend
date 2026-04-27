@@ -205,8 +205,8 @@ class HomeRemoteDatasource {
   }
 
   /// 자료 파일 추가 (POST /attachments/files)
-  /// Query: foldersIdList, textContent
-  /// Body: multipart/form-data (file 파트)
+  /// Query: foldersIdList
+  /// Body: multipart/form-data (file, textContent 파트)
   Future<void> createFile({
     required List<int> foldersIdList,
     required String textContent,
@@ -218,22 +218,20 @@ class HomeRemoteDatasource {
         fileBytes is Uint8List ? fileBytes : Uint8List.fromList(fileBytes),
         filename: fileName,
       ),
-      // 서버 구현에 따라 query가 아닌 multipart 필드에서 읽는 경우를 대비.
       'textContent': textContent,
     });
     await _apiClient.post(
       ApiConstants.attachmentsFilesEndpoint,
       queryParameters: {
         'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
-        'textContent': textContent,
       },
       data: formData,
     );
   }
 
   /// 자료 이미지 추가 (POST /attachments/images)
-  /// Query: foldersIdList, textContent
-  /// Body: multipart/form-data (image 파트)
+  /// Query: foldersIdList
+  /// Body: multipart/form-data (image, textContent 파트)
   Future<void> createImage({
     required List<int> foldersIdList,
     required String textContent,
@@ -245,14 +243,12 @@ class HomeRemoteDatasource {
         imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
         filename: fileName,
       ),
-      // 서버 구현에 따라 query가 아닌 multipart 필드에서 읽는 경우를 대비.
       'textContent': textContent,
     });
     await _apiClient.post(
       ApiConstants.attachmentsImagesEndpoint,
       queryParameters: {
         'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
-        'textContent': textContent,
       },
       data: formData,
     );

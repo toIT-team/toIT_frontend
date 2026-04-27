@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/lunar_display_utils.dart';
+import '../../../core/utils/system_ui_insets.dart';
 import '../../../controllers/calendar_controller.dart';
 import '../../../models/calendar/calendar_event.dart';
 import '../../../services/schedule_api_client.dart'
@@ -52,7 +54,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final bottomPadding = systemBottomBarPadding(context);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
@@ -120,7 +122,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
   /// 드래그 핸들 + 날짜 헤더 (통합)
   Widget _buildHeader() {
     final weekday = _getWeekdayText(widget.date.weekday);
-    final lunarDate = _getLunarDateText(widget.date);
+    final lunarDate = LunarDisplayUtils.formatLunarCaption(widget.date);
 
     return Column(
       children: [
@@ -259,12 +261,4 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
     return weekdays[weekday - 1];
   }
 
-  /// 음력 날짜 텍스트 (간단한 더미 - 실제로는 음력 변환 라이브러리 필요)
-  String _getLunarDateText(DateTime date) {
-    // 실제 음력 변환은 별도 라이브러리 필요
-    // 여기서는 더미 데이터로 표시
-    final lunarMonth = ((date.month + date.day) % 12) + 1;
-    final lunarDay = (date.day % 30) + 1;
-    return '음력 $lunarMonth.$lunarDay';
-  }
 }

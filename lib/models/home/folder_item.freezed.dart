@@ -38,6 +38,9 @@ mixin _$FolderItem {
   /// 기본 보관함 여부 (자동 선택용)
   bool get isDefault => throw _privateConstructorUsedError;
 
+  /// 즐겨찾기 여부 (홈·검색 응답과 동기)
+  bool get isFavorite => throw _privateConstructorUsedError;
+
   /// 강조 색상 (JSON 제외)
   Color get accentColor => throw _privateConstructorUsedError;
 
@@ -63,6 +66,7 @@ abstract class $FolderItemCopyWith<$Res> {
     int colorIndex,
     int iconIndex,
     bool isDefault,
+    bool isFavorite,
     Color accentColor,
   });
 }
@@ -89,6 +93,7 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
     Object? colorIndex = null,
     Object? iconIndex = null,
     Object? isDefault = null,
+    Object? isFavorite = null,
     Object? accentColor = null,
   }) {
     return _then(
@@ -121,6 +126,10 @@ class _$FolderItemCopyWithImpl<$Res, $Val extends FolderItem>
                 ? _value.isDefault
                 : isDefault // ignore: cast_nullable_to_non_nullable
                       as bool,
+            isFavorite: null == isFavorite
+                ? _value.isFavorite
+                : isFavorite // ignore: cast_nullable_to_non_nullable
+                      as bool,
             accentColor: null == accentColor
                 ? _value.accentColor
                 : accentColor // ignore: cast_nullable_to_non_nullable
@@ -148,6 +157,7 @@ abstract class _$$FolderItemImplCopyWith<$Res>
     int colorIndex,
     int iconIndex,
     bool isDefault,
+    bool isFavorite,
     Color accentColor,
   });
 }
@@ -173,6 +183,7 @@ class __$$FolderItemImplCopyWithImpl<$Res>
     Object? colorIndex = null,
     Object? iconIndex = null,
     Object? isDefault = null,
+    Object? isFavorite = null,
     Object? accentColor = null,
   }) {
     return _then(
@@ -205,6 +216,10 @@ class __$$FolderItemImplCopyWithImpl<$Res>
             ? _value.isDefault
             : isDefault // ignore: cast_nullable_to_non_nullable
                   as bool,
+        isFavorite: null == isFavorite
+            ? _value.isFavorite
+            : isFavorite // ignore: cast_nullable_to_non_nullable
+                  as bool,
         accentColor: null == accentColor
             ? _value.accentColor
             : accentColor // ignore: cast_nullable_to_non_nullable
@@ -225,6 +240,7 @@ class _$FolderItemImpl implements _FolderItem {
     this.colorIndex = 5,
     this.iconIndex = 0,
     this.isDefault = false,
+    this.isFavorite = false,
     this.accentColor = const Color(0xFFA2CAFF),
   });
 
@@ -261,6 +277,11 @@ class _$FolderItemImpl implements _FolderItem {
   @JsonKey()
   final bool isDefault;
 
+  /// 즐겨찾기 여부 (홈·검색 응답과 동기)
+  @override
+  @JsonKey()
+  final bool isFavorite;
+
   /// 강조 색상 (JSON 제외)
   @override
   @JsonKey()
@@ -268,7 +289,7 @@ class _$FolderItemImpl implements _FolderItem {
 
   @override
   String toString() {
-    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, iconIndex: $iconIndex, isDefault: $isDefault, accentColor: $accentColor)';
+    return 'FolderItem(foldersId: $foldersId, title: $title, memo: $memo, countText: $countText, colorIndex: $colorIndex, iconIndex: $iconIndex, isDefault: $isDefault, isFavorite: $isFavorite, accentColor: $accentColor)';
   }
 
   @override
@@ -288,6 +309,8 @@ class _$FolderItemImpl implements _FolderItem {
                 other.iconIndex == iconIndex) &&
             (identical(other.isDefault, isDefault) ||
                 other.isDefault == isDefault) &&
+            (identical(other.isFavorite, isFavorite) ||
+                other.isFavorite == isFavorite) &&
             (identical(other.accentColor, accentColor) ||
                 other.accentColor == accentColor));
   }
@@ -302,6 +325,7 @@ class _$FolderItemImpl implements _FolderItem {
     colorIndex,
     iconIndex,
     isDefault,
+    isFavorite,
     accentColor,
   );
 
@@ -323,6 +347,7 @@ abstract class _FolderItem implements FolderItem {
     final int colorIndex,
     final int iconIndex,
     final bool isDefault,
+    final bool isFavorite,
     final Color accentColor,
   }) = _$FolderItemImpl;
 
@@ -353,6 +378,10 @@ abstract class _FolderItem implements FolderItem {
   /// 기본 보관함 여부 (자동 선택용)
   @override
   bool get isDefault;
+
+  /// 즐겨찾기 여부 (홈·검색 응답과 동기)
+  @override
+  bool get isFavorite;
 
   /// 강조 색상 (JSON 제외)
   @override

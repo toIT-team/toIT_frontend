@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../core/constants/app_gradients.dart';
 import 'my_screen.dart';
 import 'notification_screen.dart';
@@ -26,6 +27,7 @@ class HomeScreen extends ConsumerWidget {
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: HomeAppBar(
+            useLightStatusBar: true,
             onMenuPressed: () {
               Navigator.of(
                 context,
@@ -49,7 +51,7 @@ class HomeScreen extends ConsumerWidget {
         ),
         body: homeState.isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SafeArea(
+            : SystemSafeArea(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,

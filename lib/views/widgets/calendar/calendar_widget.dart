@@ -279,7 +279,7 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
             color: Colors.black26,
             child: const Center(
               child: CircularProgressIndicator(
-                color: AppColors.blue500,
+                color: AppColors.loadingIndicator,
               ),
             ),
           ),

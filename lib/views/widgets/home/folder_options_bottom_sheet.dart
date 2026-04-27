@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 
 /// 보관함 옵션 바텀시트 반환값
 enum FolderOption { viewMemo, edit, toggleFavorite, delete }
@@ -46,7 +47,7 @@ class _FolderOptionsSheet extends StatelessWidget {
         ],
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      child: SafeArea(
+      child: SystemSafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,

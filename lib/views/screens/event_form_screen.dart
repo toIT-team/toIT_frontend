@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
+import '../../core/widgets/system_safe_area.dart';
 import '../../models/calendar/calendar_event.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_alert_dialog.dart';
@@ -396,8 +397,7 @@ class _EventFormLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
+    return SystemSafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -412,6 +412,7 @@ class _EventFormLayout extends StatelessWidget {
                     controller: titleController,
                     focusNode: titleFocusNode,
                     onChanged: onTitleChanged,
+                    onTapOutside: (_) => titleFocusNode.unfocus(),
                     cursorColor: AppColors.blue500,
                     style: const TextStyle(
                       color: AppColors.gray900,
@@ -429,10 +430,16 @@ class _EventFormLayout extends StatelessWidget {
                     ),
                   ),
                 ),
-                GestureDetector(
+                IconButton(
                   key: colorButtonKey,
-                  onTap: onColorTap,
-                  child: Container(
+                  onPressed: onColorTap,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
+                  tooltip: '일정 색상',
+                  icon: Container(
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
@@ -453,6 +460,8 @@ class _EventFormLayout extends StatelessWidget {
           const AppDivider(),
           Expanded(
             child: SingleChildScrollView(
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
               child: Column(
                 children: [
                   // 보관함 섹션

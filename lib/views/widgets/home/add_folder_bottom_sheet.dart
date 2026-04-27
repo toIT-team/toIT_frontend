@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/system_ui_insets.dart';
 
 /// 보관함 추가/수정 바텀시트 표시
 Future<Map<String, dynamic>?> showAddFolderBottomSheet(
@@ -99,6 +100,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final systemNav = systemBottomBarPadding(context);
 
     return Container(
       decoration: const BoxDecoration(
@@ -113,7 +115,7 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
         ],
         borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
-      padding: EdgeInsets.only(bottom: bottomInset),
+      padding: EdgeInsets.only(bottom: bottomInset + systemNav),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),

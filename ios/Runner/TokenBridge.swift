@@ -1,15 +1,22 @@
 import Flutter
 import Foundation
 
-/// Flutter MethodChannel을 통해 토큰·설정 값을
-/// App Group UserDefaults에 저장하여 Share Extension과 공유한다.
+/// Flutter MethodChannel → App Group `UserDefaults`로 Share Extension과 공유.
 final class TokenBridge {
   static let channelName = "com.example.pojTodo/token"
 
-  private static let suiteName = "group.com.example.pojTodo.share"
   static let keyAccessToken = "access_token"
   static let keyUserId = "user_id"
   static let keyBaseUrl = "api_base_url"
+
+  /// MethodChannel이 Dart int를 `NSNumber` 등으로 넘기는 경우가 있어 `Int?`로 통일
+  private static func intFromMethodChannel(
+    value: Any?
+  ) -> Int? {
+    if let n = value as? Int { return n }
+    if let n = value as? NSNumber { return n.intValue }
+    return nil
+  }
 
   static func register(with messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
@@ -22,13 +29,23 @@ final class TokenBridge {
       case "syncToken":
         guard let args = call.arguments as? [String: Any],
               let accessToken = args["accessToken"] as? String,
-              let userId = args["userId"] as? Int,
               let baseUrl = args["baseUrl"] as? String
         else {
           result(
             FlutterError(
               code: "INVALID_ARGS",
-              message: "accessToken, userId, baseUrl 필수",
+              message: "accessToken, baseUrl 필수",
+              details: nil
+            )
+          )
+          return
+        }
+        guard let userId = intFromMethodChannel(value: args["userId"])
+        else {
+          result(
+            FlutterError(
+              code: "INVALID_ARGS",
+              message: "userId 필수(숫자)",
               details: nil
             )
           )
@@ -56,22 +73,27 @@ final class TokenBridge {
     userId: Int,
     baseUrl: String
   ) {
-    guard let defaults = UserDefaults(suiteName: suiteName)
+    guard let defaults = AppGroupConfig.sharedUserDefaults
     else {
-      NSLog("[TokenBridge] UserDefaults 생성 실패 - suiteName: \(suiteName)")
+      NSLog(
+        "[TokenBridge] App Group UserDefaults nil — AppGroupId: "
+        + "\(String(describing: AppGroupConfig.identifier))"
+      )
       return
     }
     defaults.set(accessToken, forKey: keyAccessToken)
     defaults.set(userId, forKey: keyUserId)
     defaults.set(baseUrl, forKey: keyBaseUrl)
     defaults.synchronize()
-
     let verify = defaults.string(forKey: keyAccessToken)
-    NSLog("[TokenBridge] 저장 완료 - token: \(verify != nil ? "있음" : "nil"), userId: \(userId), baseUrl: \(baseUrl)")
+    NSLog(
+      "[TokenBridge] 저장 token: \(verify != nil ? "있음" : "nil"),"
+      + " userId: \(userId), baseUrl: \(baseUrl)"
+    )
   }
 
   private static func clear() {
-    guard let defaults = UserDefaults(suiteName: suiteName)
+    guard let defaults = AppGroupConfig.sharedUserDefaults
     else { return }
     defaults.removeObject(forKey: keyAccessToken)
     defaults.removeObject(forKey: keyUserId)

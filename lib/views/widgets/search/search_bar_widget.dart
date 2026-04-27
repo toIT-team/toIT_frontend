@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/system_safe_area.dart';
 import 'search_field_widget.dart';
 
 /// 검색 화면 상단 검색바
@@ -21,7 +22,7 @@ class SearchBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return SystemSafeArea(
       bottom: false,
       child: Padding(
         padding: const EdgeInsets.only(

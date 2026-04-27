@@ -1,9 +1,19 @@
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/system_safe_area.dart';
+
+/// 애플 로그인은 iOS 등에서만 노출. 웹의 defaultTargetPlatform은 android로
+/// 고정될 수 있어 kIsWeb일 때는 항상 표시한다.
+bool _shouldShowAppleLoginSection() {
+  if (kIsWeb) return true;
+  return defaultTargetPlatform != TargetPlatform.android;
+}
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
@@ -69,15 +79,27 @@ class LoginScreen extends ConsumerWidget {
               ),
             ),
           ),
-          SafeArea(
+          SystemSafeArea(
             child: Column(
               children: [
                 const Spacer(flex: 3),
                 _buildLogoSection(),
                 const Spacer(flex: 4),
-                _buildKakaoButton(ref: ref, isLoading: authState.isLoading),
-                const SizedBox(height: 12),
-                _buildAppleButton(ref: ref, isLoading: authState.isLoading),
+                _buildKakaoButton(
+                  ref: ref,
+                  isAuthBusy: authState.isLoading,
+                  showSpinner:
+                      authState.activeSocialLogin == SocialLoginKind.kakao,
+                ),
+                if (_shouldShowAppleLoginSection()) ...[
+                  const SizedBox(height: 12),
+                  _buildAppleButton(
+                    ref: ref,
+                    isAuthBusy: authState.isLoading,
+                    showSpinner:
+                        authState.activeSocialLogin == SocialLoginKind.apple,
+                  ),
+                ],
                 const SizedBox(height: 24),
                 _buildSupportRow(),
                 const SizedBox(height: 40),
@@ -116,17 +138,21 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildKakaoButton({required WidgetRef ref, required bool isLoading}) {
+  Widget _buildKakaoButton({
+    required WidgetRef ref,
+    required bool isAuthBusy,
+    required bool showSpinner,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
         width: double.infinity,
         height: 54,
         child: GestureDetector(
-          onTap: isLoading
+          onTap: isAuthBusy
               ? null
               : () => ref.read(authProvider.notifier).loginWithKakao(),
-          child: isLoading
+          child: showSpinner
               ? Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFFDE500),
@@ -155,7 +181,11 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAppleButton({required WidgetRef ref, required bool isLoading}) {
+  Widget _buildAppleButton({
+    required WidgetRef ref,
+    required bool isAuthBusy,
+    required bool showSpinner,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: SizedBox(
@@ -165,12 +195,12 @@ class LoginScreen extends ConsumerWidget {
           color: Colors.black,
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
-            onTap: isLoading
+            onTap: isAuthBusy
                 ? null
                 : () => ref.read(authProvider.notifier).loginWithApple(),
             borderRadius: BorderRadius.circular(8),
             child: Center(
-              child: isLoading
+              child: showSpinner
                   ? const SizedBox(
                       width: 24,
                       height: 24,
@@ -243,7 +273,7 @@ class LoginScreen extends ConsumerWidget {
       barrierColor: const Color(0x33222222),
       transitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (dialogContext, _, __) {
-        return SafeArea(
+        return SystemSafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Padding(

@@ -17,7 +17,16 @@ import FirebaseMessaging
     )
   }
 
-  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
-    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  func didInitializeImplicitFlutterEngine(
+    _ engineBridge: FlutterImplicitEngineBridge
+  ) {
+    GeneratedPluginRegistrant.register(
+      with: engineBridge.pluginRegistry
+    )
+    // SceneDelegate에서 FlutterViewController 캐스팅에 의존하면
+    // 등록이 누락될 수 있으므로 엔진 준비 시 여기서 등록한다
+    TokenBridge.register(
+      with: engineBridge.applicationRegistrar.messenger()
+    )
   }
 }

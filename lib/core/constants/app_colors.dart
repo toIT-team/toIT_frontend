@@ -14,6 +14,9 @@ class AppColors {
   static const Color blue400 = Color(0xFF99EDF7);
   static const Color blue500 = Color(0xFF379BFB);
 
+  /// 로딩 인디케이터 색상 
+  static const Color loadingIndicator = blue500;
+
   //Pink scale
   static const Color pink100 = Color(0xFFFFB9DD);
   static const Color pink200 = Color(0xFFFFA2A4);
