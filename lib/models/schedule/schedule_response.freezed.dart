@@ -711,6 +711,10 @@ mixin _$SelectedScheduleItemResponse {
   int get schedulesId => throw _privateConstructorUsedError;
   @JsonKey(fromJson: _stringFromJson)
   String get title => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _stringFromJson)
+  String get startDate => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: _stringFromJson)
+  String get endDate => throw _privateConstructorUsedError;
   String? get startTime => throw _privateConstructorUsedError;
   String? get endTime => throw _privateConstructorUsedError;
   String? get appColor => throw _privateConstructorUsedError;
@@ -739,6 +743,8 @@ abstract class $SelectedScheduleItemResponseCopyWith<$Res> {
   $Res call({
     @JsonKey(fromJson: _intFromJson) int schedulesId,
     @JsonKey(fromJson: _stringFromJson) String title,
+    @JsonKey(fromJson: _stringFromJson) String startDate,
+    @JsonKey(fromJson: _stringFromJson) String endDate,
     String? startTime,
     String? endTime,
     String? appColor,
@@ -765,6 +771,8 @@ class _$SelectedScheduleItemResponseCopyWithImpl<
   $Res call({
     Object? schedulesId = null,
     Object? title = null,
+    Object? startDate = null,
+    Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
     Object? appColor = freezed,
@@ -778,6 +786,14 @@ class _$SelectedScheduleItemResponseCopyWithImpl<
             title: null == title
                 ? _value.title
                 : title // ignore: cast_nullable_to_non_nullable
+                      as String,
+            startDate: null == startDate
+                ? _value.startDate
+                : startDate // ignore: cast_nullable_to_non_nullable
+                      as String,
+            endDate: null == endDate
+                ? _value.endDate
+                : endDate // ignore: cast_nullable_to_non_nullable
                       as String,
             startTime: freezed == startTime
                 ? _value.startTime
@@ -809,6 +825,8 @@ abstract class _$$SelectedScheduleItemResponseImplCopyWith<$Res>
   $Res call({
     @JsonKey(fromJson: _intFromJson) int schedulesId,
     @JsonKey(fromJson: _stringFromJson) String title,
+    @JsonKey(fromJson: _stringFromJson) String startDate,
+    @JsonKey(fromJson: _stringFromJson) String endDate,
     String? startTime,
     String? endTime,
     String? appColor,
@@ -835,6 +853,8 @@ class __$$SelectedScheduleItemResponseImplCopyWithImpl<$Res>
   $Res call({
     Object? schedulesId = null,
     Object? title = null,
+    Object? startDate = null,
+    Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
     Object? appColor = freezed,
@@ -848,6 +868,14 @@ class __$$SelectedScheduleItemResponseImplCopyWithImpl<$Res>
         title: null == title
             ? _value.title
             : title // ignore: cast_nullable_to_non_nullable
+                  as String,
+        startDate: null == startDate
+            ? _value.startDate
+            : startDate // ignore: cast_nullable_to_non_nullable
+                  as String,
+        endDate: null == endDate
+            ? _value.endDate
+            : endDate // ignore: cast_nullable_to_non_nullable
                   as String,
         startTime: freezed == startTime
             ? _value.startTime
@@ -873,6 +901,8 @@ class _$SelectedScheduleItemResponseImpl
   const _$SelectedScheduleItemResponseImpl({
     @JsonKey(fromJson: _intFromJson) required this.schedulesId,
     @JsonKey(fromJson: _stringFromJson) required this.title,
+    @JsonKey(fromJson: _stringFromJson) required this.startDate,
+    @JsonKey(fromJson: _stringFromJson) required this.endDate,
     this.startTime,
     this.endTime,
     this.appColor,
@@ -889,6 +919,12 @@ class _$SelectedScheduleItemResponseImpl
   @JsonKey(fromJson: _stringFromJson)
   final String title;
   @override
+  @JsonKey(fromJson: _stringFromJson)
+  final String startDate;
+  @override
+  @JsonKey(fromJson: _stringFromJson)
+  final String endDate;
+  @override
   final String? startTime;
   @override
   final String? endTime;
@@ -897,7 +933,7 @@ class _$SelectedScheduleItemResponseImpl
 
   @override
   String toString() {
-    return 'SelectedScheduleItemResponse(schedulesId: $schedulesId, title: $title, startTime: $startTime, endTime: $endTime, appColor: $appColor)';
+    return 'SelectedScheduleItemResponse(schedulesId: $schedulesId, title: $title, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, appColor: $appColor)';
   }
 
   @override
@@ -908,6 +944,9 @@ class _$SelectedScheduleItemResponseImpl
             (identical(other.schedulesId, schedulesId) ||
                 other.schedulesId == schedulesId) &&
             (identical(other.title, title) || other.title == title) &&
+            (identical(other.startDate, startDate) ||
+                other.startDate == startDate) &&
+            (identical(other.endDate, endDate) || other.endDate == endDate) &&
             (identical(other.startTime, startTime) ||
                 other.startTime == startTime) &&
             (identical(other.endTime, endTime) || other.endTime == endTime) &&
@@ -921,6 +960,8 @@ class _$SelectedScheduleItemResponseImpl
     runtimeType,
     schedulesId,
     title,
+    startDate,
+    endDate,
     startTime,
     endTime,
     appColor,
@@ -950,6 +991,8 @@ abstract class _SelectedScheduleItemResponse
   const factory _SelectedScheduleItemResponse({
     @JsonKey(fromJson: _intFromJson) required final int schedulesId,
     @JsonKey(fromJson: _stringFromJson) required final String title,
+    @JsonKey(fromJson: _stringFromJson) required final String startDate,
+    @JsonKey(fromJson: _stringFromJson) required final String endDate,
     final String? startTime,
     final String? endTime,
     final String? appColor,
@@ -964,6 +1007,12 @@ abstract class _SelectedScheduleItemResponse
   @override
   @JsonKey(fromJson: _stringFromJson)
   String get title;
+  @override
+  @JsonKey(fromJson: _stringFromJson)
+  String get startDate;
+  @override
+  @JsonKey(fromJson: _stringFromJson)
+  String get endDate;
   @override
   String? get startTime;
   @override

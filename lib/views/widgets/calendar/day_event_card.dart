@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/schedule_range_display_utils.dart';
 import '../../../models/calendar/calendar_event.dart';
 import '../../screens/event_detail_screen.dart';
 import '../event/event_card_context_menu.dart';
@@ -76,6 +77,7 @@ class _DayEventCardState extends State<DayEventCard> {
           decoration: BoxDecoration(
             color: _isPressed ? Colors.grey[300]! : Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.neutral100),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -116,7 +118,11 @@ class _DayEventCardState extends State<DayEventCard> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _getTimeText(),
+                        ScheduleRangeDisplayUtils.formatEventRangeLine(
+                          widget.event,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.gray600,
@@ -143,37 +149,4 @@ class _DayEventCardState extends State<DayEventCard> {
     );
   }
 
-  /// 시간 텍스트 생성
-  String _getTimeText() {
-    if (!widget.event.timeSetting) {
-      return '하루 종일';
-    }
-
-    final startTime = _formatTime(widget.event.startTime);
-    final endTime = _formatTime(widget.event.endTime);
-
-    if (startTime != null && endTime != null) {
-      return '$startTime - $endTime';
-    } else if (startTime != null) {
-      return startTime;
-    }
-
-    return '하루 종일';
-  }
-
-  /// 시간 포맷 (24시간 -> 오전/오후)
-  String? _formatTime(String? time) {
-    if (time == null) return null;
-
-    final parts = time.split(':');
-    if (parts.length != 2) return time;
-
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = parts[1];
-
-    final period = hour < 12 ? '오전' : '오후';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-
-    return '$period $displayHour:$minute';
-  }
 }

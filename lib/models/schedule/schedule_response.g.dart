@@ -71,6 +71,8 @@ _$SelectedScheduleItemResponseImpl _$$SelectedScheduleItemResponseImplFromJson(
 ) => _$SelectedScheduleItemResponseImpl(
   schedulesId: _intFromJson(json['schedulesId']),
   title: _stringFromJson(json['title']),
+  startDate: _stringFromJson(json['startDate']),
+  endDate: _stringFromJson(json['endDate']),
   startTime: json['startTime'] as String?,
   endTime: json['endTime'] as String?,
   appColor: json['appColor'] as String?,
@@ -81,6 +83,8 @@ Map<String, dynamic> _$$SelectedScheduleItemResponseImplToJson(
 ) => <String, dynamic>{
   'schedulesId': instance.schedulesId,
   'title': instance.title,
+  'startDate': instance.startDate,
+  'endDate': instance.endDate,
   'startTime': instance.startTime,
   'endTime': instance.endTime,
   'appColor': instance.appColor,
