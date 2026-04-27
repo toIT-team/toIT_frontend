@@ -3,9 +3,11 @@ import 'dart:developer' show log;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/bootstrap_controller.dart';
@@ -53,6 +55,10 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  static const _launchInfoChannel = MethodChannel(
+    'com.example.pojTodo/launch_info',
+  );
+
   /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
   /// 부트스트랩이 너무 빨라 화면이 깜빡이는 인상을 주지 않기 위함.
   static const _minSplashDuration = Duration(milliseconds: 1500);
@@ -144,16 +150,19 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       },
     );
 
+    final skipMinSplashDelay = await _shouldSkipMinSplashDelay();
+
     // 부트스트랩(토큰 확인 + 선제 재발급 + 세션 복원)과 스플래시 최소
     // 노출 시간을 병렬 대기한다. `BootstrapController` 가 실패/재시도 경로를
     // 관리하므로 여기서는 "끝났는가" 여부만 플래그로 남긴다.
     debugPrint(
-      '[BOOT] splash_start minDurationMs=${_minSplashDuration.inMilliseconds}',
+      '[BOOT] splash_start minDurationMs='
+      '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
     );
     final splashStopwatch = Stopwatch()..start();
     await Future.wait<void>([
       ref.read(bootstrapProvider.notifier).run(),
-      Future<void>.delayed(_minSplashDuration),
+      if (!skipMinSplashDelay) Future<void>.delayed(_minSplashDuration),
     ]);
     splashStopwatch.stop();
     if (!mounted) {
@@ -164,6 +173,22 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
     );
     setState(() => _isSplashFinished = true);
+  }
+
+  /// Android 외부 공유 진입에서는 스플래시 최소 노출을 건너뛰어
+  /// iOS 공유 시트와 유사한 즉시 진입 체감을 맞춘다.
+  Future<bool> _shouldSkipMinSplashDelay() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      final result = await _launchInfoChannel.invokeMethod<bool>(
+        'isShareLaunch',
+      );
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
   }
 
   @override
