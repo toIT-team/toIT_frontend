@@ -35,9 +35,7 @@ class HomeScreen extends ConsumerWidget {
             },
             onSearchPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const SearchScreen(),
-                ),
+                MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
               );
             },
             onNotificationPressed: () {

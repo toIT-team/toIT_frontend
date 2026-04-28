@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/bootstrap_controller.dart';
+import 'controllers/notifications_unread_count_controller.dart';
 import 'core/deep_link/toit_deep_link.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
@@ -66,6 +67,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const _minSplashDuration = Duration(milliseconds: 1500);
 
   StreamSubscription<String>? _fcmTokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _fcmOnMessageSub;
 
   /// 스플래시 최소 노출 시간이 지난 뒤에만 true.
   /// `authState`가 먼저 확정되더라도 이 값이 false인 동안에는 스플래시를 유지한다.
@@ -85,12 +87,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     });
     _bindFcmDeepLinks();
     _bindFcmTokenRefresh();
+    _bindFcmUnreadCountRefresh();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _fcmTokenRefreshSub?.cancel();
+    _fcmOnMessageSub?.cancel();
     super.dispose();
   }
 
@@ -135,9 +139,33 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   }
 
   void _onFcmMessageOpened(RemoteMessage message) {
+    _refreshUnreadCountIfAuthenticated();
     final url = ToitDeepLink.extractUrlFromFcmData(message.data);
     if (url == null) return;
     ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
+  }
+
+  /// 포그라운드 알림 수신 시 unread 배지를 갱신한다.
+  void _bindFcmUnreadCountRefresh() {
+    _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((_) {
+      _refreshUnreadCountIfAuthenticated();
+    });
+  }
+
+  void _refreshUnreadCountIfAuthenticated() {
+    final authState = ref.read(authProvider);
+    final userId = authState.userId;
+    if (authState.status != AuthStatus.authenticated || userId == null) {
+      return;
+    }
+    final refreshTick = ref.read(authSessionRefreshTickProvider);
+    unawaited(
+      ref
+          .read(
+            notificationsUnreadCountProvider((userId, refreshTick)).notifier,
+          )
+          .refresh(),
+    );
   }
 
   Future<void> _initAuth() async {
