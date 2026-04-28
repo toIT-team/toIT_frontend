@@ -11,6 +11,7 @@ import '../../models/dto/page_items_response_dto.dart';
 /// 홈 화면 원격 데이터 소스 (API 통신)
 class HomeRemoteDatasource {
   final ApiClient _apiClient;
+  static const Duration _uploadTimeout = Duration(seconds: 60);
 
   const HomeRemoteDatasource(this._apiClient);
 
@@ -220,12 +221,16 @@ class HomeRemoteDatasource {
       ),
       'textContent': textContent,
     });
-    await _apiClient.post(
+    await _apiClient.dio.post(
       ApiConstants.attachmentsFilesEndpoint,
       queryParameters: {
         'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
       },
       data: formData,
+      options: Options(
+        sendTimeout: _uploadTimeout,
+        receiveTimeout: _uploadTimeout,
+      ),
     );
   }
 
@@ -245,12 +250,16 @@ class HomeRemoteDatasource {
       ),
       'textContent': textContent,
     });
-    await _apiClient.post(
+    await _apiClient.dio.post(
       ApiConstants.attachmentsImagesEndpoint,
       queryParameters: {
         'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
       },
       data: formData,
+      options: Options(
+        sendTimeout: _uploadTimeout,
+        receiveTimeout: _uploadTimeout,
+      ),
     );
   }
 

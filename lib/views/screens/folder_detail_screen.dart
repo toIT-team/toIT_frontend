@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -31,6 +34,7 @@ import 'save_image_screen.dart';
 import 'save_link_screen.dart';
 import 'save_note_screen.dart';
 import 'event_form_screen.dart';
+import 'search_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -243,28 +247,28 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     switch (selected) {
       case 0:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveLinkScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 1:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveNoteScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 2:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveFileScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 3:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveImageScreen(initialFolderId: widget.foldersId),
           ),
         );
@@ -358,7 +362,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   void _openNoteDetail(TextDto note) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      CupertinoPageRoute<void>(
         builder: (_) =>
             NoteDetailScreen(note: note, foldersId: widget.foldersId),
       ),
@@ -749,6 +753,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final systemBottom = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+    final addButtonBottomInset = math.max(systemBottom, 8.0);
+
     // 즐겨찾기 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
     ref.watch(homeProvider.select((state) => state.folders));
     final isFavoriteFolder = ref
@@ -778,7 +786,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ),
         actions: [
           _TapScaleIconButton(
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+              );
+            },
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
           ),
           _TapScaleIconButton(
@@ -805,91 +817,99 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
           _TapScaleIconButton(
             onTap: _openFolderOptions,
-            icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
+            icon: const Icon(Icons.more_vert, color: AppColors.gray900),
           ),
         ],
       ),
-      body: pageItemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '항목을 불러오지 못했습니다.',
-                style: TextStyle(color: AppColors.gray600, fontSize: 16),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: () =>
-                    ref.invalidate(pageItemsProvider(widget.foldersId)),
-                child: const Text('다시 시도'),
-              ),
-            ],
-          ),
-        ),
-        data: (data) => Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: AppColors.gray900,
-              unselectedLabelColor: AppColors.gray600,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
-              labelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.025 * 16,
-                height: 1.4,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.025 * 16,
-                height: 1.4,
-              ),
-              indicatorColor: AppColors.blue500,
-              indicatorWeight: 2,
-              dividerColor: AppColors.neutral50,
-              tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: _buildTabViewChildren(data),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 4, bottom: 16),
-        child: _TapScale(
-          key: _addButtonKey,
-          onTap: _onAddMenuTap,
-          pressedScale: 0.94,
-          borderRadius: BorderRadius.circular(99),
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.blue500,
-              borderRadius: BorderRadius.circular(99),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadowNavBlue.withOpacity(0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: pageItemsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '항목을 불러오지 못했습니다.',
+                      style: TextStyle(color: AppColors.gray600, fontSize: 16),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextButton(
+                      onPressed: () =>
+                          ref.invalidate(pageItemsProvider(widget.foldersId)),
+                      child: const Text('다시 시도'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.white, size: 28),
+              ),
+              data: (data) => Column(
+                children: [
+                  TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.gray900,
+                    unselectedLabelColor: AppColors.gray600,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    indicatorColor: AppColors.blue500,
+                    indicatorWeight: 2,
+                    dividerColor: AppColors.neutral50,
+                    tabs: FolderTab.order
+                        .map((tab) => Tab(text: tab.label))
+                        .toList(),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: _buildTabViewChildren(data),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            right: 20,
+            bottom: addButtonBottomInset,
+            child: _TapScale(
+              key: _addButtonKey,
+              onTap: _onAddMenuTap,
+              pressedScale: 0.94,
+              borderRadius: BorderRadius.circular(99),
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.blue500,
+                  borderRadius: BorderRadius.circular(99),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shadowNavBlue.withOpacity(0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -906,7 +926,7 @@ class _TapScaleIconButton extends StatelessWidget {
       onTap: onTap,
       pressedScale: 0.92,
       borderRadius: BorderRadius.circular(999),
-      child: SizedBox(width: 44, height: 44, child: Center(child: icon)),
+      child: SizedBox(width: 48, height: 48, child: Center(child: icon)),
     );
   }
 }
@@ -976,10 +996,7 @@ class _TapScaleState extends State<_TapScale> {
 }
 
 /// 상단 툴바: "전체 N개"
-Widget _buildSectionToolbar(
-  int count, {
-  bool removeBottomPadding = false,
-}) {
+Widget _buildSectionToolbar(int count, {bool removeBottomPadding = false}) {
   return Padding(
     padding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
@@ -1074,6 +1091,7 @@ class _LinkItemRow extends StatelessWidget {
     final dateText = _formatCreatedAt(link.createdAt);
     return _TapScale(
       onTap: onTap,
+      onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(
@@ -1144,12 +1162,14 @@ class _LinkItemRow extends StatelessWidget {
                   pressedScale: 0.92,
                   borderRadius: BorderRadius.circular(999),
                   child: const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Icon(
-                      Icons.more_vert,
-                      size: 20,
-                      color: AppColors.gray600,
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: AppColors.gray600,
+                      ),
                     ),
                   ),
                 ),
@@ -1321,6 +1341,7 @@ class _NoteCard extends StatelessWidget {
 
     return _TapScale(
       onTap: onTap,
+      onLongPress: onKebabTap,
       pressedScale: 0.99,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Column(
@@ -1380,17 +1401,25 @@ class _NoteCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _TapScale(
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: onKebabTap,
-                pressedScale: 0.92,
-                borderRadius: BorderRadius.circular(999),
-                child: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: AppColors.gray600,
+                onLongPress: onKebabTap,
+                child: Container(
+                  width: 32,
+                  height: 36,
+                  alignment: Alignment.centerRight,
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 2),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: AppColors.gray600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1469,6 +1498,7 @@ class _FileItemRow extends StatelessWidget {
     );
     return _TapScale(
       onTap: () {},
+      onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(
@@ -1515,10 +1545,16 @@ class _FileItemRow extends StatelessWidget {
               onTap: onMoreTap,
               pressedScale: 0.92,
               borderRadius: BorderRadius.circular(999),
-              child: const Icon(
-                Icons.more_horiz,
-                size: 20,
-                color: AppColors.gray600,
+              child: const SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Icon(
+                    Icons.more_horiz,
+                    size: 20,
+                    color: AppColors.gray600,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1554,16 +1590,12 @@ String? _resolveFileIconAssetPath({
   required String fileName,
   required String attachmentsExtension,
 }) {
-  const supportedExtensions = <String>{
-    'docx',
-    'hwp',
-    'pdf',
-    'ppt',
-    'xlsx',
-  };
+  const supportedExtensions = <String>{'docx', 'hwp', 'pdf', 'ppt', 'xlsx'};
 
   final extensionFromField = _normalizeFileExtension(attachmentsExtension);
-  final extensionFromName = _normalizeFileExtension(_extractExtension(fileName));
+  final extensionFromName = _normalizeFileExtension(
+    _extractExtension(fileName),
+  );
 
   // 서버 확장자 필드가 일반 MIME(예: application/octet-stream)인 경우를
   // 대비해, 지원 가능한 확장자를 순서대로 탐색한다.
@@ -1604,8 +1636,7 @@ String _normalizeFileExtension(String raw) {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation':
         'ppt',
     'application/vnd.ms-excel': 'xlsx',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-        'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
   };
   if (mimeToExtension.containsKey(value)) {
     return mimeToExtension[value]!;
@@ -1638,8 +1669,29 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
   final dateStr = createdAt != null && createdAt.isNotEmpty
       ? _formatCreatedAt(createdAt)
       : '';
-  final sizeStr = '${attachmentsSize.toStringAsFixed(1)}KB';
+  final sizeStr = _formatAttachmentSize(attachmentsSize);
   return dateStr.isEmpty ? sizeStr : '$dateStr | $sizeStr';
+}
+
+String _formatAttachmentSize(double sizeInKb) {
+  if (sizeInKb <= 0) return '0B';
+
+  final bytes = sizeInKb * 1024;
+  if (bytes < 1024) {
+    return '${bytes.toStringAsFixed(0)}B';
+  }
+
+  if (sizeInKb < 1024) {
+    return '${sizeInKb.toStringAsFixed(1)}KB';
+  }
+
+  final sizeInMb = sizeInKb / 1024;
+  if (sizeInMb < 1024) {
+    return '${sizeInMb.toStringAsFixed(1)}MB';
+  }
+
+  final sizeInGb = sizeInMb / 1024;
+  return '${sizeInGb.toStringAsFixed(1)}GB';
 }
 
 // ─── 이미지 탭 (API images[]) ───
@@ -1767,9 +1819,8 @@ class _FolderImageCell extends StatelessWidget {
                     ),
                   );
                 },
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.borderLight,
-                ),
+                errorBuilder: (_, __, ___) =>
+                    Container(color: AppColors.borderLight),
               )
             : Container(color: AppColors.borderLight),
       ),

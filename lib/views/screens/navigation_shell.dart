@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
+import '../../core/utils/upload_validation_utils.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
@@ -170,20 +172,35 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         continue;
       }
 
+      final fileName = _extractFileName(attachment.path);
+      final validateMessage = attachment.isImage
+          ? validateImageSectionUpload(
+              fileName: fileName,
+              fileSizeBytes: fileBytes.length,
+            )
+          : validateFileSectionUpload(
+              fileName: fileName,
+              fileSizeBytes: fileBytes.length,
+            );
+      if (validateMessage != null) {
+        failReason = validateMessage;
+        continue;
+      }
+
       try {
         if (attachment.isImage) {
           await repository.createImage(
             foldersIdList: [selectedFolder.foldersId],
             textContent: memo,
             imageBytes: fileBytes,
-            fileName: _extractFileName(attachment.path),
+            fileName: fileName,
           );
         } else {
           await repository.createFile(
             foldersIdList: [selectedFolder.foldersId],
             textContent: memo,
             fileBytes: fileBytes,
-            fileName: _extractFileName(attachment.path),
+            fileName: fileName,
           );
         }
         savedCount++;
@@ -294,22 +311,30 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
                 switch (menuIndex) {
                   case 0:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveLinkScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveLinkScreen(),
+                      ),
                     );
                     break;
                   case 1:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveNoteScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveNoteScreen(),
+                      ),
                     );
                     break;
                   case 2:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveFileScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveFileScreen(),
+                      ),
                     );
                     break;
                   case 3:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveImageScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveImageScreen(),
+                      ),
                     );
                     break;
                   case 4:

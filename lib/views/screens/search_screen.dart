@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -98,7 +99,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           createdAt: item.createdAt,
         );
         Navigator.of(context).push(
-          MaterialPageRoute<void>(
+          CupertinoPageRoute<void>(
             builder: (_) => NoteDetailScreen(
               note: note,
               foldersId: item.foldersId!,
