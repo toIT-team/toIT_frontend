@@ -91,7 +91,9 @@ class EventFormState with _$EventFormState {
   /// 알림 텍스트 변환
   String? get alarmText {
     if (alarmMinutes == null) return null;
-    if (alarmMinutes == 0) return '일정 시작';
+    if (alarmMinutes == 0) {
+      return timeSetting ? '일정 시작' : '이벤트 당일(09:00)';
+    }
     if (alarmMinutes == 10080) return '1주 전';
     if (alarmMinutes! < 60) return '$alarmMinutes분 전';
     if (alarmMinutes! < 1440) return '${alarmMinutes! ~/ 60}시간 전';
