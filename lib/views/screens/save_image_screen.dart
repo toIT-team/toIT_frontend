@@ -12,7 +12,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
+import '../../core/network/api_client.dart';
 import '../../repositories/home_repository.dart';
+import '../../services/upload_benchmark_service.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -93,16 +95,35 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     final textContent = _memoController.text.trim();
     int successCount = 0;
     String? lastError;
+    final sw = Stopwatch()..start();
+    final logLines = <String>[];
+
+    // ── 벤치마크: 선택한 이미지들로 N장 × 20회 측정 ──
+    final imageData = <({List<int> bytes, String fileName})>[];
+    for (final xFile in _pickedImages) {
+      imageData.add((bytes: await xFile.readAsBytes(), fileName: xFile.name));
+    }
+    final benchmarkReport = await UploadBenchmarkService(
+      apiClient: ref.read(apiClientProvider),
+    ).runImageBatchBenchmark(
+      foldersIdList: [folderId],
+      images: imageData,
+      textContent: textContent,
+      iterations: 20,
+    );
+    // ──────────────────────────────────────────────────
 
     for (final xFile in _pickedImages) {
       if (!mounted) break;
       List<int> imageBytes;
+      final stepSw = Stopwatch()..start();
       try {
         imageBytes = await xFile.readAsBytes();
       } catch (_) {
         lastError = '이미지 데이터를 읽을 수 없습니다.';
         continue;
       }
+      final readMs = stepSw.elapsedMilliseconds;
       if (imageBytes.isEmpty) {
         lastError = '이미지 데이터를 읽을 수 없습니다.';
         continue;
@@ -114,6 +135,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           imageBytes: imageBytes,
           fileName: xFile.name,
         );
+        logLines.add('${xFile.name}  readAsBytes: ${readMs}ms  createImage: ${stepSw.elapsedMilliseconds - readMs}ms');
         successCount++;
       } on DioException catch (e) {
         final statusCode = e.response?.statusCode;
@@ -136,7 +158,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
     if (!mounted) return;
     if (successCount > 0) {
-      await ref.read(homeProvider.notifier).refresh();
+      final refreshStart = sw.elapsedMilliseconds;
+      final refreshTiming = await ref.read(homeProvider.notifier).refresh();
+      final refreshMs = sw.elapsedMilliseconds - refreshStart;
+      logLines.add('refresh: ${refreshMs}ms  (fetchHomeData: ${refreshTiming.fetchMs}ms  applyHomeData: ${refreshTiming.applyMs}ms)');
+      logLines.add('총 소요: ${sw.elapsedMilliseconds}ms');
+      debugPrint('\n$benchmarkReport\n\n[저장 타이밍]\n${logLines.join('\n')}\n');
       ref.invalidate(pageItemsProvider(folderId));
       _showSnackBar(
         successCount == _pickedImages.length

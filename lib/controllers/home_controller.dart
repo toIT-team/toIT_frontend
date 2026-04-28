@@ -229,19 +229,23 @@ class HomeController extends Notifier<HomeState> {
   }
 
   /// 홈 화면 데이터 로드 (API)
-  Future<void> _loadHomeData() async {
+  Future<({int fetchMs, int applyMs})> _loadHomeData() async {
     try {
       final repository = ref.read(homeRepositoryProvider);
       final now = DateTime.now();
       final today =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final sw = Stopwatch()..start();
       final dto = await repository.fetchHomeData(todayDate: today);
+      final fetchMs = sw.elapsedMilliseconds;
       await _applyHomeDataDto(dto);
+      return (fetchMs: fetchMs, applyMs: sw.elapsedMilliseconds - fetchMs);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: '데이터를 불러오지 못했습니다: $e',
       );
+      return (fetchMs: 0, applyMs: 0);
     }
   }
 
@@ -309,13 +313,13 @@ class HomeController extends Notifier<HomeState> {
 
   /// 데이터 새로고침
   /// [silent]이 true면 전체 화면 로딩 없이 백그라운드로 갱신 (다른 화면 복귀 시 등)
-  Future<void> refresh({bool silent = false}) async {
+  Future<({int fetchMs, int applyMs})> refresh({bool silent = false}) async {
     if (silent) {
       state = state.copyWith(errorMessage: null);
     } else {
       state = state.copyWith(isLoading: true, errorMessage: null);
     }
-    await _loadHomeData();
+    return _loadHomeData();
   }
 
   /// 보관함 삭제 (API 호출 → 목록 새로고침)

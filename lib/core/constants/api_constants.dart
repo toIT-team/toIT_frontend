@@ -16,8 +16,8 @@ class ApiConstants {
   }
 
   /// 요청 타임아웃 (밀리초)
-  static const int connectTimeout = 10000;
-  static const int receiveTimeout = 10000;
+  static const int connectTimeout = 60000;
+  static const int receiveTimeout = 60000;
 
   // /// 개발용 고정 사용자 ID — 로그인 구현 완료로 비활성화
   // /// JWT의 sub 값으로 대체됨 (authProvider.userId)
