@@ -46,6 +46,8 @@ class FcmRegistrationService {
   final ApiClient _apiClient;
 
   static const String _fcmTokenKey = 'fcmToken';
+  static const int _apnsTokenRetryCount = 8;
+  static const Duration _apnsTokenRetryDelay = Duration(milliseconds: 300);
 
   /// 알림이 허용된 경우에만 [POST /fcm]으로 토큰을 등록한다.
   ///
@@ -82,8 +84,7 @@ class FcmRegistrationService {
   }
 
   Future<void> _postFcmToken(String? fcmToken) async {
-    final token =
-        fcmToken ?? await FirebaseMessaging.instance.getToken();
+    final token = fcmToken ?? await _resolveFcmToken();
     logFcmTokenSnapshot(
       fcmToken != null ? 'onTokenRefresh·전달' : 'getToken()',
       token,
@@ -105,6 +106,33 @@ class FcmRegistrationService {
       _logFcmPostSuccess(path);
     } catch (e, st) {
       _logFcmPostFailure(path, e, st);
+    }
+  }
+
+  Future<String?> _resolveFcmToken() async {
+    if (_isApplePlatform) {
+      await _waitUntilApnsTokenReady();
+    }
+    return FirebaseMessaging.instance.getToken();
+  }
+
+  bool get _isApplePlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+  }
+
+  Future<void> _waitUntilApnsTokenReady() async {
+    final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+    if (apnsToken != null && apnsToken.isNotEmpty) {
+      return;
+    }
+    for (var i = 0; i < _apnsTokenRetryCount; i++) {
+      await Future<void>.delayed(_apnsTokenRetryDelay);
+      final retriedToken = await FirebaseMessaging.instance.getAPNSToken();
+      if (retriedToken != null && retriedToken.isNotEmpty) {
+        return;
+      }
     }
   }
 }

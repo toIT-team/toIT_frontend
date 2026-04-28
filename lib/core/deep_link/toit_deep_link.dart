@@ -15,6 +15,9 @@ class ToitDeepLink {
   /// FCM `data` 맵에서 딥링크 문자열을 꺼낼 때 사용하는 키 (둘 중 하나)
   static const String fcmDataUrlKey = 'url';
   static const String fcmDataLinkKey = 'link';
+  static const String fcmDataNotificationIdKey = 'notificationId';
+  static const String fcmDataNotificationIdAltKey = 'notification_id';
+  static const String fcmDataIdKey = 'id';
 
   /// `toit://` 가 아니면 null
   static String? extractUrlFromFcmData(Map<String, dynamic> data) {
@@ -24,6 +27,19 @@ class ToitDeepLink {
     final prefix = '${ApiConstants.authCallbackScheme}://';
     if (!url.startsWith(prefix)) return null;
     return url;
+  }
+
+  /// FCM `data` 맵에서 알림 ID를 꺼낸다. (없거나 파싱 실패 시 null)
+  static int? extractNotificationIdFromFcmData(Map<String, dynamic> data) {
+    final raw =
+        data[fcmDataNotificationIdKey] ??
+        data[fcmDataNotificationIdAltKey] ??
+        data[fcmDataIdKey];
+    if (raw == null) return null;
+    if (raw is int) return raw;
+    if (raw is num) return raw.toInt();
+    final parsed = int.tryParse(raw.toString().trim());
+    return parsed;
   }
 
   /// 예: `toit://schedule?id=42`
