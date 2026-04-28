@@ -137,11 +137,17 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
             Container(
               margin: const EdgeInsets.only(top: 16),
               height: 44,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppColors.neutral50, width: 1),
+                ),
+              ),
               child: TabBar(
                 controller: _tabController,
                 indicatorColor: AppColors.blue500,
                 indicatorWeight: 2,
                 indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
                 labelColor: AppColors.gray900,
                 unselectedLabelColor: AppColors.gray600,
                 labelStyle: const TextStyle(
@@ -559,9 +565,14 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                     child: Container(
                       height: 80,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: AppColors.neutral50, width: 1),
+                          bottom: BorderSide(
+                            color: isExpanded
+                                ? Colors.transparent
+                                : AppColors.neutral50,
+                            width: 1,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -627,7 +638,7 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                       () => GlobalKey(),
                     ),
                     width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       border: Border(
@@ -681,7 +692,7 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                       () => GlobalKey(),
                     ),
                     width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       border: Border(
