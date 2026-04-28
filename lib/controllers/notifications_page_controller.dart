@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../models/dto/notifications_page_response_dto.dart';
+import 'notifications_unread_count_controller.dart';
 
 Future<NotificationsPageResponseDto> _fetchNotificationsPage(Ref ref) async {
   final apiClient = ref.read(apiClientProvider);
@@ -77,6 +78,9 @@ class NotificationsPageNotifier
       ],
     );
     state = AsyncValue.data(updated);
+    _ref
+        .read(notificationsUnreadCountProvider(_cacheKey).notifier)
+        .consumeOneUnreadOptimistic();
 
     Future(() async {
       try {
@@ -86,6 +90,9 @@ class NotificationsPageNotifier
       } catch (_) {
         try {
           state = AsyncValue.data(previous);
+          _ref
+              .read(notificationsUnreadCountProvider(_cacheKey).notifier)
+              .restoreOneUnreadOnFailure();
         } on Object {
           // Provider 해제 직후 등 상태 반영 불가 시 무시
         }

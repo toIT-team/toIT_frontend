@@ -21,17 +21,13 @@ class CalendarScreen extends ConsumerWidget {
         child: HomeAppBar(
           title: '캘린더',
           onMenuPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const MyScreen(),
-              ),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => const MyScreen()));
           },
           onSearchPressed: () {
             Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const SearchScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
             );
           },
           onNotificationPressed: () {
