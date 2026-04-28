@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -246,28 +247,28 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     switch (selected) {
       case 0:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveLinkScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 1:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveNoteScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 2:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveFileScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 3:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveImageScreen(initialFolderId: widget.foldersId),
           ),
         );
@@ -361,7 +362,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   void _openNoteDetail(TextDto note) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      CupertinoPageRoute<void>(
         builder: (_) =>
             NoteDetailScreen(note: note, foldersId: widget.foldersId),
       ),

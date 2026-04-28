@@ -132,9 +132,7 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
       });
     });
 
-    return WillPopScope(
-      onWillPop: _handleExitAttempt,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(44),
@@ -163,7 +161,6 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

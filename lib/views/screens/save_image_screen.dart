@@ -295,9 +295,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       });
     });
 
-    return WillPopScope(
-      onWillPop: _handleExitAttempt,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(44),
@@ -335,7 +333,6 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 
