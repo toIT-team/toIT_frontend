@@ -811,7 +811,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
           _TapScaleIconButton(
             onTap: _openFolderOptions,
-            icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
+            icon: const Icon(Icons.more_vert, color: AppColors.gray900),
           ),
         ],
       ),
@@ -860,8 +860,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                     indicatorColor: AppColors.blue500,
                     indicatorWeight: 2,
                     dividerColor: AppColors.neutral50,
-                    tabs:
-                        FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
+                    tabs: FolderTab.order
+                        .map((tab) => Tab(text: tab.label))
+                        .toList(),
                   ),
                   Expanded(
                     child: TabBarView(
@@ -919,7 +920,7 @@ class _TapScaleIconButton extends StatelessWidget {
       onTap: onTap,
       pressedScale: 0.92,
       borderRadius: BorderRadius.circular(999),
-      child: SizedBox(width: 44, height: 44, child: Center(child: icon)),
+      child: SizedBox(width: 48, height: 48, child: Center(child: icon)),
     );
   }
 }
@@ -989,10 +990,7 @@ class _TapScaleState extends State<_TapScale> {
 }
 
 /// 상단 툴바: "전체 N개"
-Widget _buildSectionToolbar(
-  int count, {
-  bool removeBottomPadding = false,
-}) {
+Widget _buildSectionToolbar(int count, {bool removeBottomPadding = false}) {
   return Padding(
     padding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
@@ -1087,6 +1085,7 @@ class _LinkItemRow extends StatelessWidget {
     final dateText = _formatCreatedAt(link.createdAt);
     return _TapScale(
       onTap: onTap,
+      onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(
@@ -1157,12 +1156,14 @@ class _LinkItemRow extends StatelessWidget {
                   pressedScale: 0.92,
                   borderRadius: BorderRadius.circular(999),
                   child: const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Icon(
-                      Icons.more_vert,
-                      size: 20,
-                      color: AppColors.gray600,
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: AppColors.gray600,
+                      ),
                     ),
                   ),
                 ),
@@ -1334,6 +1335,7 @@ class _NoteCard extends StatelessWidget {
 
     return _TapScale(
       onTap: onTap,
+      onLongPress: onKebabTap,
       pressedScale: 0.99,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Column(
@@ -1393,17 +1395,25 @@ class _NoteCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _TapScale(
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: onKebabTap,
-                pressedScale: 0.92,
-                borderRadius: BorderRadius.circular(999),
-                child: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: AppColors.gray600,
+                onLongPress: onKebabTap,
+                child: Container(
+                  width: 32,
+                  height: 36,
+                  alignment: Alignment.centerRight,
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 2),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: AppColors.gray600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1482,6 +1492,7 @@ class _FileItemRow extends StatelessWidget {
     );
     return _TapScale(
       onTap: () {},
+      onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(
@@ -1528,10 +1539,16 @@ class _FileItemRow extends StatelessWidget {
               onTap: onMoreTap,
               pressedScale: 0.92,
               borderRadius: BorderRadius.circular(999),
-              child: const Icon(
-                Icons.more_horiz,
-                size: 20,
-                color: AppColors.gray600,
+              child: const SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Icon(
+                    Icons.more_horiz,
+                    size: 20,
+                    color: AppColors.gray600,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1567,16 +1584,12 @@ String? _resolveFileIconAssetPath({
   required String fileName,
   required String attachmentsExtension,
 }) {
-  const supportedExtensions = <String>{
-    'docx',
-    'hwp',
-    'pdf',
-    'ppt',
-    'xlsx',
-  };
+  const supportedExtensions = <String>{'docx', 'hwp', 'pdf', 'ppt', 'xlsx'};
 
   final extensionFromField = _normalizeFileExtension(attachmentsExtension);
-  final extensionFromName = _normalizeFileExtension(_extractExtension(fileName));
+  final extensionFromName = _normalizeFileExtension(
+    _extractExtension(fileName),
+  );
 
   // 서버 확장자 필드가 일반 MIME(예: application/octet-stream)인 경우를
   // 대비해, 지원 가능한 확장자를 순서대로 탐색한다.
@@ -1617,8 +1630,7 @@ String _normalizeFileExtension(String raw) {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation':
         'ppt',
     'application/vnd.ms-excel': 'xlsx',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-        'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
   };
   if (mimeToExtension.containsKey(value)) {
     return mimeToExtension[value]!;
@@ -1780,9 +1792,8 @@ class _FolderImageCell extends StatelessWidget {
                     ),
                   );
                 },
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.borderLight,
-                ),
+                errorBuilder: (_, __, ___) =>
+                    Container(color: AppColors.borderLight),
               )
             : Container(color: AppColors.borderLight),
       ),
