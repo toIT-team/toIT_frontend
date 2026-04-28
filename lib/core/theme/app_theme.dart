@@ -18,6 +18,26 @@ class AppTheme {
   static List<({EventColorToken token, Color color})> get eventColors =>
       EventColorTokens.pickerEntries;
 
+  static const SnackBarThemeData _snackBarTheme = SnackBarThemeData(
+    behavior: SnackBarBehavior.floating,
+    width: 335,
+    elevation: 0,
+    backgroundColor: Color(0x99222222),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
+    insetPadding: EdgeInsets.only(left: 20, right: 20, bottom: 20),
+    contentTextStyle: TextStyle(
+      fontFamily: 'Pretendard Variable',
+      fontStyle: FontStyle.normal,
+      fontWeight: FontWeight.w600,
+      fontSize: 18,
+      height: 1.4,
+      letterSpacing: -0.45,
+      color: Colors.white,
+    ),
+  );
+
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: Colors.deepPurple,
@@ -41,6 +61,7 @@ class AppTheme {
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.loadingIndicator,
       ),
+      snackBarTheme: _snackBarTheme,
     );
   }
 
@@ -59,6 +80,7 @@ class AppTheme {
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.loadingIndicator,
       ),
+      snackBarTheme: _snackBarTheme,
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/system_ui_insets.dart';
+import '../../core/utils/upload_validation_utils.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -39,6 +40,10 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
   bool get _hasDraft {
     return _imageAttached || _memoController.text.trim().isNotEmpty;
+  }
+
+  bool get _canSave {
+    return _imageAttached && _selectedFolder != null && !_isSaving;
   }
 
   Future<bool> _handleExitAttempt() async {
@@ -79,11 +84,9 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
   Future<void> _onSave() async {
     if (!_imageAttached) {
-      _showSnackBar('이미지를 선택해 주세요.');
       return;
     }
     if (_selectedFolder == null) {
-      _showSnackBar('보관함을 선택해 주세요.');
       return;
     }
 
@@ -96,6 +99,15 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
     for (final xFile in _pickedImages) {
       if (!mounted) break;
+      final fileSizeBytes = await xFile.length();
+      final validateMessage = validateImageSectionUpload(
+        fileName: xFile.name,
+        fileSizeBytes: fileSizeBytes,
+      );
+      if (validateMessage != null) {
+        lastError = validateMessage;
+        continue;
+      }
       List<int> imageBytes;
       try {
         imageBytes = await xFile.readAsBytes();
@@ -219,7 +231,20 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           limit: remaining,
         );
         if (list.isEmpty || !mounted) return;
-        final toAdd = list.take(remaining).toList();
+        final toAdd = <XFile>[];
+        for (final file in list.take(remaining)) {
+          final fileSizeBytes = await file.length();
+          final validateMessage = validateImageSectionUpload(
+            fileName: file.name,
+            fileSizeBytes: fileSizeBytes,
+          );
+          if (validateMessage != null) {
+            _showSnackBar(validateMessage);
+            continue;
+          }
+          toAdd.add(file);
+        }
+        if (toAdd.isEmpty) return;
         setState(() => _pickedImages.addAll(toAdd));
       } else {
         final xFile = await picker.pickImage(
@@ -227,6 +252,15 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           imageQuality: 85,
         );
         if (xFile != null && mounted && _pickedImages.length < _maxImages) {
+          final fileSizeBytes = await xFile.length();
+          final validateMessage = validateImageSectionUpload(
+            fileName: xFile.name,
+            fileSizeBytes: fileSizeBytes,
+          );
+          if (validateMessage != null) {
+            _showSnackBar(validateMessage);
+            return;
+          }
           setState(() => _pickedImages.add(xFile));
         }
       }
@@ -261,9 +295,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       });
     });
 
-    return WillPopScope(
-      onWillPop: _handleExitAttempt,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(44),
@@ -301,7 +333,6 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -344,7 +375,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _isSaving ? null : _onSave,
+              onTap: _canSave ? _onSave : null,
               behavior: HitTestBehavior.opaque,
               child: _isSaving
                   ? const SizedBox(
@@ -352,12 +383,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
+                  : Text(
                       '저장',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.blue500,
+                        color: _canSave ? AppColors.blue500 : AppColors.gray400,
                         letterSpacing: -0.025 * 16,
                         height: 1.4,
                       ),

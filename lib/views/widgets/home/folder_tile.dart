@@ -70,6 +70,86 @@ class _FolderTileState extends ConsumerState<FolderTile> {
     );
   }
 
+  Future<void> _openFolderOptions() async {
+    final option = await showFolderOptionsBottomSheet(
+      context,
+      isFavorite: ref
+          .read(homeProvider.notifier)
+          .isFavoriteFolder(widget.foldersId),
+    );
+    if (option == null || !context.mounted) return;
+
+    switch (option) {
+      case FolderOption.viewMemo:
+        showFolderMemoBottomSheet(context, memo: widget.memo);
+        break;
+      case FolderOption.edit:
+        final editResult = await showAddFolderBottomSheet(
+          context,
+          initialName: widget.title,
+          initialMemo: widget.memo,
+          initialColorIndex: widget.colorIndex,
+          initialIconIndex: widget.iconIndex,
+          isEditMode: true,
+        );
+        if (editResult != null) {
+          final success = await ref
+              .read(homeProvider.notifier)
+              .updateFolder(
+                foldersId: widget.foldersId,
+                name: editResult['name'] as String,
+                memo: editResult['memo'] as String,
+                colorIndex: editResult['colorIndex'] as int,
+                iconIndex: editResult['iconIndex'] as int,
+              );
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('보관함 수정에 실패했습니다.')));
+          }
+        }
+        break;
+      case FolderOption.delete:
+        if (widget.isDefault) {
+          await showAppAlertDialog(context, message: '기본 보관함은 삭제할 수 없습니다.');
+          break;
+        }
+        final confirmed = await showDeleteDialog(
+          context,
+          message: '[${widget.title}]을 정말 삭제하시겠습니까?',
+          warningMessage: '보관함을 삭제하면 포함된 모든 자료가 같이 삭제됩니다.',
+        );
+        if (!confirmed || !context.mounted) break;
+        final deleted = await ref
+            .read(homeProvider.notifier)
+            .deleteFolder(foldersId: widget.foldersId);
+        if (!deleted && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('보관함 삭제에 실패했습니다.')));
+        }
+        break;
+      case FolderOption.toggleFavorite:
+        final nextFavoriteState = await ref
+            .read(homeProvider.notifier)
+            .toggleFavoriteFolder(foldersId: widget.foldersId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                nextFavoriteState == null
+                    ? '즐겨찾기 변경에 실패했습니다.'
+                    : nextFavoriteState
+                    ? '즐겨찾기에 추가되었습니다.'
+                    : '즐겨찾기가 해제되었습니다.',
+              ),
+            ),
+          );
+        }
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedScale(
@@ -81,6 +161,7 @@ class _FolderTileState extends ConsumerState<FolderTile> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         child: InkWell(
           onTap: handleTileTap,
+          onLongPress: widget.onTap == null ? _openFolderOptions : null,
           onHighlightChanged: setPressed,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           splashColor: Colors.transparent,
@@ -191,141 +272,34 @@ class _FolderTileState extends ConsumerState<FolderTile> {
                                     size: 20,
                                   )
                                 else
-                                  _FolderKebabButton(
-                                    onTap: () async {
-                                      final option =
-                                          await showFolderOptionsBottomSheet(
-                                            context,
-                                            isFavorite: ref
-                                                .read(homeProvider.notifier)
-                                                .isFavoriteFolder(
-                                                  widget.foldersId,
-                                                ),
-                                          );
-                                      if (option == null || !context.mounted) {
-                                        return;
-                                      }
-                                      switch (option) {
-                                        case FolderOption.viewMemo:
-                                          showFolderMemoBottomSheet(
-                                            context,
-                                            memo: widget.memo,
-                                          );
-                                          break;
-                                        case FolderOption.edit:
-                                          final editResult =
-                                              await showAddFolderBottomSheet(
-                                                context,
-                                                initialName: widget.title,
-                                                initialMemo: widget.memo,
-                                                initialColorIndex:
-                                                    widget.colorIndex,
-                                                initialIconIndex:
-                                                    widget.iconIndex,
-                                                isEditMode: true,
-                                              );
-                                          if (editResult != null) {
-                                            final success = await ref
-                                                .read(homeProvider.notifier)
-                                                .updateFolder(
-                                                  foldersId: widget.foldersId,
-                                                  name:
-                                                      editResult['name']
-                                                          as String,
-                                                  memo:
-                                                      editResult['memo']
-                                                          as String,
-                                                  colorIndex:
-                                                      editResult['colorIndex']
-                                                          as int,
-                                                  iconIndex:
-                                                      editResult['iconIndex']
-                                                          as int,
-                                                );
-                                            if (!success && context.mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    '보관함 수정에 실패했습니다.',
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          }
-                                          break;
-                                        case FolderOption.delete:
-                                          if (widget.isDefault) {
-                                            await showAppAlertDialog(
-                                              context,
-                                              message: '기본 보관함은 삭제할 수 없습니다.',
-                                            );
-                                            break;
-                                          }
-                                          final confirmed =
-                                              await showDeleteDialog(
-                                                context,
-                                                message:
-                                                    '[${widget.title}]을 정말 '
-                                                    '삭제하시겠습니까?',
-                                                warningMessage:
-                                                    '보관함을 삭제하면 포함된 모든 '
-                                                    '자료가 같이 삭제됩니다.',
-                                              );
-                                          if (!confirmed || !context.mounted) {
-                                            break;
-                                          }
-                                          final deleted = await ref
-                                              .read(homeProvider.notifier)
-                                              .deleteFolder(
-                                                foldersId: widget.foldersId,
-                                              );
-                                          if (!deleted && context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  '보관함 삭제에 실패했습니다.',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          break;
-                                        case FolderOption.toggleFavorite:
-                                          final nextFavoriteState = await ref
-                                              .read(homeProvider.notifier)
-                                              .toggleFavoriteFolder(
-                                                foldersId: widget.foldersId,
-                                              );
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  nextFavoriteState == null
-                                                      ? '즐겨찾기 변경에 '
-                                                            '실패했습니다.'
-                                                      : nextFavoriteState
-                                                      ? '즐겨찾기에 '
-                                                            '추가되었습니다.'
-                                                      : '즐겨찾기가 '
-                                                            '해제되었습니다.',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                          break;
-                                      }
-                                    },
-                                  ),
+                                  _FolderKebabButton(onTap: _openFolderOptions),
                               ],
                             ),
                           ],
                         ),
                       ),
+                      // 레이아웃은 유지하고 케밥 상단 방향 터치 영역만 확장한다.
+                      if (widget.onTap == null)
+                        Positioned(
+                          // 케밥 아이콘 중심 기준으로 36x36 원형 터치/피드백 영역
+                          right: AppSpacing.sm - 2,
+                          bottom: AppSpacing.sm - 8,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkResponse(
+                              onTap: _openFolderOptions,
+                              radius: 18,
+                              containedInkWell: true,
+                              customBorder: const CircleBorder(),
+                              highlightShape: BoxShape.circle,
+                              splashColor: Colors.transparent,
+                              highlightColor: AppColors.neutral100.withOpacity(
+                                0.5,
+                              ),
+                              child: const SizedBox(width: 36, height: 36),
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 },
@@ -402,17 +376,26 @@ class _FolderKebabButtonState extends State<_FolderKebabButton> {
           borderRadius: BorderRadius.circular(999),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: isPressed
-                  ? AppColors.neutral100.withOpacity(0.5)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            width: 44,
+            height: 18,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                color: isPressed
+                    ? AppColors.neutral100.withOpacity(0.5)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Image.asset(AppAssets.moreIcon, width: 24, height: 14),
+                ),
+              ),
             ),
-            child: Image.asset(AppAssets.moreIcon, width: 24, height: 14),
           ),
         ),
       ),
