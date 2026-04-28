@@ -28,8 +28,8 @@ import '../widgets/event/color_context_menu.dart';
 import 'folder_detail_screen.dart';
 
 /// 알림 분 단위를 표시 텍스트로 변환
-String _alarmOffsetToText(int minutes) {
-  if (minutes == 0) return '일정 시작';
+String _alarmOffsetToText({required int minutes, required bool timeSetting}) {
+  if (minutes == 0) return timeSetting ? '일정 시작' : '이벤트 당일(09:00)';
   if (minutes == 10080) return '1주 전';
   if (minutes < 60) return '$minutes분 전';
   if (minutes < 1440) return '${minutes ~/ 60}시간 전';
@@ -340,7 +340,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   List<EventSectionItem> _buildSections(ScheduleDetailResponse detail) {
     final alarmText = detail.alarmState
-        ? _alarmOffsetToText(detail.alarmOffsetMinutes)
+        ? _alarmOffsetToText(
+            minutes: detail.alarmOffsetMinutes,
+            timeSetting: detail.timeSetting,
+          )
         : null;
 
     return [
