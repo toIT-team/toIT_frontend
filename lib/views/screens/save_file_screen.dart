@@ -160,7 +160,7 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
 
   Future<void> _onAttachFile() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.any,
         allowMultiple: false,
         withData: true,
