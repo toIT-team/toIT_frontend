@@ -1,9 +1,12 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
+import '../../models/dto/attachment_confirm_dto.dart';
+import '../../models/dto/attachment_presign_dto.dart';
 import '../../models/dto/home_response_dto.dart';
 import '../../models/dto/link_preview_response_dto.dart';
 import '../../models/dto/page_items_response_dto.dart';
@@ -205,62 +208,93 @@ class HomeRemoteDatasource {
     );
   }
 
-  /// 자료 파일 추가 (POST /attachments/files)
-  /// Query: foldersIdList
-  /// Body: multipart/form-data (file, textContent 파트)
-  Future<void> createFile({
-    required List<int> foldersIdList,
-    required String textContent,
-    required List<int> fileBytes,
-    required String fileName,
-  }) async {
-    final formData = FormData.fromMap({
-      'file': MultipartFile.fromBytes(
-        fileBytes is Uint8List ? fileBytes : Uint8List.fromList(fileBytes),
-        filename: fileName,
-      ),
-      'textContent': textContent,
-    });
-    await _apiClient.dio.post(
-      ApiConstants.attachmentsFilesEndpoint,
-      queryParameters: {
-        'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
-      },
-      data: formData,
-      options: Options(
-        sendTimeout: _uploadTimeout,
-        receiveTimeout: _uploadTimeout,
-      ),
+  /// S3 업로드용 presigned URL 발급 (POST /attachments/presign)
+  Future<List<PresignResponseDto>> presignAttachment(
+    PresignRequestDto request,
+  ) async {
+    final response = await _apiClient.post(
+      ApiConstants.attachmentsPresignEndpoint,
+      data: request.toJson(),
     );
+    final data = response.data;
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(PresignResponseDto.fromJson)
+          .toList();
+    }
+    if (data is Map<String, dynamic>) {
+      return [PresignResponseDto.fromJson(data)];
+    }
+    return const <PresignResponseDto>[];
   }
 
-  /// 자료 이미지 추가 (POST /attachments/images)
-  /// Query: foldersIdList
-  /// Body: multipart/form-data (image, textContent 파트)
-  Future<void> createImage({
-    required List<int> foldersIdList,
-    required String textContent,
-    required List<int> imageBytes,
-    required String fileName,
+  /// presigned URL로 S3에 직접 PUT 업로드
+  /// - 인증/로깅 인터셉터를 우회하기 위해 별도 Dio 인스턴스 사용
+  /// - Content-Type은 presign 시 보낸 값과 동일해야 서명 검증 통과
+  /// - data를 Stream으로 보내야 Dio Transformer가 String 변환을 시도하지 않음
+  ///   (Uint8List를 그대로 넘기면 환경에 따라 빈 body로 전송될 수 있음)
+  Future<void> uploadToS3({
+    required String uploadUrl,
+    required List<int> bytes,
+    required String contentType,
   }) async {
-    final formData = FormData.fromMap({
-      'image': MultipartFile.fromBytes(
-        imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
-        filename: fileName,
-      ),
-      'textContent': textContent,
-    });
-    await _apiClient.dio.post(
-      ApiConstants.attachmentsImagesEndpoint,
-      queryParameters: {
-        'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
-      },
-      data: formData,
-      options: Options(
-        sendTimeout: _uploadTimeout,
-        receiveTimeout: _uploadTimeout,
-      ),
+    final payload = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final rawDio = Dio();
+    try {
+      final response = await rawDio.put(
+        uploadUrl,
+        data: Stream<List<int>>.fromIterable([payload]),
+        options: Options(
+          headers: {
+            Headers.contentTypeHeader: contentType,
+            Headers.contentLengthHeader: payload.length,
+          },
+          contentType: contentType,
+          responseType: ResponseType.plain,
+          sendTimeout: _uploadTimeout,
+          receiveTimeout: _uploadTimeout,
+          validateStatus: (status) => status != null && status < 400,
+        ),
+      );
+      if (kDebugMode) {
+        debugPrint(
+          '[S3 PUT] status=${response.statusCode} bytes=${payload.length} '
+          'contentType=$contentType',
+        );
+      }
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[S3 PUT] FAILED status=${e.response?.statusCode} '
+          'message=${e.message} body=${e.response?.data}',
+        );
+      }
+      rethrow;
+    } finally {
+      rawDio.close(force: true);
+    }
+  }
+
+  /// S3 업로드 완료 후 DB 저장 확정 (POST /attachments/confirm)
+  Future<List<ConfirmResponseItem>> confirmAttachment(
+    ConfirmRequestDto request,
+  ) async {
+    final response = await _apiClient.post(
+      ApiConstants.attachmentsConfirmEndpoint,
+      data: request.toJson(),
     );
+    final data = response.data;
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map(ConfirmResponseItem.fromJson)
+          .toList();
+    }
+    if (data is Map<String, dynamic>) {
+      return [ConfirmResponseItem.fromJson(data)];
+    }
+    return const <ConfirmResponseItem>[];
   }
 
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)

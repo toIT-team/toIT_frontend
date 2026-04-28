@@ -60,11 +60,19 @@ class ApiConstants {
   /// 자료 텍스트(노트) 수정 (PATCH)
   static const String textsUpdateEndpoint = '/texts/update';
 
-  /// 자료 파일 추가 (POST, multipart)
+  /// 자료 파일 추가 (POST, multipart) - legacy
   static const String attachmentsFilesEndpoint = '/attachments/files';
 
-  /// 자료 이미지 추가 (POST, multipart)
+  /// 자료 이미지 추가 (POST, multipart) - legacy
   static const String attachmentsImagesEndpoint = '/attachments/images';
+
+  /// S3 업로드용 presigned URL 발급 (POST)
+  /// 응답: objectKey, uploadUrl, expiresInSeconds
+  static const String attachmentsPresignEndpoint = '/attachments/presign';
+
+  /// S3 업로드 완료 후 DB 저장 확정 (POST)
+  /// 응답: 생성된 attachment 정보 배열 (presignedUrl 포함)
+  static const String attachmentsConfirmEndpoint = '/attachments/confirm';
 
   /// 자료 파일 이름 수정 (PATCH)
   static const String attachmentsUpdateEndpoint = '/attachments/update';
