@@ -36,7 +36,7 @@ class NavigationShell extends ConsumerStatefulWidget {
 }
 
 class _NavigationShellState extends ConsumerState<NavigationShell> {
-  static const _deepLinkChannel = MethodChannel('com.example.pojTodo/deeplink');
+  static const _deepLinkChannel = MethodChannel('com.toit/deeplink');
 
   StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
   bool _isShareSheetVisible = false;

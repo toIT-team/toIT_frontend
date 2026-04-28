@@ -3,7 +3,7 @@ import Foundation
 
 /// Flutter MethodChannel → App Group `UserDefaults`로 Share Extension과 공유.
 final class TokenBridge {
-  static let channelName = "com.example.pojTodo/token"
+  static let channelName = "com.toit/token"
 
   static let keyAccessToken = "access_token"
   static let keyUserId = "user_id"

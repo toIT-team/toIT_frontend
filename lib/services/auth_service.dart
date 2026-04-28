@@ -42,7 +42,7 @@ class AuthService {
   final Dio _dio;
 
   static const _tokenChannel = MethodChannel(
-    'com.example.pojTodo/token',
+    'com.toit/token',
   );
 
   AuthService({FlutterSecureStorage? storage, Dio? dio})

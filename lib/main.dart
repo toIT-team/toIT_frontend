@@ -58,7 +58,7 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const _launchInfoChannel = MethodChannel(
-    'com.example.pojTodo/launch_info',
+    'com.toit/launch_info',
   );
   final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
