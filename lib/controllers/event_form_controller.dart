@@ -92,6 +92,7 @@ class EventFormState with _$EventFormState {
   String? get alarmText {
     if (alarmMinutes == null) return null;
     if (alarmMinutes == 0) return '일정 시작';
+    if (alarmMinutes == 10080) return '1주 전';
     if (alarmMinutes! < 60) return '$alarmMinutes분 전';
     if (alarmMinutes! < 1440) return '${alarmMinutes! ~/ 60}시간 전';
     return '${alarmMinutes! ~/ 1440}일 전';
@@ -117,10 +118,7 @@ class EventFormController extends Notifier<EventFormState> {
   @override
   EventFormState build() {
     final now = DateTime.now();
-    return EventFormState(
-      startDate: now,
-      endDate: now,
-    );
+    return EventFormState(startDate: now, endDate: now);
   }
 
   /// 기존 이벤트로 폼 초기화 (수정 모드)
@@ -245,18 +243,12 @@ class EventFormController extends Notifier<EventFormState> {
 
   /// 보관함 선택 시 이름과 [foldersId]를 한 번에 반영한다.
   void selectFolder({required int foldersId, required String folderName}) {
-    state = state.copyWith(
-      foldersId: foldersId,
-      folderName: folderName,
-    );
+    state = state.copyWith(foldersId: foldersId, folderName: folderName);
   }
 
   /// 보관함 연결 해제 (API에는 [foldersId]·이름 null로 반영).
   void clearFolderLink() {
-    state = state.copyWith(
-      foldersId: null,
-      folderName: null,
-    );
+    state = state.copyWith(foldersId: null, folderName: null);
   }
 
   /// 일정 색상 토큰 업데이트
@@ -309,7 +301,6 @@ class EventFormController extends Notifier<EventFormState> {
 }
 
 /// 이벤트 폼 Provider
-final eventFormProvider =
-    NotifierProvider<EventFormController, EventFormState>(
+final eventFormProvider = NotifierProvider<EventFormController, EventFormState>(
   EventFormController.new,
 );
