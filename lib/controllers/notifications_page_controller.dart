@@ -24,6 +24,14 @@ Future<NotificationsPageResponseDto> _fetchNotificationsPage(Ref ref) async {
   return NotificationsPageResponseDto.fromJson(jsonMap);
 }
 
+/// 알림 목록 캐시가 신선하지 않다는 외부 신호.
+///
+/// 포그라운드 FCM 수신·앱 resume 등 "리스트가 변했을 가능성"이 있는 시점에
+/// `true`로 올려둔다. 알림 페이지가 떠 있으면 즉시 동기화되고, 떠 있지 않으면
+/// 다음 진입 시 [NotificationsPageNotifier.maybeRefresh]가 소비한다.
+final notificationsPageDirtyProvider =
+    StateProvider.family<bool, (int, int)>((ref, _) => false);
+
 /// 알림 목록 (GET) + 탭 시 읽음 PATCH, 로컬 먼저 반영
 class NotificationsPageNotifier
     extends StateNotifier<AsyncValue<NotificationsPageResponseDto>> {
@@ -35,6 +43,16 @@ class NotificationsPageNotifier
   final Ref _ref;
   final (int, int) _cacheKey;
 
+  /// 마지막으로 서버에서 받아온 시각. 진입 시 TTL 기반 재조회 판단에 사용.
+  DateTime? _lastSyncedAt;
+
+  /// 동시에 여러 트리거가 들어올 때 중복 호출을 막는다.
+  bool _isFetching = false;
+
+  /// 외부 신호(dirty)가 없어도 이 시간이 지났으면 캐시를 stale로 본다.
+  /// 백그라운드 알림이 누락된 케이스를 보강하기 위한 안전망.
+  static const Duration _staleTtl = Duration(minutes: 5);
+
   Future<void> _load() async {
     final (_, refreshTick) = _cacheKey;
     if (refreshTick < 0) {
@@ -44,13 +62,40 @@ class NotificationsPageNotifier
       );
       return;
     }
+    if (_isFetching) return;
+    _isFetching = true;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _fetchNotificationsPage(_ref));
+    if (state.hasValue) {
+      _lastSyncedAt = DateTime.now();
+    }
+    _clearDirtyFlag();
+    _isFetching = false;
   }
 
   /// 당김 새로고침·에러 재시도
   Future<void> refresh() async {
     await _load();
+  }
+
+  /// 캐시가 dirty거나 TTL을 초과한 경우에만 서버를 다시 부른다.
+  ///
+  /// 알림 페이지 진입 시 호출하는 SWR 진입점. 매 진입마다 fetch하지 않으므로
+  /// 사용자가 화면을 빠르게 드나들어도 추가 비용이 거의 없다.
+  Future<void> maybeRefresh({Duration ttl = _staleTtl}) async {
+    if (_isFetching) return;
+    final isDirty = _ref.read(notificationsPageDirtyProvider(_cacheKey));
+    final lastSyncedAt = _lastSyncedAt;
+    final isStale =
+        lastSyncedAt != null && DateTime.now().difference(lastSyncedAt) >= ttl;
+    if (!isDirty && !isStale) return;
+    await _load();
+  }
+
+  void _clearDirtyFlag() {
+    final notifier =
+        _ref.read(notificationsPageDirtyProvider(_cacheKey).notifier);
+    if (notifier.state) notifier.state = false;
   }
 
   /// 미읽음이면 UI를 즉시 읽음으로 바꾼 뒤 PATCH (실패 시 롤백)

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/bootstrap_controller.dart';
+import 'controllers/notifications_page_controller.dart';
 import 'controllers/notifications_unread_count_controller.dart';
 import 'core/constants/api_constants.dart';
 import 'core/deep_link/toit_deep_link.dart';
@@ -71,7 +72,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     });
     _bindFcmDeepLinks();
     _bindFcmTokenRefresh();
-    _bindFcmUnreadCountRefresh();
+    _bindFcmForegroundIncoming();
   }
 
   @override
@@ -93,6 +94,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           .read(fcmRegistrationServiceProvider)
           .syncServerRegistration(promptForPermission: false),
     );
+    // 백그라운드/종료 상태에서 도착한 알림은 포그라운드 핸들러를 거치지 못하므로
+    // resume 시점에 카운트는 즉시 갱신하고, 리스트는 dirty만 찍어 다음 진입 시
+    // 자동 동기화되도록 한다.
+    _refreshUnreadCountIfAuthenticated();
+    _markNotificationsPageDirtyIfAuthenticated();
   }
 
   /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
@@ -154,27 +160,38 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     _refreshUnreadCountIfAuthenticated();
   }
 
-  /// 포그라운드 알림 수신 시 unread 배지를 갱신한다.
-  void _bindFcmUnreadCountRefresh() {
+  /// 포그라운드 알림 수신 시 배지(count)는 즉시 갱신하고,
+  /// 리스트 캐시는 dirty 표시만 남겨 진입 시점에 동기화되도록 한다.
+  void _bindFcmForegroundIncoming() {
     _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((_) {
       _refreshUnreadCountIfAuthenticated();
+      _markNotificationsPageDirtyIfAuthenticated();
     });
   }
 
   void _refreshUnreadCountIfAuthenticated() {
+    final cacheKey = _resolveAuthenticatedCacheKey();
+    if (cacheKey == null) return;
+    unawaited(
+      ref.read(notificationsUnreadCountProvider(cacheKey).notifier).refresh(),
+    );
+  }
+
+  void _markNotificationsPageDirtyIfAuthenticated() {
+    final cacheKey = _resolveAuthenticatedCacheKey();
+    if (cacheKey == null) return;
+    ref.read(notificationsPageDirtyProvider(cacheKey).notifier).state = true;
+  }
+
+  /// 인증된 사용자에 대한 (userId, refreshTick) 캐시 키를 반환.
+  /// 미인증이면 null을 돌려 호출자가 조용히 빠져나오게 한다.
+  (int, int)? _resolveAuthenticatedCacheKey() {
     final authState = ref.read(authProvider);
     final userId = authState.userId;
     if (authState.status != AuthStatus.authenticated || userId == null) {
-      return;
+      return null;
     }
-    final refreshTick = ref.read(authSessionRefreshTickProvider);
-    unawaited(
-      ref
-          .read(
-            notificationsUnreadCountProvider((userId, refreshTick)).notifier,
-          )
-          .refresh(),
-    );
+    return (userId, ref.read(authSessionRefreshTickProvider));
   }
 
   Future<void> _initAuth() async {
