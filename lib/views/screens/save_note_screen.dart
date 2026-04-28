@@ -32,6 +32,12 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
     return _noteController.text.trim().isNotEmpty;
   }
 
+  bool get _canSave {
+    return _noteController.text.trim().isNotEmpty &&
+        _selectedFolder != null &&
+        !_isSaving;
+  }
+
   Future<bool> _handleExitAttempt() async {
     if (_isSaving) return false;
     if (!_hasDraft) return true;
@@ -71,11 +77,9 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
   Future<void> _onSave() async {
     final textContent = _noteController.text.trim();
     if (textContent.isEmpty) {
-      _showSnackBar('내용을 입력해 주세요.');
       return;
     }
     if (_selectedFolder == null) {
-      _showSnackBar('보관함을 선택해 주세요.');
       return;
     }
 
@@ -202,7 +206,7 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _isSaving ? null : _onSave,
+              onTap: _canSave ? _onSave : null,
               behavior: HitTestBehavior.opaque,
               child: _isSaving
                   ? const SizedBox(
@@ -210,12 +214,12 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
+                  : Text(
                       '저장',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.blue500,
+                        color: _canSave ? AppColors.blue500 : AppColors.gray400,
                         letterSpacing: -0.025 * 16,
                         height: 1.4,
                       ),

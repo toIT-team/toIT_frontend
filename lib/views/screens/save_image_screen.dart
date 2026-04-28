@@ -42,6 +42,10 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     return _imageAttached || _memoController.text.trim().isNotEmpty;
   }
 
+  bool get _canSave {
+    return _imageAttached && _selectedFolder != null && !_isSaving;
+  }
+
   Future<bool> _handleExitAttempt() async {
     if (_isSaving) return false;
     if (!_hasDraft) return true;
@@ -80,11 +84,9 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
   Future<void> _onSave() async {
     if (!_imageAttached) {
-      _showSnackBar('이미지를 선택해 주세요.');
       return;
     }
     if (_selectedFolder == null) {
-      _showSnackBar('보관함을 선택해 주세요.');
       return;
     }
 
@@ -376,7 +378,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _isSaving ? null : _onSave,
+              onTap: _canSave ? _onSave : null,
               behavior: HitTestBehavior.opaque,
               child: _isSaving
                   ? const SizedBox(
@@ -384,12 +386,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text(
+                  : Text(
                       '저장',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.blue500,
+                        color: _canSave ? AppColors.blue500 : AppColors.gray400,
                         letterSpacing: -0.025 * 16,
                         height: 1.4,
                       ),
