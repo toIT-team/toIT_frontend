@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' show log;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -12,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/bootstrap_controller.dart';
 import 'controllers/notifications_unread_count_controller.dart';
+import 'core/constants/api_constants.dart';
 import 'core/deep_link/toit_deep_link.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
@@ -30,23 +30,7 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  _initFcm();
-
   runApp(const ProviderScope(child: MyApp()));
-}
-
-/// FCM 초기화(비동기). OS 알림 권한 요청은 로그인 후
-/// [FcmRegistrationService.syncServerRegistration]에서 수행한다.
-Future<void> _initFcm() async {
-  // TODO(FCM-콘솔정리): 릴리스 전 삭제 — 선조회 로그·catch의 debugPrint/log·필요 시 import
-  try {
-    final token = await FirebaseMessaging.instance.getToken();
-    logFcmTokenSnapshot('main 선조회(getToken)', token);
-  } catch (e, st) {
-    final text = '[FCM] main 선조회 실패(무시 가능): $e';
-    debugPrint('$text\n$st');
-    log(text, name: 'FCM', error: e, stackTrace: st);
-  }
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -139,10 +123,35 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   }
 
   void _onFcmMessageOpened(RemoteMessage message) {
-    _refreshUnreadCountIfAuthenticated();
+    final didScheduleRead = _markNotificationAsReadFromFcm(message);
+    if (!didScheduleRead) {
+      _refreshUnreadCountIfAuthenticated();
+    }
     final url = ToitDeepLink.extractUrlFromFcmData(message.data);
     if (url == null) return;
     ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
+  }
+
+  bool _markNotificationAsReadFromFcm(RemoteMessage message) {
+    final notificationId = ToitDeepLink.extractNotificationIdFromFcmData(
+      message.data,
+    );
+    if (notificationId == null) return false;
+    final authState = ref.read(authProvider);
+    if (authState.status != AuthStatus.authenticated) return false;
+    unawaited(_patchNotificationRead(notificationId));
+    return true;
+  }
+
+  Future<void> _patchNotificationRead(int notificationId) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .patch<void>(ApiConstants.notificationReadPath(notificationId));
+    } catch (_) {
+      return;
+    }
+    _refreshUnreadCountIfAuthenticated();
   }
 
   /// 포그라운드 알림 수신 시 unread 배지를 갱신한다.
