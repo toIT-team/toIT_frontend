@@ -4,9 +4,15 @@ import UniformTypeIdentifiers
 final class ShareViewController: UIViewController {
   private enum Constants {
     static let maxMemoLength = 1000
-    static let chipHorizontalPadding: CGFloat = 18
-    static let chipVerticalPadding: CGFloat = 8
-    static let bottomPadding: CGFloat = 20
+    static let maxImageSaveCount = 3
+    static let maxFileSizeBytes = 10 * 1024 * 1024
+    static let chipHorizontalPadding: CGFloat = 8
+    static let chipMinWidth: CGFloat = 60
+    static let chipHeight: CGFloat = 34
+    static let chipMaxText = "가나다라마"
+    static let bottomPadding: CGFloat = 24
+    static let bottomSpacerHeight: CGFloat = 0
+    static let keyboardAnimationDuration = 0.25
   }
 
   private var apiClient: ShareApiClient?
@@ -16,6 +22,7 @@ final class ShareViewController: UIViewController {
   private var sharedItemUrls: [URL] = []
   private var isImage = true
   private var isSaving = false
+  private var bottomSpacerHeightConstraint: NSLayoutConstraint?
 
   // MARK: - UI Elements
 
@@ -197,6 +204,12 @@ final class ShareViewController: UIViewController {
     label.textAlignment = .right
     return label
   }()
+  private let bottomSpacerView: UIView = {
+    let view = UIView()
+    view.translatesAutoresizingMaskIntoConstraints = false
+    view.backgroundColor = .white
+    return view
+  }()
 
   // MARK: - Lifecycle
 
@@ -205,11 +218,16 @@ final class ShareViewController: UIViewController {
     setupLayout()
     loadSharedItems()
     initApiAndFetchFolders()
+    observeKeyboardNotifications()
   }
 
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     clearSystemBackgrounds()
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
   }
 
   private func clearSystemBackgrounds() {
@@ -309,6 +327,12 @@ final class ShareViewController: UIViewController {
     )
     dimTap.delegate = self
     view.addGestureRecognizer(dimTap)
+    let cardTap = UITapGestureRecognizer(
+      target: self, action: #selector(cardBackgroundTapped)
+    )
+    cardTap.cancelsTouchesInView = false
+    cardTap.delegate = self
+    cardView.addGestureRecognizer(cardTap)
 
     view.addSubview(cardView)
 
@@ -332,6 +356,7 @@ final class ShareViewController: UIViewController {
     memoContainerView.addSubview(memoTextView)
     memoContainerView.addSubview(memoPlaceholderLabel)
     cardView.addSubview(memoCounterLabel)
+    cardView.addSubview(bottomSpacerView)
 
     let safeBottom = view.safeAreaLayoutGuide.bottomAnchor
 
@@ -341,9 +366,6 @@ final class ShareViewController: UIViewController {
       ),
       cardView.trailingAnchor.constraint(
         equalTo: view.trailingAnchor
-      ),
-      cardView.bottomAnchor.constraint(
-        equalTo: view.bottomAnchor
       ),
 
       headerStack.topAnchor.constraint(
@@ -491,10 +513,29 @@ final class ShareViewController: UIViewController {
       ),
 
       memoCounterLabel.bottomAnchor.constraint(
-        equalTo: safeBottom,
+        equalTo: bottomSpacerView.topAnchor,
         constant: -Constants.bottomPadding
       ),
+      bottomSpacerView.leadingAnchor.constraint(
+        equalTo: cardView.leadingAnchor
+      ),
+      bottomSpacerView.trailingAnchor.constraint(
+        equalTo: cardView.trailingAnchor
+      ),
+      bottomSpacerView.bottomAnchor.constraint(
+        equalTo: safeBottom
+      ),
     ])
+    let bottomSpacerHeightConstraint = bottomSpacerView
+      .heightAnchor.constraint(
+        equalToConstant: Constants.bottomSpacerHeight
+      )
+    bottomSpacerHeightConstraint.isActive = true
+    self.bottomSpacerHeightConstraint = bottomSpacerHeightConstraint
+    let cardBottomConstraint = cardView.bottomAnchor.constraint(
+      equalTo: view.bottomAnchor
+    )
+    cardBottomConstraint.isActive = true
   }
 
   // MARK: - Actions
@@ -531,9 +572,13 @@ final class ShareViewController: UIViewController {
       showError("공유된 파일이 없습니다.")
       return
     }
+    if uploadValidationFails() {
+      return
+    }
 
     isSaving = true
     saveButton.isEnabled = false
+    saveButton.isHidden = true
     loadingIndicator.startAnimating()
 
     let memo = memoTextView.text ?? ""
@@ -564,8 +609,7 @@ final class ShareViewController: UIViewController {
         }
 
         await MainActor.run {
-          self.openAppAndComplete(
-            folderId: folder.foldersId,
+          self.showSaveSuccessAndComplete(
             folderName: folder.title
           )
         }
@@ -573,6 +617,7 @@ final class ShareViewController: UIViewController {
         await MainActor.run {
           self.isSaving = false
           self.saveButton.isEnabled = true
+          self.saveButton.isHidden = false
           self.loadingIndicator.stopAnimating()
           self.showError(
             error.localizedDescription
@@ -593,39 +638,122 @@ final class ShareViewController: UIViewController {
     )
   }
 
-  // MARK: - Navigation
+  @objc
+  private func cardBackgroundTapped() {
+    view.endEditing(true)
+  }
 
-  private func openAppAndComplete(
-    folderId: Int,
-    folderName: String
-  ) {
-    let tab = isImage ? "images" : "files"
-    let encodedName = folderName.addingPercentEncoding(
-      withAllowedCharacters: .urlQueryAllowed
-    ) ?? folderName
-
-    let urlString = "toit://folder"
-      + "?id=\(folderId)"
-      + "&name=\(encodedName)"
-      + "&tab=\(tab)"
-
-    if let url = URL(string: urlString) {
-      var responder: UIResponder? = self
-      while let r = responder {
-        if let app = r as? UIApplication {
-          app.open(url)
-          break
-        }
-        responder = r.next
-      }
-    }
-
-    extensionContext?.completeRequest(
-      returningItems: [], completionHandler: nil
+  private func observeKeyboardNotifications() {
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleKeyboardWillShow),
+      name: UIResponder.keyboardWillShowNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleKeyboardWillHide),
+      name: UIResponder.keyboardWillHideNotification,
+      object: nil
     )
   }
 
+  @objc
+  private func handleKeyboardWillShow(_ notification: Notification) {
+    guard memoTextView.isFirstResponder else {
+      return
+    }
+    guard
+      let keyboardFrame = notification.userInfo?[
+        UIResponder.keyboardFrameEndUserInfoKey
+      ] as? CGRect
+    else {
+      return
+    }
+    let keyboardHeight = max(
+      0,
+      keyboardFrame.height - view.safeAreaInsets.bottom
+    )
+    bottomSpacerHeightConstraint?.constant = keyboardHeight
+    UIView.animate(withDuration: Constants.keyboardAnimationDuration) {
+      self.view.layoutIfNeeded()
+    }
+  }
+
+  @objc
+  private func handleKeyboardWillHide(_ notification: Notification) {
+    // 키보드가 내려가도 시트 높이는 유지한다.
+  }
+
+  // MARK: - Navigation
+
+  private func showSaveSuccessAndComplete(
+    folderName: String
+  ) {
+    isSaving = false
+    saveButton.isEnabled = true
+    saveButton.isHidden = false
+    loadingIndicator.stopAnimating()
+
+    let alert = UIAlertController(
+      title: nil,
+      message: "\(folderName) 에 저장이 완료되었습니다.",
+      preferredStyle: .alert
+    )
+    alert.addAction(UIAlertAction(
+      title: "확인",
+      style: .default
+    ) { [weak self] _ in
+      self?.extensionContext?.completeRequest(
+        returningItems: [],
+        completionHandler: nil
+      )
+    })
+    present(alert, animated: true)
+  }
+
   // MARK: - Error
+
+  private func uploadValidationFails() -> Bool {
+    if isImage && sharedItemUrls.count > Constants.maxImageSaveCount {
+      showAlert(
+        "이미지는 3개 이상 저장할 수 없습니다."
+      )
+      return true
+    }
+    if !isImage {
+      for url in sharedItemUrls {
+        guard let fileSize = fileSizeBytes(
+          for: url
+        ) else { continue }
+        if fileSize > Constants.maxFileSizeBytes {
+          showAlert(
+            "파일은 10MB 이상 저장할 수 없습니다."
+          )
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  private func fileSizeBytes(for url: URL) -> Int? {
+    let values = try? url.resourceValues(
+      forKeys: [.fileSizeKey]
+    )
+    return values?.fileSize
+  }
+
+  private func showAlert(_ message: String) {
+    let alert = UIAlertController(
+      title: nil, message: message,
+      preferredStyle: .alert
+    )
+    alert.addAction(
+      UIAlertAction(title: "확인", style: .default)
+    )
+    present(alert, animated: true)
+  }
 
   private func showError(_ message: String) {
     let alert = UIAlertController(
@@ -648,6 +776,15 @@ extension ShareViewController: UIGestureRecognizerDelegate {
     _ gestureRecognizer: UIGestureRecognizer,
     shouldReceive touch: UITouch
   ) -> Bool {
+    if gestureRecognizer.view === cardView {
+      if touch.view is UIControl {
+        return false
+      }
+      if touch.view?.isDescendant(of: chipsCollectionView) == true {
+        return false
+      }
+      return true
+    }
     let location = touch.location(in: view)
     return !cardView.frame.contains(location)
   }
@@ -702,13 +839,22 @@ extension ShareViewController:
     let title = displayedFolders[indexPath.item].title
     let attrs: [NSAttributedString.Key: Any] = [
       .font: UIFont.systemFont(
-        ofSize: 16, weight: .semibold
+        ofSize: 14, weight: .semibold
       ),
     ]
     let width = title.size(withAttributes: attrs).width
+    let maxTextWidth = Constants.chipMaxText
+      .size(withAttributes: attrs).width
+    let minWidth = Constants.chipMinWidth
+    let maxWidth = maxTextWidth
+      + (Constants.chipHorizontalPadding * 2)
+    let targetWidth = max(
+      minWidth,
+      min(width + (Constants.chipHorizontalPadding * 2), maxWidth)
+    )
     return CGSize(
-      width: width + (Constants.chipHorizontalPadding * 2),
-      height: Constants.chipVerticalPadding * 2 + 22
+      width: targetWidth,
+      height: Constants.chipHeight
     )
   }
 }
@@ -732,32 +878,35 @@ extension ShareViewController: UITextViewDelegate {
 
 private final class FolderChipCell: UICollectionViewCell {
   static let reuseId = "FolderChipCell"
+  private static let horizontalPadding: CGFloat = 8
 
   private let titleLabel: UILabel = {
     let label = UILabel()
     label.translatesAutoresizingMaskIntoConstraints = false
-    label.font = .systemFont(ofSize: 16, weight: .semibold)
+    label.font = .systemFont(ofSize: 14, weight: .semibold)
+    label.numberOfLines = 1
+    label.textAlignment = .center
+    label.lineBreakMode = .byTruncatingTail
     return label
   }()
 
   override init(frame: CGRect) {
     super.init(frame: frame)
-    contentView.layer.cornerRadius = 22
+    contentView.layer.cornerRadius = 17
     contentView.layer.borderWidth = 1
     contentView.addSubview(titleLabel)
 
     NSLayoutConstraint.activate([
       titleLabel.leadingAnchor.constraint(
-        equalTo: contentView.leadingAnchor, constant: 18
+        equalTo: contentView.leadingAnchor,
+        constant: Self.horizontalPadding
       ),
       titleLabel.trailingAnchor.constraint(
-        equalTo: contentView.trailingAnchor, constant: -18
+        equalTo: contentView.trailingAnchor,
+        constant: -Self.horizontalPadding
       ),
-      titleLabel.topAnchor.constraint(
-        equalTo: contentView.topAnchor, constant: 8
-      ),
-      titleLabel.bottomAnchor.constraint(
-        equalTo: contentView.bottomAnchor, constant: -8
+      titleLabel.centerYAnchor.constraint(
+        equalTo: contentView.centerYAnchor
       ),
     ])
   }

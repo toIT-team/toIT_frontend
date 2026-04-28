@@ -98,12 +98,12 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   Future<void> _handleSharedMedia(List<SharedMediaFile> mediaFiles) async {
     if (!mounted || _isShareSheetVisible || mediaFiles.isEmpty) return;
 
-    final sharedImagePaths = mediaFiles
-        .map((file) => _normalizeFilePath(file.path))
-        .where(_isImagePath)
+    final sharedAttachments = mediaFiles
+        .map((file) => _toSharedAttachment(file.path))
+        .whereType<_SharedAttachment>()
         .toList();
 
-    if (sharedImagePaths.isEmpty) return;
+    if (sharedAttachments.isEmpty) return;
 
     _isShareSheetVisible = true;
     try {
@@ -120,8 +120,8 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         folders: folders,
         initialSelectedFolder: folders.where((f) => f.isDefault).firstOrNull,
         onSave: (selectedFolder, memo) async {
-          await _saveSharedImages(
-            imagePaths: sharedImagePaths,
+          await _saveSharedAttachments(
+            attachments: sharedAttachments,
             selectedFolder: selectedFolder,
             memo: memo,
           );
@@ -142,8 +142,8 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     return state.folders;
   }
 
-  Future<void> _saveSharedImages({
-    required List<String> imagePaths,
+  Future<void> _saveSharedAttachments({
+    required List<_SharedAttachment> attachments,
     required FolderItem selectedFolder,
     required String memo,
   }) async {
@@ -151,51 +151,73 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     int savedCount = 0;
     String? failReason;
 
-    for (final imagePath in imagePaths) {
-      final file = File(imagePath);
+    for (final attachment in attachments) {
+      final file = File(attachment.path);
       if (!await file.exists()) {
-        failReason = '이미지 파일을 찾을 수 없습니다.';
+        failReason = '공유된 파일을 찾을 수 없습니다.';
         continue;
       }
 
-      List<int> imageBytes;
+      List<int> fileBytes;
       try {
-        imageBytes = await file.readAsBytes();
+        fileBytes = await file.readAsBytes();
       } catch (_) {
-        failReason = '이미지 파일을 읽을 수 없습니다.';
+        failReason = '공유된 파일을 읽을 수 없습니다.';
         continue;
       }
-      if (imageBytes.isEmpty) {
-        failReason = '이미지 파일을 읽을 수 없습니다.';
+      if (fileBytes.isEmpty) {
+        failReason = '공유된 파일을 읽을 수 없습니다.';
         continue;
       }
 
       try {
-        await repository.createImage(
-          foldersIdList: [selectedFolder.foldersId],
-          textContent: memo,
-          imageBytes: imageBytes,
-          fileName: _extractFileName(imagePath),
-        );
+        if (attachment.isImage) {
+          await repository.createImage(
+            foldersIdList: [selectedFolder.foldersId],
+            textContent: memo,
+            imageBytes: fileBytes,
+            fileName: _extractFileName(attachment.path),
+          );
+        } else {
+          await repository.createFile(
+            foldersIdList: [selectedFolder.foldersId],
+            textContent: memo,
+            fileBytes: fileBytes,
+            fileName: _extractFileName(attachment.path),
+          );
+        }
         savedCount++;
-      } on DioException catch (_) {
-        failReason = '이미지 저장 중 오류가 발생했습니다.';
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          failReason = '인증이 만료되었습니다. 앱에서 다시 로그인해주세요.';
+        } else {
+          failReason = '공유 항목 저장 중 오류가 발생했습니다.';
+        }
       } catch (_) {
-        failReason = '이미지 저장에 실패했습니다.';
+        failReason = '공유 항목 저장에 실패했습니다.';
       }
     }
 
     if (savedCount <= 0) {
-      _showSnackBar(failReason ?? '공유 이미지 저장에 실패했습니다.');
-      throw Exception('Failed to save shared images.');
+      _showSnackBar(failReason ?? '공유 항목 저장에 실패했습니다.');
+      throw Exception('Failed to save shared attachments.');
     }
 
     await ref.read(homeProvider.notifier).refresh();
     ref.invalidate(pageItemsProvider(selectedFolder.foldersId));
     _showSnackBar(
-      savedCount == imagePaths.length
-          ? '공유 이미지가 저장되었습니다.'
-          : '$savedCount장 저장됨. 일부 실패.',
+      savedCount == attachments.length
+          ? '공유 항목이 저장되었습니다.'
+          : '$savedCount개 저장됨. 일부 실패.',
+    );
+  }
+
+  _SharedAttachment? _toSharedAttachment(String rawPath) {
+    final normalizedPath = _normalizeFilePath(rawPath);
+    if (normalizedPath.trim().isEmpty) return null;
+    return _SharedAttachment(
+      path: normalizedPath,
+      isImage: _isImagePath(normalizedPath),
     );
   }
 
@@ -311,4 +333,11 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
       ),
     );
   }
+}
+
+class _SharedAttachment {
+  final String path;
+  final bool isImage;
+
+  const _SharedAttachment({required this.path, required this.isImage});
 }

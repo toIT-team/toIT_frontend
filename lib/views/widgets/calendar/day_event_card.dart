@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/schedule_range_display_utils.dart';
 import '../../../models/calendar/calendar_event.dart';
 import '../../screens/event_detail_screen.dart';
 import '../event/event_card_context_menu.dart';
@@ -31,6 +32,14 @@ class DayEventCard extends StatefulWidget {
 }
 
 class _DayEventCardState extends State<DayEventCard> {
+  static const _cardHorizontalMargin = 16.0;
+  static const _cardVerticalMargin = 6.0;
+  static const _cardBorderRadius = 16.0;
+  static const _leftBarWidth = 4.0;
+  static const _cardHorizontalPadding = 16.0;
+  static const _cardVerticalPadding = 12.0;
+  static const _cardMinHeight = 72.0;
+
   Offset _lastTouchPosition = Offset.zero;
   bool _isPressed = false;
 
@@ -72,61 +81,70 @@ class _DayEventCardState extends State<DayEventCard> {
             : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: _isPressed ? Colors.grey[300]! : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+          clipBehavior: Clip.antiAlias,
+          margin: const EdgeInsets.symmetric(
+            horizontal: _cardHorizontalMargin,
+            vertical: _cardVerticalMargin,
           ),
-          child: Row(
+          constraints: const BoxConstraints(minHeight: _cardMinHeight),
+          decoration: BoxDecoration(
+            color: _isPressed ? AppColors.neutral50 : Colors.white,
+            borderRadius: BorderRadius.circular(_cardBorderRadius),
+            border: Border.all(color: AppColors.neutral100),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                width: 4,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: widget.event.color,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
+                  width: _leftBarWidth,
+                  decoration: BoxDecoration(
+                    color: widget.event.color,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(_cardBorderRadius),
+                      bottomLeft: Radius.circular(_cardBorderRadius),
+                    ),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.event.title,
-                        style: const TextStyle(
-                          color: AppColors.gray900,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: _cardHorizontalPadding,
+                      vertical: _cardVerticalPadding,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.event.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.gray900,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getTimeText(),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.gray600,
+                        const SizedBox(height: 6),
+                        Text(
+                          ScheduleRangeDisplayUtils.formatEventRangeLine(
+                            widget.event,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.gray600,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
             ],
+          ),
           ),
         ),
       ),
@@ -143,37 +161,4 @@ class _DayEventCardState extends State<DayEventCard> {
     );
   }
 
-  /// 시간 텍스트 생성
-  String _getTimeText() {
-    if (!widget.event.timeSetting) {
-      return '하루 종일';
-    }
-
-    final startTime = _formatTime(widget.event.startTime);
-    final endTime = _formatTime(widget.event.endTime);
-
-    if (startTime != null && endTime != null) {
-      return '$startTime - $endTime';
-    } else if (startTime != null) {
-      return startTime;
-    }
-
-    return '하루 종일';
-  }
-
-  /// 시간 포맷 (24시간 -> 오전/오후)
-  String? _formatTime(String? time) {
-    if (time == null) return null;
-
-    final parts = time.split(':');
-    if (parts.length != 2) return time;
-
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = parts[1];
-
-    final period = hour < 12 ? '오전' : '오후';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-
-    return '$period $displayHour:$minute';
-  }
 }

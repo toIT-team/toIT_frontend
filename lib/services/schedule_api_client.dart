@@ -246,11 +246,16 @@ class ScheduleApiClient {
   ) {
     final color = EventColorTokens.fromToken(item.appColor);
     final hasTime = item.startTime != null && item.endTime != null;
+    final startAt =
+        item.startDate.isNotEmpty ? item.startDate : selectedDayStr;
+    // endDate가 없는 응답은 "하루 내 시간 범위"로 간주해야 하므로 빈 값 유지
+    // (UI에서 날짜 없이 시간만 노출).
+    final endAt = item.endDate;
     return CalendarEvent(
       id: item.schedulesId.toString(),
       title: item.title,
-      startAt: selectedDayStr,
-      endAt: selectedDayStr,
+      startAt: startAt,
+      endAt: endAt,
       startTime: _toHhMm(item.startTime),
       endTime: _toHhMm(item.endTime),
       timeSetting: hasTime,
