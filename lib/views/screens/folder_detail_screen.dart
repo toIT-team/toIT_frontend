@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -749,6 +751,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final systemBottom = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+    final addButtonBottomInset = math.max(systemBottom, 8.0);
+
     // 즐겨찾기 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
     ref.watch(homeProvider.select((state) => state.folders));
     final isFavoriteFolder = ref
@@ -809,87 +815,94 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ],
       ),
-      body: pageItemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '항목을 불러오지 못했습니다.',
-                style: TextStyle(color: AppColors.gray600, fontSize: 16),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: () =>
-                    ref.invalidate(pageItemsProvider(widget.foldersId)),
-                child: const Text('다시 시도'),
-              ),
-            ],
-          ),
-        ),
-        data: (data) => Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: AppColors.gray900,
-              unselectedLabelColor: AppColors.gray600,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
-              labelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.025 * 16,
-                height: 1.4,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.025 * 16,
-                height: 1.4,
-              ),
-              indicatorColor: AppColors.blue500,
-              indicatorWeight: 2,
-              dividerColor: AppColors.neutral50,
-              tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: _buildTabViewChildren(data),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 4, bottom: 16),
-        child: _TapScale(
-          key: _addButtonKey,
-          onTap: _onAddMenuTap,
-          pressedScale: 0.94,
-          borderRadius: BorderRadius.circular(99),
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppColors.blue500,
-              borderRadius: BorderRadius.circular(99),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadowNavBlue.withOpacity(0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: pageItemsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '항목을 불러오지 못했습니다.',
+                      style: TextStyle(color: AppColors.gray600, fontSize: 16),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextButton(
+                      onPressed: () =>
+                          ref.invalidate(pageItemsProvider(widget.foldersId)),
+                      child: const Text('다시 시도'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(Icons.add, color: Colors.white, size: 28),
+              ),
+              data: (data) => Column(
+                children: [
+                  TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.gray900,
+                    unselectedLabelColor: AppColors.gray600,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    indicatorColor: AppColors.blue500,
+                    indicatorWeight: 2,
+                    dividerColor: AppColors.neutral50,
+                    tabs:
+                        FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: _buildTabViewChildren(data),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            right: 20,
+            bottom: addButtonBottomInset,
+            child: _TapScale(
+              key: _addButtonKey,
+              onTap: _onAddMenuTap,
+              pressedScale: 0.94,
+              borderRadius: BorderRadius.circular(99),
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.blue500,
+                  borderRadius: BorderRadius.circular(99),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shadowNavBlue.withOpacity(0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(Icons.add, color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
