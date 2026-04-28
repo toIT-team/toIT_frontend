@@ -33,6 +33,7 @@ import 'save_image_screen.dart';
 import 'save_link_screen.dart';
 import 'save_note_screen.dart';
 import 'event_form_screen.dart';
+import 'search_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -784,7 +785,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ),
         actions: [
           _TapScaleIconButton(
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+              );
+            },
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
           ),
           _TapScaleIconButton(

@@ -10,6 +10,7 @@ import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/system_ui_insets.dart';
+import '../../core/utils/upload_validation_utils.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -84,7 +85,18 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       _showSnackBar('보관함을 선택해 주세요.');
       return;
     }
-    List<int>? bytes = _pickedFile!.bytes != null
+    final selectedFile = _pickedFile!;
+    final fileSizeBytes = selectedFile.size;
+    final validateMessage = validateFileSectionUpload(
+      fileName: selectedFile.name,
+      fileSizeBytes: fileSizeBytes,
+    );
+    if (validateMessage != null) {
+      _showSnackBar(validateMessage);
+      return;
+    }
+
+    List<int>? bytes = selectedFile.bytes != null
         ? _pickedFile!.bytes!
         : (_pickedFile!.path != null
               ? await _readFileBytes(_pickedFile!.path!)
@@ -103,7 +115,7 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
         foldersIdList: [_selectedFolder!.foldersId],
         textContent: _memoController.text.trim(),
         fileBytes: fileBytes,
-        fileName: _pickedFile!.name,
+        fileName: selectedFile.name,
       );
       await ref.read(homeProvider.notifier).refresh();
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
@@ -166,7 +178,16 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
         withData: true,
       );
       if (result != null && result.files.isNotEmpty && mounted) {
-        setState(() => _pickedFile = result.files.single);
+        final nextFile = result.files.single;
+        final validateMessage = validateFileSectionUpload(
+          fileName: nextFile.name,
+          fileSizeBytes: nextFile.size,
+        );
+        if (validateMessage != null) {
+          _showSnackBar(validateMessage);
+          return;
+        }
+        setState(() => _pickedFile = nextFile);
       }
     } catch (e) {
       if (!mounted) return;

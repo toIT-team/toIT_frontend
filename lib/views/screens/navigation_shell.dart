@@ -9,6 +9,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
+import '../../core/utils/upload_validation_utils.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
@@ -170,20 +171,35 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         continue;
       }
 
+      final fileName = _extractFileName(attachment.path);
+      final validateMessage = attachment.isImage
+          ? validateImageSectionUpload(
+              fileName: fileName,
+              fileSizeBytes: fileBytes.length,
+            )
+          : validateFileSectionUpload(
+              fileName: fileName,
+              fileSizeBytes: fileBytes.length,
+            );
+      if (validateMessage != null) {
+        failReason = validateMessage;
+        continue;
+      }
+
       try {
         if (attachment.isImage) {
           await repository.createImage(
             foldersIdList: [selectedFolder.foldersId],
             textContent: memo,
             imageBytes: fileBytes,
-            fileName: _extractFileName(attachment.path),
+            fileName: fileName,
           );
         } else {
           await repository.createFile(
             foldersIdList: [selectedFolder.foldersId],
             textContent: memo,
             fileBytes: fileBytes,
-            fileName: _extractFileName(attachment.path),
+            fileName: fileName,
           );
         }
         savedCount++;
