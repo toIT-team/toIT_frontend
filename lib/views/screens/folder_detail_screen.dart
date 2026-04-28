@@ -1668,8 +1668,29 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
   final dateStr = createdAt != null && createdAt.isNotEmpty
       ? _formatCreatedAt(createdAt)
       : '';
-  final sizeStr = '${attachmentsSize.toStringAsFixed(1)}KB';
+  final sizeStr = _formatAttachmentSize(attachmentsSize);
   return dateStr.isEmpty ? sizeStr : '$dateStr | $sizeStr';
+}
+
+String _formatAttachmentSize(double sizeInKb) {
+  if (sizeInKb <= 0) return '0B';
+
+  final bytes = sizeInKb * 1024;
+  if (bytes < 1024) {
+    return '${bytes.toStringAsFixed(0)}B';
+  }
+
+  if (sizeInKb < 1024) {
+    return '${sizeInKb.toStringAsFixed(1)}KB';
+  }
+
+  final sizeInMb = sizeInKb / 1024;
+  if (sizeInMb < 1024) {
+    return '${sizeInMb.toStringAsFixed(1)}MB';
+  }
+
+  final sizeInGb = sizeInMb / 1024;
+  return '${sizeInGb.toStringAsFixed(1)}GB';
 }
 
 // ─── 이미지 탭 (API images[]) ───
