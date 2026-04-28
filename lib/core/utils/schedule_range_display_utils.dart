@@ -1,4 +1,4 @@
-import 'package:poj_todo/models/calendar/calendar_event.dart';
+import '../../models/calendar/calendar_event.dart';
 
 /// 일정 기간·시간을 바텀시트 등에서 한 줄로 표시할 때 사용한다.
 class ScheduleRangeDisplayUtils {

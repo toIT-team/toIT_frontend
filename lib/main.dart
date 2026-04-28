@@ -22,6 +22,7 @@ import 'views/screens/navigation_shell.dart'
     show NavigationShell, pendingDeepLinkUrlProvider;
 import 'views/screens/splash_retry_screen.dart';
 import 'views/screens/splash_screen.dart';
+import 'views/widgets/common/app_alert_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +59,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const _launchInfoChannel = MethodChannel(
     'com.example.pojTodo/launch_info',
   );
+  final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
   /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
   /// 부트스트랩이 너무 빨라 화면이 깜빡이는 인상을 주지 않기 위함.
@@ -68,6 +70,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   /// 스플래시 최소 노출 시간이 지난 뒤에만 true.
   /// `authState`가 먼저 확정되더라도 이 값이 false인 동안에는 스플래시를 유지한다.
   bool _isSplashFinished = false;
+  bool _showSessionExpiredNotice = false;
+  bool _isSessionExpiredDialogShowing = false;
 
   @override
   void initState() {
@@ -146,6 +150,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     apiClient.enableAuth(
       authService: authService,
       onForceLogout: () {
+        _showSessionExpiredNotice = true;
         ref.read(authProvider.notifier).forceLogout();
       },
     );
@@ -193,6 +198,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthStatus>(
+      authProvider.select((state) => state.status),
+      _handleAuthStatusChanged,
+    );
+
     final bootstrapStatus = ref.watch(
       bootstrapProvider.select((state) => state.status),
     );
@@ -201,6 +211,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       title: 'toIT',
       debugShowCheckedModeBanner: false,
+      navigatorKey: _rootNavigatorKey,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       home: _buildHome(bootstrapStatus, authStatus),
@@ -269,5 +280,43 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     if (_lastRouteLog == name) return;
     _lastRouteLog = name;
     debugPrint('[BOOT] route_decided home=$name');
+  }
+
+  void _handleAuthStatusChanged(AuthStatus? previous, AuthStatus next) {
+    if (next == AuthStatus.authenticated) {
+      _showSessionExpiredNotice = false;
+      return;
+    }
+    if (next != AuthStatus.unauthenticated || !_showSessionExpiredNotice) {
+      return;
+    }
+
+    if (_isSessionExpiredDialogShowing) return;
+    _showSessionExpiredNotice = false;
+    _isSessionExpiredDialogShowing = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        _isSessionExpiredDialogShowing = false;
+        return;
+      }
+
+      final navigator = _rootNavigatorKey.currentState;
+      final dialogContext = _rootNavigatorKey.currentContext;
+      if (navigator == null || dialogContext == null) {
+        _isSessionExpiredDialogShowing = false;
+        return;
+      }
+
+      await showAppAlertDialog(
+        dialogContext,
+        message: '세션이 만료되어 다시 로그인해 주세요.',
+        confirmLabel: '확인',
+      );
+
+      if (mounted) {
+        navigator.popUntil((route) => route.isFirst);
+      }
+      _isSessionExpiredDialogShowing = false;
+    });
   }
 }
