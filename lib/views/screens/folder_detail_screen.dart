@@ -1673,14 +1673,15 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
   return dateStr.isEmpty ? sizeStr : '$dateStr | $sizeStr';
 }
 
-String _formatAttachmentSize(double sizeInKb) {
-  if (sizeInKb <= 0) return '0B';
+String _formatAttachmentSize(double sizeInBytes) {
+  if (sizeInBytes <= 0) return '0B';
 
-  final bytes = sizeInKb * 1024;
+  final bytes = sizeInBytes;
   if (bytes < 1024) {
     return '${bytes.toStringAsFixed(0)}B';
   }
 
+  final sizeInKb = bytes / 1024;
   if (sizeInKb < 1024) {
     return '${sizeInKb.toStringAsFixed(1)}KB';
   }

@@ -1,7 +1,13 @@
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
+import '../core/utils/attachment_upload_utils.dart';
 import '../datasources/remote/home_remote_datasource.dart';
+import '../models/dto/attachment_confirm_dto.dart';
+import '../models/dto/attachment_presign_dto.dart';
 import '../models/dto/home_response_dto.dart';
 import '../models/dto/link_preview_response_dto.dart';
 import '../models/dto/page_items_response_dto.dart';
@@ -157,34 +163,119 @@ class HomeRepository {
     );
   }
 
-  /// 자료 파일 추가 (POST /attachments/files)
-  Future<void> createFile({
+  /// 자료 파일 추가 (presign → S3 PUT → confirm)
+  /// 기존 multipart 단일 호출을 presigned URL 기반 3단계로 교체
+  Future<List<ConfirmResponseItem>> createFile({
     required List<int> foldersIdList,
     required String textContent,
     required List<int> fileBytes,
     required String fileName,
   }) async {
-    await _remoteDatasource.createFile(
+    return _uploadViaPresign(
       foldersIdList: foldersIdList,
       textContent: textContent,
-      fileBytes: fileBytes,
+      bytes: fileBytes,
       fileName: fileName,
+      attachmentsType: AttachmentsType.file,
     );
   }
 
-  /// 자료 이미지 추가 (POST /attachments/images)
-  Future<void> createImage({
+  /// 자료 이미지 추가 (presign → S3 PUT → confirm)
+  /// 가능한 경우 width/height까지 함께 전송
+  Future<List<ConfirmResponseItem>> createImage({
     required List<int> foldersIdList,
     required String textContent,
     required List<int> imageBytes,
     required String fileName,
   }) async {
-    await _remoteDatasource.createImage(
+    return _uploadViaPresign(
       foldersIdList: foldersIdList,
       textContent: textContent,
-      imageBytes: imageBytes,
+      bytes: imageBytes,
       fileName: fileName,
+      attachmentsType: AttachmentsType.image,
     );
+  }
+
+  /// presign → S3 PUT → confirm 3단계 업로드 공통 로직
+  Future<List<ConfirmResponseItem>> _uploadViaPresign({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> bytes,
+    required String fileName,
+    required String attachmentsType,
+  }) async {
+    final payload = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final fileSize = payload.length;
+    final contentType = resolveContentType(fileName);
+    // 백엔드가 textContent null 처리에서 NPE를 내는 경우가 있어 빈 문자열도 명시 전달한다.
+    final normalizedTextContent = textContent;
+
+    int? width;
+    int? height;
+    if (attachmentsType == AttachmentsType.image) {
+      final dimensions = await readImageDimensions(payload);
+      width = dimensions?.width;
+      height = dimensions?.height;
+    }
+
+    final presignedFiles = await _remoteDatasource.presignAttachment(
+      PresignRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: attachmentsType,
+        files: [
+          PresignFileDto(
+            contentType: contentType,
+            fileName: fileName,
+            fileSize: fileSize,
+            width: width,
+            height: height,
+          ),
+        ],
+        textContent: normalizedTextContent,
+      ),
+    );
+    if (presignedFiles.isEmpty) {
+      throw Exception('presign 응답이 비어 있습니다.');
+    }
+    final presign = presignedFiles.first;
+    if (kDebugMode) {
+      debugPrint(
+        '[upload] presign ok type=$attachmentsType '
+        'objectKey=${presign.objectKey} size=$fileSize',
+      );
+    }
+
+    await _remoteDatasource.uploadToS3(
+      uploadUrl: presign.uploadUrl,
+      bytes: payload,
+      contentType: contentType,
+    );
+
+    final confirmed = await _remoteDatasource.confirmAttachment(
+      ConfirmRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: attachmentsType,
+        files: [
+          ConfirmFileDto(
+            objectKey: presign.objectKey,
+            fileName: fileName,
+            contentType: contentType,
+            fileSize: fileSize,
+            width: width,
+            height: height,
+          ),
+        ],
+        textContent: normalizedTextContent,
+      ),
+    );
+    if (kDebugMode) {
+      debugPrint(
+        '[upload] confirm ok count=${confirmed.length} '
+        'objectKey=${presign.objectKey}',
+      );
+    }
+    return confirmed;
   }
 
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
