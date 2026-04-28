@@ -631,7 +631,7 @@ final class ShareViewController: UIViewController {
   private func cancelTapped() {
     extensionContext?.cancelRequest(
       withError: NSError(
-        domain: "com.example.pojTodo.share",
+        domain: "com.toit.ShareExtension.ErrorDomain",
         code: 0,
         userInfo: nil
       )

@@ -26,7 +26,7 @@ class SceneDelegate: FlutterSceneDelegate {
     else { return }
 
     let channel = FlutterMethodChannel(
-      name: "com.example.pojTodo/deeplink",
+      name: "com.toit/deeplink",
       binaryMessenger: controller.binaryMessenger
     )
     channel.invokeMethod("onDeepLink", arguments: url.absoluteString)
