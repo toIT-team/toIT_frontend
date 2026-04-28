@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
 import '../../core/constants/setting_layout_tokens.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/calendar/calendar_event.dart';
 import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
@@ -25,11 +26,7 @@ import '../widgets/event/event_time_section.dart';
 
 /// 이벤트 폼 화면 (생성/수정 공용)
 class EventFormScreen extends ConsumerStatefulWidget {
-  const EventFormScreen({
-    super.key,
-    this.event,
-    this.initialDate,
-  });
+  const EventFormScreen({super.key, this.event, this.initialDate});
 
   /// 수정할 이벤트 (null이면 생성 모드)
   final CalendarEvent? event;
@@ -42,6 +39,8 @@ class EventFormScreen extends ConsumerStatefulWidget {
 }
 
 class _EventFormScreenState extends ConsumerState<EventFormScreen> {
+  static const _pastAlarmToastMessage = '이미 지난 시점에는 알림을 설정할 수 없어요.';
+
   late final TextEditingController _titleController;
   late final TextEditingController _memoController;
   late final FocusNode _titleFocusNode;
@@ -172,9 +171,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
   }
 
   void _handleMemoChanged(String value) {
-    ref.read(eventFormProvider.notifier).updateMemo(
-          value.isEmpty ? null : value,
-        );
+    ref
+        .read(eventFormProvider.notifier)
+        .updateMemo(value.isEmpty ? null : value);
   }
 
   void _handleSave() async {
@@ -194,7 +193,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
       return;
     }
 
-    print('>>> [일정 저장] isCreateMode=$isCreateMode, event.id=${widget.event?.id}');
+    print(
+      '>>> [일정 저장] isCreateMode=$isCreateMode, event.id=${widget.event?.id}',
+    );
     controller.setSaving(true);
     controller.setError(null);
 
@@ -228,7 +229,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
         print('[일정 수정] 수정 모드 - API 호출 시작');
         final formState = ref.read(eventFormProvider);
         final schedulesId = int.tryParse(formState.id ?? '');
-        print('[일정 수정] schedulesId: $schedulesId, formState.id: ${formState.id}');
+        print(
+          '[일정 수정] schedulesId: $schedulesId, formState.id: ${formState.id}',
+        );
         if (schedulesId == null) {
           controller.setError('일정 ID를 찾을 수 없습니다.');
           return;
@@ -272,7 +275,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
       context,
       ref,
       onSelected: (folder) {
-        ref.read(eventFormProvider.notifier).selectFolder(
+        ref
+            .read(eventFormProvider.notifier)
+            .selectFolder(
               foldersId: folder.foldersId,
               folderName: folder.title,
             );
@@ -311,13 +316,18 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
   }
 
   Future<void> _showInvalidDateRangeDialog() async {
-    await showAppAlertDialog(
-      context,
-      message: '시작 날짜는 종료 날짜 이전이어야 합니다.',
-    );
+    await showAppAlertDialog(context, message: '시작 날짜는 종료 날짜 이전이어야 합니다.');
   }
 
   void _showAlarmPicker() {
+    final formState = ref.read(eventFormProvider);
+    final isAllDayAlarmMode = !formState.timeSetting;
+    final options = isAllDayAlarmMode
+        ? AlarmUtils.allDayPresetOptions(
+            startDate: formState.startDate ?? DateTime.now(),
+          )
+        : AlarmUtils.predefinedOptions;
+
     BottomSheetStyle.show<void>(
       context,
       showDragHandle: true,
@@ -326,8 +336,13 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           final currentMinutes = ref.watch(eventFormProvider).alarmMinutes;
           return AlarmPickerSheet(
             currentMinutes: currentMinutes,
+            options: options,
+            showCustomSetting: !isAllDayAlarmMode,
             onOptionSelected: (minutes) {
               ref.read(eventFormProvider.notifier).updateAlarm(minutes);
+            },
+            onDisabledOptionTap: (_) {
+              showAppToast(context, message: _pastAlarmToastMessage);
             },
             onCustomSettingTap: _showAlarmCustomPicker,
           );
@@ -338,8 +353,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
 
   void _showAlarmCustomPicker() {
     final currentMinutes = ref.read(eventFormProvider).alarmMinutes;
-    final (initialValue, initialUnit) =
-        AlarmUtils.fromMinutes(currentMinutes ?? 60); // 기본 1시간
+    final (initialValue, initialUnit) = AlarmUtils.fromMinutes(
+      currentMinutes ?? 60,
+    ); // 기본 1시간
 
     BottomSheetStyle.show<void>(
       context,
@@ -447,10 +463,7 @@ class _EventFormLayout extends StatelessWidget {
                       color: formState.appColorToken != null
                           ? EventColorTokens.of(formState.appColorToken!)
                           : EventColorTokens.defaultColor,
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
                     ),
                   ),
                 ),
@@ -460,8 +473,7 @@ class _EventFormLayout extends StatelessWidget {
           const AppDivider(),
           Expanded(
             child: SingleChildScrollView(
-              keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: Column(
                 children: [
                   // 보관함 섹션
@@ -483,8 +495,9 @@ class _EventFormLayout extends StatelessWidget {
                     child: EventTimeSection(
                       startDate: formState.startDate ?? DateTime.now(),
                       endDate: formState.endDate ?? DateTime.now(),
-                      startTime:
-                          formState.timeSetting ? formState.startTime : null,
+                      startTime: formState.timeSetting
+                          ? formState.startTime
+                          : null,
                       endTime: formState.timeSetting ? formState.endTime : null,
                       isEditable: true,
                       timeSetting: formState.timeSetting,

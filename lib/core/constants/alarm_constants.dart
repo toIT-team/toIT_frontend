@@ -8,6 +8,18 @@ enum AlarmUnit {
   final String label;
 }
 
+class AlarmOptionItem {
+  const AlarmOptionItem({
+    required this.minutes,
+    required this.label,
+    this.enabled = true,
+  });
+
+  final int minutes;
+  final String label;
+  final bool enabled;
+}
+
 /// 알림 유틸리티
 class AlarmUtils {
   AlarmUtils._();
@@ -38,13 +50,44 @@ class AlarmUtils {
   }
 
   /// 사전 정의된 알림 옵션 (분, 라벨)
-  static const predefinedOptions = [
-    (0, '일정 시작'),
-    (5, '5분 전'),
-    (10, '10분 전'),
-    (60, '1시간 전'),
-    (1440, '1일 전'),
+  static const predefinedOptions = <AlarmOptionItem>[
+    AlarmOptionItem(minutes: 0, label: '일정 시작'),
+    AlarmOptionItem(minutes: 5, label: '5분 전'),
+    AlarmOptionItem(minutes: 10, label: '10분 전'),
+    AlarmOptionItem(minutes: 60, label: '1시간 전'),
+    AlarmOptionItem(minutes: 1440, label: '1일 전'),
   ];
 
   static const predefinedMinutes = [0, 5, 10, 60, 1440];
+
+  static const _allDayPresetOptions = <AlarmOptionItem>[
+    AlarmOptionItem(minutes: 0, label: '이벤트 당일(09:00)'),
+    AlarmOptionItem(minutes: 1440, label: '1일 전(09:00)'),
+    AlarmOptionItem(minutes: 2880, label: '2일 전(09:00)'),
+    AlarmOptionItem(minutes: 10080, label: '1주 전'),
+  ];
+
+  static List<AlarmOptionItem> allDayPresetOptions({
+    required DateTime startDate,
+    DateTime? now,
+  }) {
+    final current = now ?? DateTime.now();
+    final eventBase = DateTime(
+      startDate.year,
+      startDate.month,
+      startDate.day,
+      9,
+    );
+
+    return _allDayPresetOptions
+        .map((option) {
+          final alarmAt = eventBase.subtract(Duration(minutes: option.minutes));
+          return AlarmOptionItem(
+            minutes: option.minutes,
+            label: option.label,
+            enabled: !alarmAt.isBefore(current),
+          );
+        })
+        .toList(growable: false);
+  }
 }
