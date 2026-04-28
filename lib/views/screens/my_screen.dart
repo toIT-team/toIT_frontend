@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../controllers/auth_controller.dart';
+import '../../controllers/notifications_unread_count_controller.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
@@ -89,6 +90,27 @@ class MyScreen extends ConsumerWidget {
                       ref.invalidate(myPageProvider(cacheKey));
                     }
                   },
+                  onSupportPressed: () async {
+                    final result = await Navigator.of(context).push<String>(
+                      MaterialPageRoute<String>(
+                        builder: (_) => const SupportScreen(),
+                      ),
+                    );
+                    await ref
+                        .read(
+                          notificationsUnreadCountProvider((
+                            userId,
+                            refreshTick,
+                          )).notifier,
+                        )
+                        .refresh();
+                    if (!context.mounted) return;
+                    if (result != null && result.isNotEmpty) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(result)));
+                    }
+                  },
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _ErrorView(
@@ -154,11 +176,13 @@ class _MyContent extends StatelessWidget {
     required this.myPage,
     required this.storageUsageAsync,
     required this.onEditProfilePressed,
+    required this.onSupportPressed,
   });
 
   final MyPageResponseDto myPage;
   final AsyncValue<StorageUsageResponseDto> storageUsageAsync;
   final VoidCallback onEditProfilePressed;
+  final Future<void> Function() onSupportPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -246,19 +270,7 @@ class _MyContent extends StatelessWidget {
                   subtitle: '고객센터, 의견, 공지사항',
                   showChevron: true,
                   scale: scale,
-                  onTap: () async {
-                    final result = await Navigator.of(context).push<String>(
-                      MaterialPageRoute<String>(
-                        builder: (_) => const SupportScreen(),
-                      ),
-                    );
-                    if (!context.mounted) return;
-                    if (result != null && result.isNotEmpty) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(result)));
-                    }
-                  },
+                  onTap: onSupportPressed,
                 ),
                 Container(height: s(10), color: AppColors.neutral300),
                 _SettingTile(

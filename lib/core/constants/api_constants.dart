@@ -41,6 +41,10 @@ class ApiConstants {
   static String notificationReadPath(int notificationId) =>
       '/api/notifications/$notificationId/read';
 
+  /// 미읽음 알림 개수 (GET /api/notifications/unread-count)
+  static const String notificationsUnreadCountEndpoint =
+      '/api/notifications/unread-count';
+
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
 
