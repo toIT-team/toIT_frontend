@@ -59,14 +59,15 @@ class AuthService {
                 milliseconds: ApiConstants.receiveTimeout,
               ),
             ),
-          )..interceptors.add(
-              LogInterceptor(
-                requestHeader: true,
-                requestBody: true,
-                responseHeader: false,
-                responseBody: true,
-              ),
-            ));
+          ));
+          // ..interceptors.add(
+          //   LogInterceptor(
+          //     requestHeader: true,
+          //     requestBody: true,
+          //     responseHeader: false,
+          //     responseBody: true,
+          //   ),
+          // );
 
   // ─── 토큰 저장소 ───
 
@@ -95,9 +96,9 @@ class AuthService {
     // 토큰 쌍이 어긋난 상태(access만 있거나 refresh만 있는 경우)는
     // 앱 시작 시 authenticated로 오판되어 401 루프를 만들 수 있다.
     if (hasAccessToken != hasRefreshToken) {
-      debugPrint(
-        '[AuthService] 토큰 쌍 불일치 감지(access=$hasAccessToken, refresh=$hasRefreshToken) → 토큰 정리',
-      );
+      // debugPrint(
+        // '[AuthService] 토큰 쌍 불일치 감지(access=$hasAccessToken, refresh=$hasRefreshToken) → 토큰 정리',
+      // );
       await clearTokens();
       return false;
     }
@@ -127,12 +128,12 @@ class AuthService {
     if (!Platform.isIOS) return;
     try {
       final userId = await getUserIdFromToken();
-      debugPrint(
-        '[AuthService] App Group 동기화 시도 - '
-        'token: ${accessToken.substring(0, 10)}..., '
-        'userId: $userId, '
-        'baseUrl: ${ApiConstants.baseUrl}',
-      );
+      // debugPrint(
+        // '[AuthService] App Group 동기화 시도 - '
+        // 'token: ${accessToken.substring(0, 10)}..., '
+        // 'userId: $userId, '
+        // 'baseUrl: ${ApiConstants.baseUrl}',
+      // );
       final result = await _tokenChannel.invokeMethod(
         'syncToken',
         {
@@ -141,13 +142,13 @@ class AuthService {
           'baseUrl': ApiConstants.baseUrl,
         },
       );
-      debugPrint(
-        '[AuthService] App Group 동기화 결과: $result',
-      );
+      // debugPrint(
+        // '[AuthService] App Group 동기화 결과: $result',
+      // );
     } catch (e) {
-      debugPrint(
-        '[AuthService] App Group 토큰 동기화 실패: $e',
-      );
+      // debugPrint(
+        // '[AuthService] App Group 토큰 동기화 실패: $e',
+      // );
     }
   }
 
@@ -156,9 +157,9 @@ class AuthService {
     try {
       await _tokenChannel.invokeMethod('clearToken');
     } catch (e) {
-      debugPrint(
-        '[AuthService] App Group 토큰 삭제 실패: $e',
-      );
+      // debugPrint(
+        // '[AuthService] App Group 토큰 삭제 실패: $e',
+      // );
     }
   }
 
@@ -170,14 +171,14 @@ class AuthService {
     required String logLabel,
   }) async {
     final loginUrl = '${ApiConstants.baseUrl}$endpoint';
-    debugPrint('[AuthService] $logLabel 로그인 시작: $loginUrl');
+    // debugPrint('[AuthService] $logLabel 로그인 시작: $loginUrl');
 
     final resultUrl = await FlutterWebAuth2.authenticate(
       url: loginUrl,
       callbackUrlScheme: ApiConstants.authCallbackScheme,
     );
 
-    debugPrint('[AuthService] 콜백 수신: $resultUrl');
+    // debugPrint('[AuthService] 콜백 수신: $resultUrl');
     return _parseCallback(resultUrl);
   }
 
@@ -200,21 +201,21 @@ class AuthService {
     final errorCode = uri.queryParameters['errorCode'];
     final restoreToken = uri.queryParameters['restoreToken'];
 
-    debugPrint('[AuthService] 콜백 파싱 결과:');
-    debugPrint('  result: $resultStr');
-    debugPrint(
-      '  accessToken: ${accessToken != null ? '${accessToken.substring(0, 20)}...' : 'null'}',
-    );
-    debugPrint(
-      '  refreshToken: ${refreshToken != null ? '${refreshToken.substring(0, 20)}...' : 'null'}',
-    );
-    debugPrint('  errorCode: $errorCode');
-    debugPrint(
-      '  restoreToken: ${restoreToken != null ? '${restoreToken.substring(0, restoreToken.length > 12 ? 12 : restoreToken.length)}...' : 'null'}',
-    );
-    debugPrint('  전체 쿼리: ${uri.queryParameters}');
+    // debugPrint('[AuthService] 콜백 파싱 결과:');
+    // debugPrint('  result: $resultStr');
+    // debugPrint(
+      // '  accessToken: ${accessToken != null ? '${accessToken.substring(0, 20)}...' : 'null'}',
+    // );
+    // debugPrint(
+      // '  refreshToken: ${refreshToken != null ? '${refreshToken.substring(0, 20)}...' : 'null'}',
+    // );
+    // debugPrint('  errorCode: $errorCode');
+    // debugPrint(
+      // '  restoreToken: ${restoreToken != null ? '${restoreToken.substring(0, restoreToken.length > 12 ? 12 : restoreToken.length)}...' : 'null'}',
+    // );
+    // debugPrint('  전체 쿼리: ${uri.queryParameters}');
     if (accessToken != null && accessToken.isNotEmpty) {
-      _debugPrintJwtPayload(token: accessToken, label: 'callback accessToken');
+      // _debugPrintJwtPayload(token: accessToken, label: 'callback accessToken');
     }
 
     final result = switch (resultStr) {
@@ -238,10 +239,10 @@ class AuthService {
   Future<void> printStoredUserInfo() async {
     final accessToken = await getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
-      debugPrint('[AuthService] 저장된 accessToken이 없습니다.');
+      // debugPrint('[AuthService] 저장된 accessToken이 없습니다.');
       return;
     }
-    _debugPrintJwtPayload(token: accessToken, label: 'stored accessToken');
+    // _debugPrintJwtPayload(token: accessToken, label: 'stored accessToken');
   }
 
   /// accessToken에서 userId(sub) 추출
@@ -294,18 +295,18 @@ class AuthService {
   void _debugPrintJwtPayload({required String token, required String label}) {
     final payload = _tryDecodeJwtPayload(token);
     if (payload == null) {
-      debugPrint('[AuthService] $label payload decode 실패');
+      // debugPrint('[AuthService] $label payload decode 실패');
       return;
     }
 
-    debugPrint('[AuthService] $label payload: $payload');
-    debugPrint(
-      '[AuthService] $label claims'
-      ' sub=${payload['sub']}'
-      ' nickname=${payload['nickname']}'
-      ' name=${payload['name']}'
-      ' email=${payload['email']}',
-    );
+    // debugPrint('[AuthService] $label payload: $payload');
+    // debugPrint(
+      // '[AuthService] $label claims'
+      // ' sub=${payload['sub']}'
+      // ' nickname=${payload['nickname']}'
+      // ' name=${payload['name']}'
+      // ' email=${payload['email']}',
+    // );
   }
 
   // ─── 토큰 재발급 ───
@@ -320,14 +321,14 @@ class AuthService {
   Future<String?> reissueAccessToken() async {
     final refreshToken = await getRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) {
-      debugPrint('[AuthService][REISSUE] ❌ refreshToken 없음 → 재발급 불가');
+      // debugPrint('[AuthService][REISSUE] ❌ refreshToken 없음 → 재발급 불가');
       return null;
     }
 
     final reissueUrl = '${ApiConstants.baseUrl}${ApiConstants.reissueEndpoint}';
     final maskedRt = _maskToken(refreshToken);
-    debugPrint('[AuthService][REISSUE] ▶ POST $reissueUrl');
-    debugPrint('[AuthService][REISSUE]   body: {"refreshToken": "$maskedRt"}');
+    // debugPrint('[AuthService][REISSUE] ▶ POST $reissueUrl');
+    // debugPrint('[AuthService][REISSUE]   body: {"refreshToken": "$maskedRt"}');
 
     try {
       final response = await _dio.post(
@@ -338,24 +339,24 @@ class AuthService {
         ),
       );
 
-      debugPrint(
-        '[AuthService][REISSUE] ◀ status=${response.statusCode}'
-        ' body=${response.data}',
-      );
+      // debugPrint(
+        // '[AuthService][REISSUE] ◀ status=${response.statusCode}'
+        // ' body=${response.data}',
+      // );
 
       final data = response.data;
       if (data is! Map) {
-        debugPrint(
-          '[AuthService][REISSUE] ❌ 응답이 Map 형식이 아님 → 백엔드 명세 확인 필요',
-        );
+        // debugPrint(
+          // '[AuthService][REISSUE] ❌ 응답이 Map 형식이 아님 → 백엔드 명세 확인 필요',
+        // );
         return null;
       }
 
       final newAccessToken = data['accessToken'] as String?;
       if (newAccessToken == null || newAccessToken.isEmpty) {
-        debugPrint(
-          '[AuthService][REISSUE] ❌ 응답에 accessToken 키 없음/비어있음 → 키명: ${data.keys.toList()}',
-        );
+        // debugPrint(
+          // '[AuthService][REISSUE] ❌ 응답에 accessToken 키 없음/비어있음 → 키명: ${data.keys.toList()}',
+        // );
         return null;
       }
 
@@ -364,21 +365,21 @@ class AuthService {
       await _storage.write(key: _kAccessToken, value: newAccessToken);
       if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
         await _storage.write(key: _kRefreshToken, value: newRefreshToken);
-        debugPrint('[AuthService][REISSUE] ✓ refreshToken rotation 적용');
+        // debugPrint('[AuthService][REISSUE] ✓ refreshToken rotation 적용');
       }
 
       await _syncTokenToAppGroup(newAccessToken);
-      debugPrint('[AuthService][REISSUE] ✓ accessToken 재발급 성공');
+      // debugPrint('[AuthService][REISSUE] ✓ accessToken 재발급 성공');
       return newAccessToken;
     } on DioException catch (e) {
-      debugPrint('[AuthService][REISSUE] ❌ DioException');
-      debugPrint('[AuthService][REISSUE]   type: ${e.type}');
-      debugPrint('[AuthService][REISSUE]   status: ${e.response?.statusCode}');
-      debugPrint('[AuthService][REISSUE]   responseBody: ${e.response?.data}');
-      debugPrint('[AuthService][REISSUE]   message: ${e.message}');
+      // debugPrint('[AuthService][REISSUE] ❌ DioException');
+      // debugPrint('[AuthService][REISSUE]   type: ${e.type}');
+      // debugPrint('[AuthService][REISSUE]   status: ${e.response?.statusCode}');
+      // debugPrint('[AuthService][REISSUE]   responseBody: ${e.response?.data}');
+      // debugPrint('[AuthService][REISSUE]   message: ${e.message}');
       return null;
     } catch (e, st) {
-      debugPrint('[AuthService][REISSUE] ❌ 예외: $e\n$st');
+      // debugPrint('[AuthService][REISSUE] ❌ 예외: $e\n$st');
       return null;
     }
   }
@@ -415,7 +416,7 @@ class AuthService {
         refreshToken: refreshToken,
       );
     } on DioException catch (e) {
-      debugPrint('[AuthService] 계정 복구 실패: ${e.message}');
+      // debugPrint('[AuthService] 계정 복구 실패: ${e.message}');
       return null;
     }
   }

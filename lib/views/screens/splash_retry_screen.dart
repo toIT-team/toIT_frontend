@@ -71,7 +71,7 @@ class SplashRetryScreen extends ConsumerWidget {
                 onPressed: isRunning
                     ? null
                     : () {
-                        debugPrint('[BOOT] retry_tapped source=splash_retry');
+                        // debugPrint('[BOOT] retry_tapped source=splash_retry');
                         ref.read(bootstrapProvider.notifier).retry();
                       },
                 isRunning: isRunning,

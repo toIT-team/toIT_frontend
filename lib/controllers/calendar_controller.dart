@@ -160,10 +160,10 @@ class CalendarController extends Notifier<CalendarState> {
     if (prefetched != null &&
         prefetched.month.year == focusedMonth.year &&
         prefetched.month.month == focusedMonth.month) {
-      debugPrint(
-        '[BOOT] calendar_build source=prefetch_cache '
-        'events=${prefetched.events.length}',
-      );
+      // debugPrint(
+        // '[BOOT] calendar_build source=prefetch_cache '
+        // 'events=${prefetched.events.length}',
+      // );
       _primed = true;
       // Riverpod 은 build() 도중 다른 Provider 의 state 수정을 금지하므로
       // 캐시 초기화는 한 틱 뒤로 미룬다(홈 프리패치와 동일한 패턴).
@@ -177,7 +177,7 @@ class CalendarController extends Notifier<CalendarState> {
       );
     }
 
-    debugPrint('[BOOT] calendar_build source=network');
+    // debugPrint('[BOOT] calendar_build source=network');
     return CalendarState(
       focusedMonth: focusedMonth,
       selectedDate: now,
@@ -192,7 +192,7 @@ class CalendarController extends Notifier<CalendarState> {
     if (_primed &&
         targetMonth.year == state.focusedMonth.year &&
         targetMonth.month == state.focusedMonth.month) {
-      debugPrint('[BOOT] calendar_loadEvents_skipped reason=primed_same_month');
+      // debugPrint('[BOOT] calendar_loadEvents_skipped reason=primed_same_month');
       _primed = false;
       return;
     }
@@ -210,7 +210,7 @@ class CalendarController extends Notifier<CalendarState> {
         isLoading: false,
       );
     } catch (e) {
-      debugPrint('일정 로드 실패: $e');
+      // debugPrint('일정 로드 실패: $e');
       state = state.copyWith(isLoading: false);
     }
   }

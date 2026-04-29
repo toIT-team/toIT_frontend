@@ -11,10 +11,10 @@ final class ShareApiClient {
     guard
       let defaults = AppGroupConfig.sharedUserDefaults
     else {
-      NSLog(
-        "[ShareApiClient] App Group UserDefaults nil — AppGroupId: "
-        + "\(String(describing: AppGroupConfig.identifier))"
-      )
+      // NSLog(
+      //   "[ShareApiClient] App Group UserDefaults nil — AppGroupId: "
+      //   + "\(String(describing: AppGroupConfig.identifier))"
+      // )
       return nil
     }
 

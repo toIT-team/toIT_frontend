@@ -118,18 +118,18 @@ Future<AttachmentDownloadResult> downloadAttachmentFromPresignedUrl({
   try {
     await dio.download(presignedUrl, savePath);
   } on DioException catch (e, st) {
-    debugPrint(
-      '[download] dio error: ${e.message} status=${e.response?.statusCode}',
-    );
-    debugPrint('$st');
+    // debugPrint(
+      // '[download] dio error: ${e.message} status=${e.response?.statusCode}',
+    // );
+    // debugPrint('$st');
     throw AttachmentDownloadException(
       AttachmentDownloadErrorKind.network,
       statusCode: e.response?.statusCode,
       cause: e,
     );
   } catch (e, st) {
-    debugPrint('[download] unknown error: $e');
-    debugPrint('$st');
+    // debugPrint('[download] unknown error: $e');
+    // debugPrint('$st');
     throw AttachmentDownloadException(
       AttachmentDownloadErrorKind.unknown,
       cause: e,
@@ -179,8 +179,8 @@ Future<GallerySaveResult> saveDownloadedMediaToGallery({
     }
     return GallerySaveResult.failed;
   } catch (e, st) {
-    debugPrint('[gallery] ImageGallerySaver 실패: $e');
-    debugPrint('$st');
+    // debugPrint('[gallery] ImageGallerySaver 실패: $e');
+    // debugPrint('$st');
     return GallerySaveResult.failed;
   }
 }

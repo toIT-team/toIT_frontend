@@ -128,7 +128,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   Future<void> _saveChanges() async {
-    print('>>> [일정 수정] EventDetailScreen _saveChanges 호출됨');
+    // print('>>> [일정 수정] EventDetailScreen _saveChanges 호출됨');
     final controller = ref.read(eventFormProvider.notifier);
     final formState = ref.read(eventFormProvider);
     final calendarController = ref.read(calendarProvider.notifier);
@@ -182,8 +182,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         Navigator.of(context).pop(updatedEvent);
       }
     } catch (e, stack) {
-      print('[일정 수정] EventDetailScreen _saveChanges Error: $e');
-      print('[일정 수정] Stack: $stack');
+      // print('[일정 수정] EventDetailScreen _saveChanges Error: $e');
+      // print('[일정 수정] Stack: $stack');
       controller.setError('저장에 실패했습니다.');
     } finally {
       controller.setSaving(false);

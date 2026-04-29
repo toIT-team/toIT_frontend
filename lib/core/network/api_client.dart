@@ -28,9 +28,9 @@ class ApiClient {
     );
 
     // 로깅 인터셉터 (디버그용)
-    _dio.interceptors.add(
-      LogInterceptor(requestBody: true, responseBody: true),
-    );
+    // _dio.interceptors.add(
+    //   LogInterceptor(requestBody: true, responseBody: true),
+    // );
   }
 
   /// 인증 인터셉터 활성화
@@ -222,7 +222,7 @@ class _AuthInterceptor extends Interceptor {
         completer.complete(newToken);
       }
     } catch (e, st) {
-      debugPrint('[_AuthInterceptor] reissue 예외: $e\n$st');
+      // debugPrint('[_AuthInterceptor] reissue 예외: $e\n$st');
       completer.complete(null);
     } finally {
       _refreshCompleter = null;
