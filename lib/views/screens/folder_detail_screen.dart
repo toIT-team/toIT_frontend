@@ -313,12 +313,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             }
             break;
           case LinkKebabAction.share:
-            // TODO: 공유
-            if (mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('공유 (준비 중)')));
-            }
+            if (mounted) _shareLinkUrl(link.linksUrl);
             break;
           case LinkKebabAction.delete:
             if (mounted) _confirmAndDeleteLink(link);
@@ -563,8 +558,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
             break;
           case FileKebabAction.share:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            _downloadFileAttachment(
+              presignedUrl: file.presignedUrl,
+              fileName: file.fileName,
+              attachmentsExtension: file.attachmentsExtension,
             );
             break;
           case FileKebabAction.download:
@@ -651,8 +648,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
             break;
           case FileKebabAction.share:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            _shareImageAttachment(
+              presignedUrl: image.presignedUrl,
+              fileName: image.fileName,
+              attachmentsExtension: image.attachmentsExtension,
             );
             break;
           case FileKebabAction.download:
@@ -849,6 +848,45 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       }
     } catch (e) {
       debugPrint('[download] temp delete failed: $path, error: $e');
+    }
+  }
+
+  void _shareLinkUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) {
+      _showSnack('공유할 링크가 없습니다.');
+      return;
+    }
+    SharePlus.instance.share(ShareParams(text: trimmed));
+  }
+
+  Future<void> _shareImageAttachment({
+    required String presignedUrl,
+    required String fileName,
+    String attachmentsExtension = '',
+  }) async {
+    String? tempPath;
+    try {
+      final result = await downloadAttachmentFromPresignedUrl(
+        presignedUrl: presignedUrl,
+        fileName: fileName,
+        attachmentsExtension: attachmentsExtension,
+      );
+      tempPath = result.savedPath;
+      debugPrint('[share][image] temp saved: $tempPath');
+      final shareResult = await SharePlus.instance.share(
+        ShareParams(files: [XFile(result.savedPath)]),
+      );
+      debugPrint('[share][image] share result: ${shareResult.status}');
+    } on AttachmentDownloadException catch (e) {
+      if (!mounted) return;
+      _showSnack(_messageForDownloadError(e));
+    } catch (e, st) {
+      debugPrint('[share][image] unexpected error: $e\n$st');
+      if (!mounted) return;
+      _showSnack('공유에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      await _tryDeleteTempFile(tempPath);
     }
   }
 
