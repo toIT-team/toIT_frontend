@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -661,7 +661,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.toit.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT Runner Dev Profile Sangwoo";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT Runner Dev Profile Hojin";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -850,7 +850,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.toit.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT Runner Dev Profile Sangwoo";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT Runner Dev Profile Hojin";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -879,7 +879,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.toit.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT Runner Dev Profile Sangwoo";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT Runner Dev Profile Hojin";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -924,7 +924,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.toit.ios.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT ShareExtension Dev Profile Sangwoo";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT ShareExtension Dev Profile Hojin";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -974,7 +974,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.toit.ios.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT ShareExtension Dev Profile Sangwoo";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT ShareExtension Dev Profile Hojin";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -1020,7 +1020,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.toit.ios.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT ShareExtension Dev Profile Sangwoo";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "toIT ShareExtension Dev Profile Hojin";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

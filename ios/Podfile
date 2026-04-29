@@ -42,5 +42,19 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+
+    # permission_handler: iOS는 빌드 시점에 사용할 권한을 매크로로 켜야 한다.
+    # 켜지 않으면 request()가 시스템 팝업을 띄우지 않고 곧장 denied로 떨어진다.
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+      ]
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] += [
+        'PERMISSION_CAMERA=1',
+        'PERMISSION_PHOTOS=1',
+        'PERMISSION_PHOTOS_ADD_ONLY=1',
+        'PERMISSION_NOTIFICATIONS=1',
+      ]
+    end
   end
 end

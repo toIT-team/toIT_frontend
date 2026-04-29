@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/image_picker_permission_utils.dart';
 import '../../core/utils/system_ui_insets.dart';
 import '../../core/utils/upload_validation_utils.dart';
 import '../../core/widgets/system_safe_area.dart';
@@ -16,6 +18,7 @@ import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
+import '../widgets/home/folder_delete_dialog.dart';
 
 /// 이미지 저장 화면 (POST /attachments/images API 연동)
 class SaveImageScreen extends ConsumerStatefulWidget {
@@ -168,6 +171,24 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _showImagePickerPermissionDialog({
+    required bool forGallery,
+  }) async {
+    if (!mounted) return;
+    final body = forGallery
+        ? '사진을 선택하려면 설정에서 사진 접근을 허용해 주세요.'
+        : '촬영하려면 설정에서 카메라 접근을 허용해 주세요.';
+    final confirmed = await showDeleteDialog(
+      context,
+      message: '권한 필요',
+      warningMessage: body,
+      cancelLabel: '취소',
+      confirmLabel: '설정으로 이동',
+      confirmColor: AppColors.blue500,
+    );
+    if (confirmed) await openAppSettings();
+  }
+
   void _openFolderPicker() {
     showMoveToFolderSheet(
       context,
@@ -221,6 +242,17 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       ),
     );
     if (source == null || !mounted) return;
+
+    final permitted = source == ImageSource.gallery
+        ? await requestGalleryReadForImagePicker()
+        : await requestCameraForImagePicker();
+    if (!permitted) {
+      if (!mounted) return;
+      await _showImagePickerPermissionDialog(
+        forGallery: source == ImageSource.gallery,
+      );
+      return;
+    }
 
     try {
       final picker = ImagePicker();

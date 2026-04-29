@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/system_safe_area.dart';
 
 /// 파일 케밥(미트볼) 메뉴 선택 액션 (Figma: 파일 미트볼메뉴)
-enum FileKebabAction { editInfo, moveFolder, share, delete }
+enum FileKebabAction { editInfo, moveFolder, share, download, delete }
 
 /// 파일 항목 케밥 메뉴 바텀시트 - 정보 수정 / 보관함 이동 / 공유 / 삭제
 void showFileKebabSheet(
@@ -80,6 +81,13 @@ class _FileKebabSheet extends StatelessWidget {
                       onTap: () => onAction(FileKebabAction.share),
                     ),
                     _KebabRow(
+                      iconAssetPath: AppAssets.downloadIcon,
+                      label: '다운로드',
+                      textColor: AppColors.gray900,
+                      useSvgIcon: true,
+                      onTap: () => onAction(FileKebabAction.download),
+                    ),
+                    _KebabRow(
                       iconAssetPath: AppAssets.bottomSheetDeleteIcon,
                       label: '삭제',
                       textColor: AppColors.red500,
@@ -113,12 +121,14 @@ class _KebabRow extends StatelessWidget {
     required this.label,
     required this.textColor,
     required this.onTap,
+    this.useSvgIcon = false,
   });
 
   final String iconAssetPath;
   final String label;
   final Color textColor;
   final VoidCallback onTap;
+  final bool useSvgIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +140,9 @@ class _KebabRow extends StatelessWidget {
           height: 54,
           child: Row(
             children: [
-              Image.asset(iconAssetPath, width: 20, height: 20),
+              useSvgIcon
+                  ? SvgPicture.asset(iconAssetPath, width: 20, height: 20)
+                  : Image.asset(iconAssetPath, width: 20, height: 20),
               const SizedBox(width: 8),
               Text(
                 label,

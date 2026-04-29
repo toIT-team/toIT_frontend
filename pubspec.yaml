@@ -61,6 +61,10 @@ dependencies:
   receive_sharing_intent: ^1.8.1
   url_launcher: ^6.3.2
   korean_lunar_utils: ^1.0.1
+  path_provider: ^2.1.5
+  share_plus: ^12.0.2
+  image_gallery_saver: ^2.0.3
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
