@@ -59,6 +59,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   bool _isSplashFinished = false;
   bool _showSessionExpiredNotice = false;
   bool _isSessionExpiredDialogShowing = false;
+  int? _pendingReadNotificationId;
 
   @override
   void initState() {
@@ -144,7 +145,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     );
     if (notificationId == null) return false;
     final authState = ref.read(authProvider);
-    if (authState.status != AuthStatus.authenticated) return false;
+    if (authState.status != AuthStatus.authenticated) {
+      // cold start에서 인증 복구보다 push open 콜백이 먼저 들어오면
+      // 읽음 PATCH를 놓치지 않도록 인증 완료 시점까지 보관한다.
+      _pendingReadNotificationId = notificationId;
+      return false;
+    }
     unawaited(_patchNotificationRead(notificationId));
     return true;
   }
@@ -339,6 +345,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void _handleAuthStatusChanged(AuthStatus? previous, AuthStatus next) {
     if (next == AuthStatus.authenticated) {
       _showSessionExpiredNotice = false;
+      _consumePendingNotificationRead();
       return;
     }
     if (next != AuthStatus.unauthenticated || !_showSessionExpiredNotice) {
@@ -372,5 +379,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       }
       _isSessionExpiredDialogShowing = false;
     });
+  }
+
+  void _consumePendingNotificationRead() {
+    final notificationId = _pendingReadNotificationId;
+    if (notificationId == null) return;
+    _pendingReadNotificationId = null;
+    unawaited(_patchNotificationRead(notificationId));
   }
 }

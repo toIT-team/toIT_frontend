@@ -194,7 +194,9 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
           event: event,
           onEdit: () => _handleEdit(event),
           onDelete: () => _handleDelete(event),
-          onShare: () => _handleShare(event),
+          // TODO(share-ui): 공유 기능 구현 전까지 메뉴 노출 비활성화.
+          // 필요 시 아래 라인 주석 해제.
+          // onShare: () => _handleShare(event),
         );
       },
     );
@@ -207,9 +209,10 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
     ).push(MaterialPageRoute(builder: (_) => EventFormScreen(event: event)));
   }
 
-  void _handleShare(CalendarEvent _) {
-    // TODO: 공유 시트 열기 (일정 상세 하단 바와 동일 플로우)
-  }
+  // TODO(share-ui): 공유 기능 구현 후 다시 활성화.
+  // void _handleShare(CalendarEvent _) {
+  //   // TODO: 공유 시트 열기 (일정 상세 하단 바와 동일 플로우)
+  // }
 
   Future<void> _handleDelete(CalendarEvent event) async {
     final confirmed = await showConfirmDialog(
