@@ -409,15 +409,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              Expanded(
-                child: BottomBarButton(
-                  iconAsset: EventAssets.bottomBarShare,
-                  label: '공유',
-                  onTap: () {
-                    // TODO: 공유 시트 열기
-                  },
-                ),
-              ),
+              // TODO(share-ui): 공유 기능 구현 전까지 UI 노출 비활성화.
+              // 필요 시 아래 블록 주석 해제하여 다시 표시.
+              // Expanded(
+              //   child: BottomBarButton(
+              //     iconAsset: EventAssets.bottomBarShare,
+              //     label: '공유',
+              //     onTap: () {
+              //       // TODO: 공유 시트 열기
+              //     },
+              //   ),
+              // ),
               Expanded(
                 child: BottomBarButton(
                   iconAsset: EventAssets.bottomBarUpdate,
