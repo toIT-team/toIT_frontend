@@ -1775,7 +1775,15 @@ String? _resolveFileIconAssetPath({
   required String fileName,
   required String attachmentsExtension,
 }) {
-  const supportedExtensions = <String>{'docx', 'hwp', 'pdf', 'ppt', 'xlsx'};
+  const supportedExtensions = <String>{
+    'docx',
+    'hwp',
+    'pdf',
+    'ppt',
+    'txt',
+    'xlsx',
+    'zip',
+  };
 
   final extensionFromField = _normalizeFileExtension(attachmentsExtension);
   final extensionFromName = _normalizeFileExtension(
@@ -1822,6 +1830,9 @@ String _normalizeFileExtension(String raw) {
         'ppt',
     'application/vnd.ms-excel': 'xlsx',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'text/plain': 'txt',
+    'application/zip': 'zip',
+    'application/x-zip-compressed': 'zip',
   };
   if (mimeToExtension.containsKey(value)) {
     return mimeToExtension[value]!;
