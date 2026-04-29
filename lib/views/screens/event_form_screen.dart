@@ -177,12 +177,12 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
   }
 
   void _handleSave() async {
-    print('>>> [일정 저장] _handleSave 호출됨');
+    // print('>>> [일정 저장] _handleSave 호출됨');
     final controller = ref.read(eventFormProvider.notifier);
     final formState = ref.read(eventFormProvider);
 
     if (!formState.isValid) {
-      print('>>> [일정 저장] 유효성 검사 실패 - 저장 중단');
+      // print('>>> [일정 저장] 유효성 검사 실패 - 저장 중단');
       controller.setSaving(false);
       return;
     }
@@ -193,15 +193,15 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
       return;
     }
 
-    print(
-      '>>> [일정 저장] isCreateMode=$isCreateMode, event.id=${widget.event?.id}',
-    );
+    // print(
+      // '>>> [일정 저장] isCreateMode=$isCreateMode, event.id=${widget.event?.id}',
+    // );
     controller.setSaving(true);
     controller.setError(null);
 
     try {
       if (isCreateMode) {
-        print('>>> [일정 저장] 생성 모드 - createSchedule 호출');
+        // print('>>> [일정 저장] 생성 모드 - createSchedule 호출');
         final appColor = formState.appColorToken != null
             ? EventColorTokens.toToken(formState.appColorToken!)
             : EventColorTokens.toToken(EventColorToken.blue300);
@@ -226,12 +226,12 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           Navigator.of(context).pop((event: event, isCreate: true));
         }
       } else {
-        print('[일정 수정] 수정 모드 - API 호출 시작');
+        // print('[일정 수정] 수정 모드 - API 호출 시작');
         final formState = ref.read(eventFormProvider);
         final schedulesId = int.tryParse(formState.id ?? '');
-        print(
-          '[일정 수정] schedulesId: $schedulesId, formState.id: ${formState.id}',
-        );
+        // print(
+          // '[일정 수정] schedulesId: $schedulesId, formState.id: ${formState.id}',
+        // );
         if (schedulesId == null) {
           controller.setError('일정 ID를 찾을 수 없습니다.');
           return;
@@ -263,8 +263,8 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
         }
       }
     } catch (e, stack) {
-      print('[일정 저장] Error: $e');
-      print('[일정 저장] Stack: $stack');
+      // print('[일정 저장] Error: $e');
+      // print('[일정 저장] Stack: $stack');
     } finally {
       controller.setSaving(false);
     }

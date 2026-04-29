@@ -80,16 +80,16 @@ Future<Uint8List> compressImageForUpload(
       format: format,
     );
     if (compressed.length >= bytes.length) return bytes;
-    if (kDebugMode) {
-      debugPrint(
-        '[compress] ${(bytes.length / 1024).toStringAsFixed(0)}KB'
-        ' → ${(compressed.length / 1024).toStringAsFixed(0)}KB'
-        ' (${((1 - compressed.length / bytes.length) * 100).toStringAsFixed(1)}% 감소)',
-      );
-    }
+    // if (kDebugMode) {
+      // debugPrint(
+        // '[compress] ${(bytes.length / 1024).toStringAsFixed(0)}KB'
+        // ' → ${(compressed.length / 1024).toStringAsFixed(0)}KB'
+        // ' (${((1 - compressed.length / bytes.length) * 100).toStringAsFixed(1)}% 감소)',
+      // );
+    // }
     return compressed;
   } catch (e) {
-    debugPrint('[compress] failed, using original: $e');
+    // debugPrint('[compress] failed, using original: $e');
     return bytes;
   }
 }
@@ -116,10 +116,10 @@ Future<ImageDimensions?> readImageDimensions(Uint8List bytes) async {
     image.dispose();
     return dimensions;
   } on PlatformException catch (e) {
-    debugPrint('[readImageDimensions] PlatformException: $e');
+    // debugPrint('[readImageDimensions] PlatformException: $e');
     return null;
   } catch (e) {
-    debugPrint('[readImageDimensions] failed: $e');
+    // debugPrint('[readImageDimensions] failed: $e');
     return null;
   }
 }

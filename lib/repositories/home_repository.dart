@@ -316,12 +316,12 @@ class HomeRepository {
       throw Exception('presign 응답이 비어 있습니다.');
     }
     final presign = presignedFiles.first;
-    if (kDebugMode) {
-      debugPrint(
-        '[upload] presign ok type=$attachmentsType '
-        'objectKey=${presign.objectKey} size=$fileSize',
-      );
-    }
+    // if (kDebugMode) {
+      // debugPrint(
+        // '[upload] presign ok type=$attachmentsType '
+        // 'objectKey=${presign.objectKey} size=$fileSize',
+      // );
+    // }
 
     await _remoteDatasource.uploadToS3(
       uploadUrl: presign.uploadUrl,
@@ -346,12 +346,12 @@ class HomeRepository {
         textContent: normalizedTextContent,
       ),
     );
-    if (kDebugMode) {
-      debugPrint(
-        '[upload] confirm ok count=${confirmed.length} '
-        'objectKey=${presign.objectKey}',
-      );
-    }
+    // if (kDebugMode) {
+      // debugPrint(
+        // '[upload] confirm ok count=${confirmed.length} '
+        // 'objectKey=${presign.objectKey}',
+      // );
+    // }
     return confirmed;
   }
 

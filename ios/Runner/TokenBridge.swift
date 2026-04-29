@@ -75,21 +75,21 @@ final class TokenBridge {
   ) {
     guard let defaults = AppGroupConfig.sharedUserDefaults
     else {
-      NSLog(
-        "[TokenBridge] App Group UserDefaults nil — AppGroupId: "
-        + "\(String(describing: AppGroupConfig.identifier))"
-      )
+      // NSLog(
+      //   "[TokenBridge] App Group UserDefaults nil — AppGroupId: "
+      //   + "\(String(describing: AppGroupConfig.identifier))"
+      // )
       return
     }
     defaults.set(accessToken, forKey: keyAccessToken)
     defaults.set(userId, forKey: keyUserId)
     defaults.set(baseUrl, forKey: keyBaseUrl)
     defaults.synchronize()
-    let verify = defaults.string(forKey: keyAccessToken)
-    NSLog(
-      "[TokenBridge] 저장 token: \(verify != nil ? "있음" : "nil"),"
-      + " userId: \(userId), baseUrl: \(baseUrl)"
-    )
+    // let verify = defaults.string(forKey: keyAccessToken)
+    // NSLog(
+    //   "[TokenBridge] 저장 token: \(verify != nil ? "있음" : "nil"),"
+    //   + " userId: \(userId), baseUrl: \(baseUrl)"
+    // )
   }
 
   private static func clear() {

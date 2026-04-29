@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
@@ -53,7 +52,38 @@ String sanitizeDownloadFileName(String fileName) {
   return trimmed.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
 }
 
-/// 갤러리·플러그인이 MIME을 알 수 있도록 알려진 확장자를 붙인다.
+/// 백엔드가 확장자 대신 MIME(text/plain 등)을 줄 때 저장 파일명용 확장자로 바꾼다.
+String normalizeAttachmentExtensionField(String attachmentsExtension) {
+  final raw = attachmentsExtension.trim().toLowerCase();
+  if (raw.isEmpty) return '';
+
+  const mimeToExt = <String, String>{
+    'text/plain': 'txt',
+    'application/pdf': 'pdf',
+    'application/zip': 'zip',
+    'application/x-zip-compressed': 'zip',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'image/heic': 'heic',
+  };
+  if (mimeToExt.containsKey(raw)) return mimeToExt[raw]!;
+
+  if (raw.contains('/')) {
+    final parts = raw.split('/');
+    if (parts.length != 2) return '';
+    var sub = parts[1];
+    if (sub == 'jpeg') return 'jpg';
+    sub = sub.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (sub.isEmpty || sub.length > 16) return '';
+    return sub;
+  }
+
+  return raw.replaceAll('.', '');
+}
+
+/// 갤러리·저장 시스템이 종류를 알 수 있도록 알려진 확장자를 붙인다.
 String ensureDownloadFileNameHasExtension(
   String safeFileName,
   String attachmentsExtension,
@@ -69,10 +99,11 @@ String ensureDownloadFileNameHasExtension(
     '.bmp',
     '.pdf',
     '.zip',
+    '.txt',
   ];
   if (known.any(lower.endsWith)) return safeFileName;
 
-  var ext = attachmentsExtension.trim().replaceAll('.', '').toLowerCase();
+  var ext = normalizeAttachmentExtensionField(attachmentsExtension);
   if (ext.isEmpty) ext = 'jpg';
   final base = safeFileName.endsWith('.')
       ? safeFileName.substring(0, safeFileName.length - 1)
@@ -117,19 +148,13 @@ Future<AttachmentDownloadResult> downloadAttachmentFromPresignedUrl({
 
   try {
     await dio.download(presignedUrl, savePath);
-  } on DioException catch (e, st) {
-    debugPrint(
-      '[download] dio error: ${e.message} status=${e.response?.statusCode}',
-    );
-    debugPrint('$st');
+  } on DioException catch (e) {
     throw AttachmentDownloadException(
       AttachmentDownloadErrorKind.network,
       statusCode: e.response?.statusCode,
       cause: e,
     );
-  } catch (e, st) {
-    debugPrint('[download] unknown error: $e');
-    debugPrint('$st');
+  } catch (e) {
     throw AttachmentDownloadException(
       AttachmentDownloadErrorKind.unknown,
       cause: e,
@@ -165,22 +190,14 @@ Future<GallerySaveResult> saveDownloadedMediaToGallery({
   }
 
   try {
-    final result = await ImageGallerySaver.saveFile(
-      filePath,
-      isReturnPathOfIOS: true,
-    );
-    if (result is Map) {
-      final success = result['isSuccess'];
-      if (success is bool && success) return GallerySaveResult.success;
-      final filePathValue = result['filePath'] ?? result['savedFilePath'];
-      if (filePathValue != null && filePathValue.toString().isNotEmpty) {
-        return GallerySaveResult.success;
-      }
+    await Gal.putImage(filePath);
+    return GallerySaveResult.success;
+  } on GalException catch (e) {
+    if (e.type == GalExceptionType.accessDenied) {
+      return GallerySaveResult.permissionDenied;
     }
     return GallerySaveResult.failed;
-  } catch (e, st) {
-    debugPrint('[gallery] ImageGallerySaver 실패: $e');
-    debugPrint('$st');
+  } catch (_) {
     return GallerySaveResult.failed;
   }
 }
@@ -195,7 +212,7 @@ Future<MediaPermissionResult> _requestMediaWritePermission() async {
   return MediaPermissionResult.granted;
 }
 
-/// iOS는 갤러리 선택과 동일한 \"전체 사진 접근\" 권한을 사용한다.
+/// iOS는 갤러리 선택과 동일한 "전체 사진 접근" 권한을 사용한다.
 /// (NSPhotoLibraryUsageDescription · Permission.photos)
 /// 사용자가 한 번만 허용하면 선택과 저장이 모두 같은 권한으로 동작한다.
 Future<MediaPermissionResult> _requestIosPhotoLibraryPermission() async {

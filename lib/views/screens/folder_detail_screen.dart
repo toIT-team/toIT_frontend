@@ -752,11 +752,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         attachmentsExtension: attachmentsExtension,
       );
       tempPath = result.savedPath;
-      debugPrint('[download][file] temp saved: $tempPath');
+      // debugPrint('[download][file] temp saved: $tempPath');
       final shareResult = await SharePlus.instance.share(
         ShareParams(files: [XFile(result.savedPath)]),
       );
-      debugPrint('[download][file] share result: ${shareResult.status}');
+      // debugPrint('[download][file] share result: ${shareResult.status}');
       if (!mounted) return;
       if (shareResult.status == ShareResultStatus.success) {
         _showSnack('${result.fileName} 내보내기를 완료했습니다.');
@@ -765,7 +765,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       if (!mounted) return;
       _showSnack(_messageForDownloadError(e));
     } catch (e, st) {
-      debugPrint('[download][file] unexpected error: $e\n$st');
+      // debugPrint('[download][file] unexpected error: $e\n$st');
       if (!mounted) return;
       _showSnack('다운로드에 실패했습니다. 다시 시도해 주세요.');
     } finally {
@@ -786,11 +786,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         attachmentsExtension: attachmentsExtension,
       );
       tempPath = result.savedPath;
-      debugPrint('[download][image] temp saved: $tempPath');
       final saveResult = await saveDownloadedMediaToGallery(
         filePath: result.savedPath,
       );
-      debugPrint('[download][image] gallery save result: $saveResult');
       if (!mounted) return;
 
       switch (saveResult) {
@@ -806,7 +804,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       if (!mounted) return;
       _showSnack(_messageForDownloadError(e));
     } catch (e, st) {
-      debugPrint('[download][image] unexpected error: $e\n$st');
+      // debugPrint('[download][image] unexpected error: $e\n$st');
       if (!mounted) return;
       _showSnack('다운로드에 실패했습니다. 다시 시도해 주세요.');
     } finally {
@@ -842,13 +840,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       final file = File(path);
       if (await file.exists()) {
         await file.delete();
-        debugPrint('[download] temp deleted: $path');
-      } else {
-        debugPrint('[download] temp already missing: $path');
       }
-    } catch (e) {
-      debugPrint('[download] temp delete failed: $path, error: $e');
-    }
+    } catch (_) {}
   }
 
   void _shareLinkUrl(String url) {
@@ -873,16 +866,16 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         attachmentsExtension: attachmentsExtension,
       );
       tempPath = result.savedPath;
-      debugPrint('[share][image] temp saved: $tempPath');
+      // debugPrint('[share][image] temp saved: $tempPath');
       final shareResult = await SharePlus.instance.share(
         ShareParams(files: [XFile(result.savedPath)]),
       );
-      debugPrint('[share][image] share result: ${shareResult.status}');
+      // debugPrint('[share][image] share result: ${shareResult.status}');
     } on AttachmentDownloadException catch (e) {
       if (!mounted) return;
       _showSnack(_messageForDownloadError(e));
     } catch (e, st) {
-      debugPrint('[share][image] unexpected error: $e\n$st');
+      // debugPrint('[share][image] unexpected error: $e\n$st');
       if (!mounted) return;
       _showSnack('공유에 실패했습니다. 다시 시도해 주세요.');
     } finally {

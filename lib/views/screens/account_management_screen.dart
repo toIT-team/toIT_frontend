@@ -106,26 +106,26 @@ class AccountManagementScreen extends ConsumerWidget {
                           _ActionRow(
                             title: '로그아웃',
                             onTap: () async {
-                              debugPrint('[AccountManagement] 로그아웃 버튼 탭');
+                              // debugPrint('[AccountManagement] 로그아웃 버튼 탭');
                               final confirmed = await _showLogoutConfirmSheet(
                                 context,
                               );
-                              debugPrint(
-                                '[AccountManagement] 로그아웃 확인 팝업 결과: $confirmed',
-                              );
+                              // debugPrint(
+                                // '[AccountManagement] 로그아웃 확인 팝업 결과: $confirmed',
+                              // );
                               if (!confirmed) return;
                               // 확인 모달 dismiss 애니메이션 프레임이
                               // 완전히 정리된 뒤 라우팅 전환을 진행한다.
                               await Future<void>.delayed(
                                 const Duration(milliseconds: 10),
                               );
-                              debugPrint('[AccountManagement] 로그아웃 실행 시작');
+                              // debugPrint('[AccountManagement] 로그아웃 실행 시작');
                               await ref.read(authProvider.notifier).logout();
-                              debugPrint('[AccountManagement] 로그아웃 실행 완료');
+                              // debugPrint('[AccountManagement] 로그아웃 실행 완료');
                               if (context.mounted) {
-                                debugPrint(
-                                  '[AccountManagement] 루트로 이동 (로그인 화면 복귀)',
-                                );
+                                // debugPrint(
+                                  // '[AccountManagement] 루트로 이동 (로그인 화면 복귀)',
+                                // );
                                 Navigator.of(
                                   context,
                                   rootNavigator: true,

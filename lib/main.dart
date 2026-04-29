@@ -220,10 +220,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     // 부트스트랩(토큰 확인 + 선제 재발급 + 세션 복원)과 스플래시 최소
     // 노출 시간을 병렬 대기한다. `BootstrapController` 가 실패/재시도 경로를
     // 관리하므로 여기서는 "끝났는가" 여부만 플래그로 남긴다.
-    debugPrint(
-      '[BOOT] splash_start minDurationMs='
-      '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
-    );
+    // debugPrint(
+      // '[BOOT] splash_start minDurationMs='
+      // '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
+    // );
     final splashStopwatch = Stopwatch()..start();
     await Future.wait<void>([
       ref.read(bootstrapProvider.notifier).run(),
@@ -231,12 +231,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     ]);
     splashStopwatch.stop();
     if (!mounted) {
-      debugPrint('[BOOT] splash_end aborted=unmounted');
+      // debugPrint('[BOOT] splash_end aborted=unmounted');
       return;
     }
-    debugPrint(
-      '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
-    );
+    // debugPrint(
+      // '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
+    // );
     setState(() => _isSplashFinished = true);
   }
 
@@ -339,7 +339,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     final name = route.runtimeType.toString();
     if (_lastRouteLog == name) return;
     _lastRouteLog = name;
-    debugPrint('[BOOT] route_decided home=$name');
+    // debugPrint('[BOOT] route_decided home=$name');
   }
 
   void _handleAuthStatusChanged(AuthStatus? previous, AuthStatus next) {

@@ -100,10 +100,10 @@ class AuthController extends Notifier<AuthState> {
         status: AuthStatus.unauthenticated,
       );
     }
-    debugPrint(
-      '[AuthController] 인증 상태: ${state.status}'
-      ', userId: ${state.userId}',
-    );
+    // debugPrint(
+      // '[AuthController] 인증 상태: ${state.status}'
+      // ', userId: ${state.userId}',
+    // );
   }
 
   /// 카카오 로그인 (백엔드 OAuth → 동일 콜백 규약)
@@ -156,9 +156,9 @@ class AuthController extends Notifier<AuthState> {
                     promptForPermission: true,
                   ),
             );
-            debugPrint(
-              '[AuthController] 로그인 성공, userId: $userId',
-            );
+            // debugPrint(
+              // '[AuthController] 로그인 성공, userId: $userId',
+            // );
           } else {
             state = state.copyWith(
               isLoading: false,
@@ -168,14 +168,14 @@ class AuthController extends Notifier<AuthState> {
 
         case AuthCallbackResult.cancelled:
           state = state.copyWith(isLoading: false, errorMessage: null);
-          debugPrint('[AuthController] 로그인 취소');
+          // debugPrint('[AuthController] 로그인 취소');
 
         case AuthCallbackResult.needsSignup:
           state = state.copyWith(
             isLoading: false,
             errorMessage: '추가 회원가입이 필요합니다.',
           );
-          debugPrint('[AuthController] 추가 회원가입 필요');
+          // debugPrint('[AuthController] 추가 회원가입 필요');
 
         case AuthCallbackResult.failed:
           final code = callbackData.errorCode ?? 'unknown';
@@ -183,7 +183,7 @@ class AuthController extends Notifier<AuthState> {
             isLoading: false,
             errorMessage: '로그인에 실패했습니다. ($code)',
           );
-          debugPrint('[AuthController] 로그인 실패: $code');
+          // debugPrint('[AuthController] 로그인 실패: $code');
 
         case AuthCallbackResult.deletedUser:
           final restoreToken = callbackData.restoreToken;
@@ -201,7 +201,7 @@ class AuthController extends Notifier<AuthState> {
           );
       }
     } catch (e) {
-      debugPrint('[AuthController] 로그인 예외: $e');
+      // debugPrint('[AuthController] 로그인 예외: $e');
       state = state.copyWith(
         isLoading: false,
         errorMessage: '로그인 중 오류가 발생했습니다.',
@@ -214,7 +214,7 @@ class AuthController extends Notifier<AuthState> {
     await _authService.clearTokens();
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
-    debugPrint('[AuthController] 로그아웃 완료');
+    // debugPrint('[AuthController] 로그아웃 완료');
   }
 
   /// 토큰 만료 시 강제 로그아웃 (401 인터셉터에서 호출)
@@ -222,7 +222,7 @@ class AuthController extends Notifier<AuthState> {
     await _authService.clearTokens();
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
-    debugPrint('[AuthController] 토큰 만료 → 강제 로그아웃');
+    // debugPrint('[AuthController] 토큰 만료 → 강제 로그아웃');
   }
 
   void clearPendingRestoreToken() {
@@ -275,7 +275,7 @@ class AuthController extends Notifier<AuthState> {
             promptForPermission: true,
           ),
     );
-    debugPrint('[AuthController] 계정 복구 및 로그인 성공, userId: $userId');
+    // debugPrint('[AuthController] 계정 복구 및 로그인 성공, userId: $userId');
   }
 }
 

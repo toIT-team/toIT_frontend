@@ -257,19 +257,19 @@ class HomeRemoteDatasource {
           validateStatus: (status) => status != null && status < 400,
         ),
       );
-      if (kDebugMode) {
-        debugPrint(
-          '[S3 PUT] status=${response.statusCode} bytes=${payload.length} '
-          'contentType=$contentType',
-        );
-      }
+      // if (kDebugMode) {
+        // debugPrint(
+          // '[S3 PUT] status=${response.statusCode} bytes=${payload.length} '
+          // 'contentType=$contentType',
+        // );
+      // }
     } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-          '[S3 PUT] FAILED status=${e.response?.statusCode} '
-          'message=${e.message} body=${e.response?.data}',
-        );
-      }
+      // if (kDebugMode) {
+        // debugPrint(
+          // '[S3 PUT] FAILED status=${e.response?.statusCode} '
+          // 'message=${e.message} body=${e.response?.data}',
+        // );
+      // }
       rethrow;
     } finally {
       rawDio.close(force: true);
