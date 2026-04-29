@@ -55,12 +55,17 @@ dependencies:
 
   # 파일/이미지 선택 (시뮬레이터·실기기 동일 로직)
   image_picker: ^1.0.7
+  flutter_image_compress: ^2.3.0
   file_picker: ^11.0.2
   flutter_web_auth_2: ^5.0.2
   flutter_secure_storage: ^10.0.0
   receive_sharing_intent: ^1.8.1
   url_launcher: ^6.3.2
   korean_lunar_utils: ^1.0.1
+  path_provider: ^2.1.5
+  share_plus: ^12.0.2
+  image_gallery_saver: ^2.0.3
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:

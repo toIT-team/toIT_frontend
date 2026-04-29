@@ -1,10 +1,14 @@
 import 'dart:math' as math;
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
@@ -12,6 +16,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
+import '../../core/utils/attachment_download_utils.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -562,6 +567,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
             );
             break;
+          case FileKebabAction.download:
+            _downloadFileAttachment(
+              presignedUrl: file.presignedUrl,
+              fileName: file.fileName,
+              attachmentsExtension: file.attachmentsExtension,
+            );
+            break;
           case FileKebabAction.delete:
             _confirmAndDeleteAttachment(file.attachmentsId);
             break;
@@ -643,6 +655,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
             );
             break;
+          case FileKebabAction.download:
+            _downloadImageAttachment(
+              presignedUrl: image.presignedUrl,
+              fileName: image.fileName,
+              attachmentsExtension: image.attachmentsExtension,
+            );
+            break;
           case FileKebabAction.delete:
             _confirmAndDeleteAttachment(image.attachmentsId);
             break;
@@ -719,6 +738,134 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         context,
       ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
     }
+  }
+
+  Future<void> _downloadFileAttachment({
+    required String presignedUrl,
+    required String fileName,
+    String attachmentsExtension = '',
+  }) async {
+    String? tempPath;
+    try {
+      final result = await downloadAttachmentFromPresignedUrl(
+        presignedUrl: presignedUrl,
+        fileName: fileName,
+        attachmentsExtension: attachmentsExtension,
+      );
+      tempPath = result.savedPath;
+      debugPrint('[download][file] temp saved: $tempPath');
+      final shareResult = await SharePlus.instance.share(
+        ShareParams(files: [XFile(result.savedPath)]),
+      );
+      debugPrint('[download][file] share result: ${shareResult.status}');
+      if (!mounted) return;
+      if (shareResult.status == ShareResultStatus.success) {
+        _showSnack('${result.fileName} 내보내기를 완료했습니다.');
+      }
+    } on AttachmentDownloadException catch (e) {
+      if (!mounted) return;
+      _showSnack(_messageForDownloadError(e));
+    } catch (e, st) {
+      debugPrint('[download][file] unexpected error: $e\n$st');
+      if (!mounted) return;
+      _showSnack('다운로드에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      await _tryDeleteTempFile(tempPath);
+    }
+  }
+
+  Future<void> _downloadImageAttachment({
+    required String presignedUrl,
+    required String fileName,
+    String attachmentsExtension = '',
+  }) async {
+    String? tempPath;
+    try {
+      final result = await downloadAttachmentFromPresignedUrl(
+        presignedUrl: presignedUrl,
+        fileName: fileName,
+        attachmentsExtension: attachmentsExtension,
+      );
+      tempPath = result.savedPath;
+      debugPrint('[download][image] temp saved: $tempPath');
+      final saveResult = await saveDownloadedMediaToGallery(
+        filePath: result.savedPath,
+      );
+      debugPrint('[download][image] gallery save result: $saveResult');
+      if (!mounted) return;
+
+      switch (saveResult) {
+        case GallerySaveResult.success:
+          _showSnack('${result.fileName} 갤러리에 저장되었습니다.');
+        case GallerySaveResult.permissionDenied:
+        case GallerySaveResult.permissionPermanentlyDenied:
+          await _showPhotoSavePermissionGuideDialog();
+        case GallerySaveResult.failed:
+          _showSnack('사진 앱에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      }
+    } on AttachmentDownloadException catch (e) {
+      if (!mounted) return;
+      _showSnack(_messageForDownloadError(e));
+    } catch (e, st) {
+      debugPrint('[download][image] unexpected error: $e\n$st');
+      if (!mounted) return;
+      _showSnack('다운로드에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      await _tryDeleteTempFile(tempPath);
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _messageForDownloadError(AttachmentDownloadException e) {
+    switch (e.kind) {
+      case AttachmentDownloadErrorKind.emptyUrl:
+        return '다운로드 링크가 없습니다.';
+      case AttachmentDownloadErrorKind.emptyFile:
+        return '다운로드한 파일이 비어 있어 저장하지 못했습니다.';
+      case AttachmentDownloadErrorKind.network:
+        return e.statusCode == 403
+            ? '다운로드 링크가 만료되었습니다. 다시 시도해 주세요.'
+            : '네트워크 오류로 다운로드에 실패했습니다. 다시 시도해 주세요.';
+      case AttachmentDownloadErrorKind.unknown:
+        return '다운로드에 실패했습니다. 다시 시도해 주세요.';
+    }
+  }
+
+  Future<void> _tryDeleteTempFile(String? path) async {
+    if (path == null || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+        debugPrint('[download] temp deleted: $path');
+      } else {
+        debugPrint('[download] temp already missing: $path');
+      }
+    } catch (e) {
+      debugPrint('[download] temp delete failed: $path, error: $e');
+    }
+  }
+
+  /// 사진 라이브러리 접근이 거부된 상태일 때 안내한다.
+  /// 갤러리 선택과 저장 모두 동일한 \"사진 접근\" 권한을 사용한다.
+  Future<void> _showPhotoSavePermissionGuideDialog() async {
+    if (!mounted) return;
+
+    final confirmed = await showDeleteDialog(
+      context,
+      message: '사진 접근 권한',
+      warningMessage: '사진 앱에 저장하려면 설정에서 toIT의 사진 접근을 허용해 주세요.',
+      cancelLabel: '취소',
+      confirmLabel: '설정으로 이동',
+      confirmColor: AppColors.blue500,
+    );
+    if (confirmed) await openAppSettings();
   }
 
   List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {

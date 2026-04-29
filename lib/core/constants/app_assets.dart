@@ -16,6 +16,7 @@ class AppAssets {
       'assets/icons/EditInformationIcon.png';
   static const String moveFolderIcon = 'assets/icons/MoveFolderIcon.png';
   static const String shareIcon = 'assets/icons/ShareIcon.png';
+  static const String downloadIcon = 'assets/icons/DownLoadIcon.svg';
   static const String bottomSheetDeleteIcon =
       'assets/icons/bottomSeatDeleteIcon.png';
   static const String editProfileIcon = 'assets/icons/EditProfileIcon.png';

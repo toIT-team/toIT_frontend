@@ -9,6 +9,9 @@ Future<bool> showDeleteDialog(
   BuildContext context, {
   required String message,
   String? warningMessage,
+  String cancelLabel = '취소',
+  String confirmLabel = '삭제',
+  Color confirmColor = AppColors.red500,
 }) async {
   final result = await showGeneralDialog<bool>(
     context: context,
@@ -23,6 +26,9 @@ Future<bool> showDeleteDialog(
           child: _DeleteDialogContent(
             message: message,
             warningMessage: warningMessage,
+            cancelLabel: cancelLabel,
+            confirmLabel: confirmLabel,
+            confirmColor: confirmColor,
           ),
         ),
       );
@@ -34,8 +40,17 @@ Future<bool> showDeleteDialog(
 class _DeleteDialogContent extends StatelessWidget {
   final String message;
   final String? warningMessage;
+  final String cancelLabel;
+  final String confirmLabel;
+  final Color confirmColor;
 
-  const _DeleteDialogContent({required this.message, this.warningMessage});
+  const _DeleteDialogContent({
+    required this.message,
+    this.warningMessage,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    required this.confirmColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +109,9 @@ class _DeleteDialogContent extends StatelessWidget {
                       child: Container(
                         height: 44,
                         alignment: Alignment.center,
-                        child: const Text(
-                          '취소',
-                          style: TextStyle(
+                        child: Text(
+                          cancelLabel,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: AppColors.blue500,
@@ -113,12 +128,12 @@ class _DeleteDialogContent extends StatelessWidget {
                       child: Container(
                         height: 44,
                         alignment: Alignment.center,
-                        child: const Text(
-                          '삭제',
+                        child: Text(
+                          confirmLabel,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.red500,
+                            color: confirmColor,
                             letterSpacing: -0.025 * 18,
                             height: 1.4,
                           ),
