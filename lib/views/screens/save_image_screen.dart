@@ -100,6 +100,8 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     int successCount = 0;
     String? lastError;
 
+    // 1. 유효성 검사 + bytes 읽기
+    final validImages = <({List<int> bytes, String fileName})>[];
     for (final xFile in _pickedImages) {
       if (!mounted) break;
       final fileSizeBytes = await xFile.length();
@@ -111,25 +113,27 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
         lastError = validateMessage;
         continue;
       }
-      List<int> imageBytes;
       try {
-        imageBytes = await xFile.readAsBytes();
+        final bytes = await xFile.readAsBytes();
+        if (bytes.isEmpty) {
+          lastError = '이미지 데이터를 읽을 수 없습니다.';
+          continue;
+        }
+        validImages.add((bytes: bytes, fileName: xFile.name));
       } catch (_) {
         lastError = '이미지 데이터를 읽을 수 없습니다.';
-        continue;
       }
-      if (imageBytes.isEmpty) {
-        lastError = '이미지 데이터를 읽을 수 없습니다.';
-        continue;
-      }
+    }
+
+    // 2. 배치 업로드 (presign 1회 → S3 PUT × N 병렬 → confirm 1회)
+    if (validImages.isNotEmpty) {
       try {
-        await repository.createImage(
+        await repository.createImages(
           foldersIdList: [folderId],
           textContent: textContent,
-          imageBytes: imageBytes,
-          fileName: xFile.name,
+          images: validImages,
         );
-        successCount++;
+        successCount = validImages.length;
       } on DioException catch (e) {
         final statusCode = e.response?.statusCode;
         final data = e.response?.data;
