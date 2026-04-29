@@ -51,6 +51,8 @@
 	<string>보관함에 저장할 사진을 촬영하기 위해 카메라 접근이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>보관함에 저장할 사진을 선택하기 위해 사진 라이브러리 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>다운로드한 이미지를 사진 앱에 저장하기 위해 권한이 필요합니다.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

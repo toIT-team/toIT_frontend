@@ -11,6 +11,14 @@ int _intFromJson(dynamic value) {
   return 0;
 }
 
+/// 백엔드가 camelCase / snake_case 혼용 시 presigned URL을 잃지 않도록 읽는다.
+// json_serializable의 readValue 시그니처상 두 번째 인자는 사용하지 않는다.
+Object? _readPresignedUrlKey(Map json, String _) {
+  return json['presignedUrl'] ??
+      json['presigned_url'] ??
+      json['presignedURL'];
+}
+
 /// GET /page/items 응답 DTO (보관함 내부 - 링크/노트/파일/이미지)
 @freezed
 class PageItemsResponseDto with _$PageItemsResponseDto {
@@ -65,7 +73,7 @@ class AttachmentFileDto with _$AttachmentFileDto {
     @Default('') String attachmentsType,
     @Default('') String textContent,
     @Default('') String objectKey,
-    @Default('') String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) @Default('') String presignedUrl,
     @Default('') String attachmentsExtension,
     @Default(0.0) double attachmentsSize,
     @Default('') String fileName,
@@ -85,7 +93,7 @@ class AttachmentImageDto with _$AttachmentImageDto {
     @Default('') String attachmentsType,
     @Default('') String textContent,
     @Default('') String objectKey,
-    @Default('') String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) @Default('') String presignedUrl,
     @Default('') String attachmentsExtension,
     @Default(0.0) double attachmentsSize,
     @Default('') String fileName,

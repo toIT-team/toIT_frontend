@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import 'upload_validation_utils.dart';
 
@@ -51,6 +52,45 @@ String resolveContentType(String fileName) {
       return 'application/zip';
     default:
       return 'application/octet-stream';
+  }
+}
+
+/// S3 업로드 전 이미지 압축
+/// - JPEG/PNG/WEBP만 압축, HEIC·기타는 원본 반환
+/// - 최대 해상도 1920px, quality 80
+Future<Uint8List> compressImageForUpload(
+  Uint8List bytes,
+  String fileName,
+) async {
+  final ext = extractNormalizedExtension(fileName);
+  final CompressFormat? format = switch (ext) {
+    'jpg' || 'jpeg' => CompressFormat.jpeg,
+    'png' => CompressFormat.png,
+    'webp' => CompressFormat.webp,
+    _ => null,
+  };
+  if (format == null) return bytes;
+
+  try {
+    final compressed = await FlutterImageCompress.compressWithList(
+      bytes,
+      minWidth: 1920,
+      minHeight: 1920,
+      quality: 80,
+      format: format,
+    );
+    if (compressed.length >= bytes.length) return bytes;
+    if (kDebugMode) {
+      debugPrint(
+        '[compress] ${(bytes.length / 1024).toStringAsFixed(0)}KB'
+        ' → ${(compressed.length / 1024).toStringAsFixed(0)}KB'
+        ' (${((1 - compressed.length / bytes.length) * 100).toStringAsFixed(1)}% 감소)',
+      );
+    }
+    return compressed;
+  } catch (e) {
+    debugPrint('[compress] failed, using original: $e');
+    return bytes;
   }
 }
 
