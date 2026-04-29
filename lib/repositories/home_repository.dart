@@ -180,8 +180,7 @@ class HomeRepository {
     );
   }
 
-  /// 자료 이미지 추가 (presign → S3 PUT → confirm)
-  /// 가능한 경우 width/height까지 함께 전송
+  /// 자료 이미지 추가 (presign → S3 PUT → confirm) - 단일
   Future<List<ConfirmResponseItem>> createImage({
     required List<int> foldersIdList,
     required String textContent,
@@ -197,6 +196,81 @@ class HomeRepository {
     );
   }
 
+  /// 자료 이미지 배치 추가 (presign 1회 → S3 PUT × N → confirm 1회)
+  Future<List<ConfirmResponseItem>> createImages({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<({List<int> bytes, String fileName})> images,
+  }) async {
+    // 1. 각 이미지 메타 준비
+    final payloads = <Uint8List>[];
+    final contentTypes = <String>[];
+    final dimensionsList = <ImageDimensions?>[];
+
+    for (final img in images) {
+      final raw = img.bytes is Uint8List
+          ? img.bytes as Uint8List
+          : Uint8List.fromList(img.bytes);
+      final payload = await compressImageForUpload(raw, img.fileName);
+      payloads.add(payload);
+      contentTypes.add(resolveContentType(img.fileName));
+      dimensionsList.add(await readImageDimensions(payload));
+    }
+
+    // 2. presign 1회 (전체 이미지)
+    final presignedList = await _remoteDatasource.presignAttachment(
+      PresignRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: AttachmentsType.image,
+        textContent: textContent,
+        files: [
+          for (int i = 0; i < images.length; i++)
+            PresignFileDto(
+              contentType: contentTypes[i],
+              fileName: images[i].fileName,
+              fileSize: payloads[i].length,
+              width: dimensionsList[i]?.width,
+              height: dimensionsList[i]?.height,
+            ),
+        ],
+      ),
+    );
+
+    if (presignedList.length != images.length) {
+      throw Exception('presign 응답 수 불일치: ${presignedList.length}/${images.length}');
+    }
+
+    // 3. S3 PUT 병렬 업로드
+    await Future.wait([
+      for (int i = 0; i < images.length; i++)
+        _remoteDatasource.uploadToS3(
+          uploadUrl: presignedList[i].uploadUrl,
+          bytes: payloads[i],
+          contentType: contentTypes[i],
+        ),
+    ]);
+
+    // 4. confirm 1회 (전체 이미지)
+    return _remoteDatasource.confirmAttachment(
+      ConfirmRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: AttachmentsType.image,
+        textContent: textContent,
+        files: [
+          for (int i = 0; i < images.length; i++)
+            ConfirmFileDto(
+              objectKey: presignedList[i].objectKey,
+              fileName: images[i].fileName,
+              contentType: contentTypes[i],
+              fileSize: payloads[i].length,
+              width: dimensionsList[i]?.width,
+              height: dimensionsList[i]?.height,
+            ),
+        ],
+      ),
+    );
+  }
+
   /// presign → S3 PUT → confirm 3단계 업로드 공통 로직
   Future<List<ConfirmResponseItem>> _uploadViaPresign({
     required List<int> foldersIdList,
@@ -205,7 +279,10 @@ class HomeRepository {
     required String fileName,
     required String attachmentsType,
   }) async {
-    final payload = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final raw = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+    final payload = attachmentsType == AttachmentsType.image
+        ? await compressImageForUpload(raw, fileName)
+        : raw;
     final fileSize = payload.length;
     final contentType = resolveContentType(fileName);
     // 백엔드가 textContent null 처리에서 NPE를 내는 경우가 있어 빈 문자열도 명시 전달한다.
