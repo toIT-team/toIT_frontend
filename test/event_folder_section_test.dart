@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/views/widgets/event/event_folder_section.dart';
+import 'package:toit/views/widgets/event/event_folder_section.dart';
 
 void main() {
   testWidgets('편집 모드·보관함 있으면 닫기 아이콘 표시', (tester) async {

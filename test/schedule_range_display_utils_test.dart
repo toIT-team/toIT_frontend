@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/core/utils/schedule_range_display_utils.dart';
-import 'package:poj_todo/models/calendar/calendar_event.dart';
+import 'package:toit/core/utils/schedule_range_display_utils.dart';
+import 'package:toit/models/calendar/calendar_event.dart';
 
 void main() {
   group('ScheduleRangeDisplayUtils', () {
@@ -93,10 +93,7 @@ void main() {
         timeSetting: false,
         color: Colors.blue,
       );
-      expect(
-        ScheduleRangeDisplayUtils.formatEventRangeLine(event),
-        '하루 종일',
-      );
+      expect(ScheduleRangeDisplayUtils.formatEventRangeLine(event), '하루 종일');
     });
 
     test('all-day multi day', () {
