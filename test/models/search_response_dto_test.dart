@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/models/dto/search_response_dto.dart';
+import 'package:toit/models/dto/search_response_dto.dart';
 
 void main() {
   group('SearchResponseDto', () {

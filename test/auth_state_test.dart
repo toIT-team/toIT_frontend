@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/controllers/auth_controller.dart';
+import 'package:toit/controllers/auth_controller.dart';
 
 void main() {
   test('AuthState 기본값에서 activeSocialLogin은 null', () {
@@ -16,10 +16,7 @@ void main() {
     expect(withKakao.activeSocialLogin, SocialLoginKind.kakao);
     expect(withKakao.isLoading, isTrue);
 
-    final cleared = withKakao.copyWith(
-      isLoading: false,
-      errorMessage: null,
-    );
+    final cleared = withKakao.copyWith(isLoading: false, errorMessage: null);
     expect(cleared.activeSocialLogin, isNull);
     expect(cleared.isLoading, isFalse);
   });
