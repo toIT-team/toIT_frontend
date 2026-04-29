@@ -1,13 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/core/utils/search_utils.dart';
+import 'package:toit/core/utils/search_utils.dart';
 
 void main() {
   group('SearchUtils.composeSearchSubtitle', () {
     test('메타 없으면 유형 태그만 반환', () {
-      expect(
-        SearchUtils.composeSearchSubtitle(typeTag: '링크'),
-        '링크',
-      );
+      expect(SearchUtils.composeSearchSubtitle(typeTag: '링크'), '링크');
     });
 
     test('보관함명·ISO 날짜 조합', () {

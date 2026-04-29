@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:poj_todo/core/utils/search_folder_mapper.dart';
-import 'package:poj_todo/models/dto/search_response_dto.dart';
-import 'package:poj_todo/models/home/folder_item.dart';
+import 'package:toit/core/utils/search_folder_mapper.dart';
+import 'package:toit/models/dto/search_response_dto.dart';
+import 'package:toit/models/home/folder_item.dart';
 
 void main() {
   group('folderItemFromSearchFolderDto', () {
