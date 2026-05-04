@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
+import '../../core/utils/image_compress_utils.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -151,39 +152,33 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     int savedCount = 0;
     String? failReason;
 
-    for (final imagePath in imagePaths) {
-      final file = File(imagePath);
-      if (!await file.exists()) {
-        failReason = '이미지 파일을 찾을 수 없습니다.';
-        continue;
-      }
+    final results = await Future.wait(
+      imagePaths.map((imagePath) async {
+        final file = File(imagePath);
+        if (!await file.exists()) {
+          return false;
+        }
+        try {
+          final raw = await file.readAsBytes();
+          if (raw.isEmpty) return false;
+          final (:bytes, :fileName) = await compressImageForUpload(
+            raw,
+            _extractFileName(imagePath),
+          );
+          await repository.createImages(
+            foldersIdList: [selectedFolder.foldersId],
+            textContent: memo,
+            images: [(bytes: bytes, fileName: fileName)],
+          );
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }),
+    );
 
-      List<int> imageBytes;
-      try {
-        imageBytes = await file.readAsBytes();
-      } catch (_) {
-        failReason = '이미지 파일을 읽을 수 없습니다.';
-        continue;
-      }
-      if (imageBytes.isEmpty) {
-        failReason = '이미지 파일을 읽을 수 없습니다.';
-        continue;
-      }
-
-      try {
-        await repository.createImage(
-          foldersIdList: [selectedFolder.foldersId],
-          textContent: memo,
-          imageBytes: imageBytes,
-          fileName: _extractFileName(imagePath),
-        );
-        savedCount++;
-      } on DioException catch (_) {
-        failReason = '이미지 저장 중 오류가 발생했습니다.';
-      } catch (_) {
-        failReason = '이미지 저장에 실패했습니다.';
-      }
-    }
+    savedCount = results.where((r) => r).length;
+    if (results.any((r) => !r)) failReason = '일부 이미지 저장에 실패했습니다.';
 
     if (savedCount <= 0) {
       _showSnackBar(failReason ?? '공유 이미지 저장에 실패했습니다.');

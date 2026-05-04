@@ -61,38 +61,26 @@ class UploadBenchmarkService {
     final samples = <({List<int> perImageMs, int totalMs})>[];
 
     for (int i = 0; i < iterations; i++) {
-      final batchSw = Stopwatch()..start();
-
-      final results = await Future.wait(
-        images.map((img) async {
-          final formData = FormData.fromMap({
-            'image': MultipartFile.fromBytes(
-              Uint8List.fromList(img.bytes),
-              filename: img.fileName,
-            ),
-            'textContent': textContent,
-          });
-          final imgSw = Stopwatch()..start();
-          try {
-            await _apiClient.post<dynamic>(
-              ApiConstants.attachmentsImagesEndpoint,
-              queryParameters: {'foldersIdList': foldersIdList},
-              data: formData,
-            );
-            return imgSw.elapsedMilliseconds as int?;
-          } catch (_) {
-            return null;
-          }
-        }),
-      );
-
-      final totalMs = batchSw.elapsedMilliseconds;
-      if (results.any((r) => r == null)) continue;
-
-      samples.add((
-        perImageMs: results.cast<int>(),
-        totalMs: totalMs,
-      ));
+      final formData = FormData.fromMap({
+        'images': images
+            .map((img) => MultipartFile.fromBytes(
+                  Uint8List.fromList(img.bytes),
+                  filename: img.fileName,
+                ))
+            .toList(),
+        'textContent': textContent,
+      });
+      final sw = Stopwatch()..start();
+      try {
+        await _apiClient.post<dynamic>(
+          ApiConstants.attachmentsImagesEndpoint,
+          queryParameters: {'foldersIdList': foldersIdList},
+          data: formData,
+        );
+        samples.add((perImageMs: [], totalMs: sw.elapsedMilliseconds));
+      } catch (_) {
+        continue;
+      }
     }
 
     return _buildBatchReport(images.length, iterations, samples);
@@ -196,14 +184,8 @@ class UploadBenchmarkService {
 
     final w = iterations.toString().length;
     for (int i = 0; i < n; i++) {
-      final s = samples[i];
       final idx = '[${(i + 1).toString().padLeft(w, '0')}/$iterations]';
-      final perImg = s.perImageMs
-          .asMap()
-          .entries
-          .map((e) => 'img${e.key + 1}=${e.value}ms')
-          .join('  ');
-      buf.writeln('$idx  req=${s.totalMs}ms  $perImg');
+      buf.writeln('$idx  req=${samples[i].totalMs}ms');
     }
 
     if (n == 0) {
@@ -213,9 +195,6 @@ class UploadBenchmarkService {
 
     buf.writeln('──────────────────────────────────────────────────────');
     _appendStats(buf, 'req(${imageCount}장)  ', samples.map((s) => s.totalMs).toList());
-    for (int i = 0; i < imageCount; i++) {
-      _appendStats(buf, 'img${i + 1}         ', samples.map((s) => s.perImageMs[i]).toList());
-    }
     buf.write('══════════════════════════════════════════════════════');
     return buf.toString();
   }

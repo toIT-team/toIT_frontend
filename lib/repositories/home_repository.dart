@@ -172,18 +172,16 @@ class HomeRepository {
     );
   }
 
-  /// 자료 이미지 추가 (POST /attachments/images)
-  Future<void> createImage({
+  /// 자료 이미지 추가 (POST /attachments/images) — 최대 3장 한 번에
+  Future<void> createImages({
     required List<int> foldersIdList,
     required String textContent,
-    required List<int> imageBytes,
-    required String fileName,
+    required List<({List<int> bytes, String fileName})> images,
   }) async {
-    await _remoteDatasource.createImage(
+    await _remoteDatasource.createImages(
       foldersIdList: foldersIdList,
       textContent: textContent,
-      imageBytes: imageBytes,
-      fileName: fileName,
+      images: images,
     );
   }
 

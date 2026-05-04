@@ -229,20 +229,23 @@ class HomeRemoteDatasource {
     );
   }
 
-  /// 자료 이미지 추가 (POST /attachments/images)
+  /// 자료 이미지 추가 (POST /attachments/images) — 최대 3장 한 번에
   /// Query: foldersIdList
-  /// Body: multipart/form-data (image, textContent 파트)
-  Future<void> createImage({
+  /// Body: multipart/form-data (images[], textContent 파트)
+  Future<void> createImages({
     required List<int> foldersIdList,
     required String textContent,
-    required List<int> imageBytes,
-    required String fileName,
+    required List<({List<int> bytes, String fileName})> images,
   }) async {
     final formData = FormData.fromMap({
-      'image': MultipartFile.fromBytes(
-        imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
-        filename: fileName,
-      ),
+      'images': images
+          .map((img) => MultipartFile.fromBytes(
+                img.bytes is Uint8List
+                    ? img.bytes
+                    : Uint8List.fromList(img.bytes),
+                filename: img.fileName,
+              ))
+          .toList(),
       'textContent': textContent,
     });
     await _apiClient.post(

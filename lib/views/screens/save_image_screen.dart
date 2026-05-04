@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/image_compress_utils.dart';
 import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
@@ -115,24 +116,18 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
     final uploadResults = await Future.wait(
       _pickedImages.map((xFile) async {
-        final stepSw = Stopwatch()..start();
         try {
-          final imageBytes = await xFile.readAsBytes();
-          final readMs = stepSw.elapsedMilliseconds;
-          if (imageBytes.isEmpty) {
+          final raw = await xFile.readAsBytes();
+          if (raw.isEmpty) {
             return (success: false, error: '이미지 데이터를 읽을 수 없습니다.', log: null as String?);
           }
-          await repository.createImage(
+          final (:bytes, :fileName) = await compressImageForUpload(raw, xFile.name);
+          await repository.createImages(
             foldersIdList: [folderId],
             textContent: textContent,
-            imageBytes: imageBytes,
-            fileName: xFile.name,
+            images: [(bytes: bytes, fileName: fileName)],
           );
-          return (
-            success: true,
-            error: null as String?,
-            log: '${xFile.name}  readAsBytes: ${readMs}ms  createImage: ${stepSw.elapsedMilliseconds - readMs}ms' as String?,
-          );
+          return (success: true, error: null as String?, log: xFile.name as String?);
         } on DioException catch (e) {
           final statusCode = e.response?.statusCode;
           final data = e.response?.data;
@@ -156,7 +151,6 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     for (final result in uploadResults) {
       if (result.success) {
         successCount++;
-        if (result.log != null) logLines.add(result.log!);
       } else {
         lastError = result.error;
       }
