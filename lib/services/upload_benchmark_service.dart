@@ -62,36 +62,36 @@ class UploadBenchmarkService {
 
     for (int i = 0; i < iterations; i++) {
       final batchSw = Stopwatch()..start();
-      final perImageMs = <int>[];
-      var failed = false;
 
-      for (final img in images) {
-        final formData = FormData.fromMap({
-          'image': MultipartFile.fromBytes(
-            Uint8List.fromList(img.bytes),
-            filename: img.fileName,
-          ),
-          'textContent': textContent,
-        });
-        final imgSw = Stopwatch()..start();
-        try {
-          await _apiClient.post<dynamic>(
-            ApiConstants.attachmentsImagesEndpoint,
-            queryParameters: {'foldersIdList': foldersIdList},
-            data: formData,
-          );
-          perImageMs.add(imgSw.elapsedMilliseconds);
-        } catch (_) {
-          failed = true;
-          break;
-        }
-      }
+      final results = await Future.wait(
+        images.map((img) async {
+          final formData = FormData.fromMap({
+            'image': MultipartFile.fromBytes(
+              Uint8List.fromList(img.bytes),
+              filename: img.fileName,
+            ),
+            'textContent': textContent,
+          });
+          final imgSw = Stopwatch()..start();
+          try {
+            await _apiClient.post<dynamic>(
+              ApiConstants.attachmentsImagesEndpoint,
+              queryParameters: {'foldersIdList': foldersIdList},
+              data: formData,
+            );
+            return imgSw.elapsedMilliseconds as int?;
+          } catch (_) {
+            return null;
+          }
+        }),
+      );
 
-      if (failed || perImageMs.length != images.length) continue;
+      final totalMs = batchSw.elapsedMilliseconds;
+      if (results.any((r) => r == null)) continue;
 
       samples.add((
-        perImageMs: perImageMs,
-        totalMs: batchSw.elapsedMilliseconds,
+        perImageMs: results.cast<int>(),
+        totalMs: totalMs,
       ));
     }
 

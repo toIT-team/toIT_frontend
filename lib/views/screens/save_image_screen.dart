@@ -113,46 +113,52 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     );
     // ──────────────────────────────────────────────────
 
-    for (final xFile in _pickedImages) {
-      if (!mounted) break;
-      List<int> imageBytes;
-      final stepSw = Stopwatch()..start();
-      try {
-        imageBytes = await xFile.readAsBytes();
-      } catch (_) {
-        lastError = '이미지 데이터를 읽을 수 없습니다.';
-        continue;
-      }
-      final readMs = stepSw.elapsedMilliseconds;
-      if (imageBytes.isEmpty) {
-        lastError = '이미지 데이터를 읽을 수 없습니다.';
-        continue;
-      }
-      try {
-        await repository.createImage(
-          foldersIdList: [folderId],
-          textContent: textContent,
-          imageBytes: imageBytes,
-          fileName: xFile.name,
-        );
-        logLines.add('${xFile.name}  readAsBytes: ${readMs}ms  createImage: ${stepSw.elapsedMilliseconds - readMs}ms');
-        successCount++;
-      } on DioException catch (e) {
-        final statusCode = e.response?.statusCode;
-        final data = e.response?.data;
-        if (statusCode == 413) {
-          lastError = '이미지 크기가 서버 제한을 초과했습니다. 더 작은 이미지를 선택해 주세요.';
-        } else if (statusCode == 500) {
-          lastError = '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-        } else if (statusCode == 400 &&
-            data is Map &&
-            data['message'] != null) {
-          lastError = data['message'] as String;
-        } else {
-          lastError = '저장에 실패했습니다. 다시 시도해 주세요.';
+    final uploadResults = await Future.wait(
+      _pickedImages.map((xFile) async {
+        final stepSw = Stopwatch()..start();
+        try {
+          final imageBytes = await xFile.readAsBytes();
+          final readMs = stepSw.elapsedMilliseconds;
+          if (imageBytes.isEmpty) {
+            return (success: false, error: '이미지 데이터를 읽을 수 없습니다.', log: null as String?);
+          }
+          await repository.createImage(
+            foldersIdList: [folderId],
+            textContent: textContent,
+            imageBytes: imageBytes,
+            fileName: xFile.name,
+          );
+          return (
+            success: true,
+            error: null as String?,
+            log: '${xFile.name}  readAsBytes: ${readMs}ms  createImage: ${stepSw.elapsedMilliseconds - readMs}ms' as String?,
+          );
+        } on DioException catch (e) {
+          final statusCode = e.response?.statusCode;
+          final data = e.response?.data;
+          final String error;
+          if (statusCode == 413) {
+            error = '이미지 크기가 서버 제한을 초과했습니다. 더 작은 이미지를 선택해 주세요.';
+          } else if (statusCode == 500) {
+            error = '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+          } else if (statusCode == 400 && data is Map && data['message'] != null) {
+            error = data['message'] as String;
+          } else {
+            error = '저장에 실패했습니다. 다시 시도해 주세요.';
+          }
+          return (success: false, error: error, log: null as String?);
+        } catch (_) {
+          return (success: false, error: '저장에 실패했습니다. 다시 시도해 주세요.', log: null as String?);
         }
-      } catch (_) {
-        lastError = '저장에 실패했습니다. 다시 시도해 주세요.';
+      }),
+    );
+
+    for (final result in uploadResults) {
+      if (result.success) {
+        successCount++;
+        if (result.log != null) logLines.add(result.log!);
+      } else {
+        lastError = result.error;
       }
     }
 
