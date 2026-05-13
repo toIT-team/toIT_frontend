@@ -53,6 +53,8 @@ dependencies:
   flutter_dotenv: ^5.1.0
   flutter_svg: ^2.2.3
 
+  flutter_image_compress: ^2.1.0
+
   # 파일/이미지 선택 (시뮬레이터·실기기 동일 로직)
   image_picker: ^1.0.7
   file_picker: ^8.0.0

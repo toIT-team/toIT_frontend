@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -12,9 +11,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
-import '../../core/network/api_client.dart';
-import '../../repositories/home_repository.dart';
-import '../../services/upload_benchmark_service.dart';
+import '../../providers/pending_uploads_provider.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -90,97 +87,27 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     }
 
     setState(() => _isSaving = true);
-    final repository = ref.read(homeRepositoryProvider);
     final folderId = _selectedFolder!.foldersId;
     final textContent = _memoController.text.trim();
-    int successCount = 0;
-    String? lastError;
-    final sw = Stopwatch()..start();
-    final logLines = <String>[];
 
-    // ── 벤치마크: 선택한 이미지들로 N장 × 20회 측정 ──
-    final imageData = <({List<int> bytes, String fileName})>[];
+    final images = <({List<int> bytes, String fileName})>[];
     for (final xFile in _pickedImages) {
-      imageData.add((bytes: await xFile.readAsBytes(), fileName: xFile.name));
-    }
-    final benchmarkReport = await UploadBenchmarkService(
-      apiClient: ref.read(apiClientProvider),
-    ).runImageBatchBenchmark(
-      foldersIdList: [folderId],
-      images: imageData,
-      textContent: textContent,
-      iterations: 20,
-    );
-    // ──────────────────────────────────────────────────
-
-    final uploadResults = await Future.wait(
-      _pickedImages.map((xFile) async {
-        final stepSw = Stopwatch()..start();
-        try {
-          final imageBytes = await xFile.readAsBytes();
-          final readMs = stepSw.elapsedMilliseconds;
-          if (imageBytes.isEmpty) {
-            return (success: false, error: '이미지 데이터를 읽을 수 없습니다.', log: null as String?);
-          }
-          await repository.createImage(
-            foldersIdList: [folderId],
-            textContent: textContent,
-            imageBytes: imageBytes,
-            fileName: xFile.name,
-          );
-          return (
-            success: true,
-            error: null as String?,
-            log: '${xFile.name}  readAsBytes: ${readMs}ms  createImage: ${stepSw.elapsedMilliseconds - readMs}ms' as String?,
-          );
-        } on DioException catch (e) {
-          final statusCode = e.response?.statusCode;
-          final data = e.response?.data;
-          final String error;
-          if (statusCode == 413) {
-            error = '이미지 크기가 서버 제한을 초과했습니다. 더 작은 이미지를 선택해 주세요.';
-          } else if (statusCode == 500) {
-            error = '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-          } else if (statusCode == 400 && data is Map && data['message'] != null) {
-            error = data['message'] as String;
-          } else {
-            error = '저장에 실패했습니다. 다시 시도해 주세요.';
-          }
-          return (success: false, error: error, log: null as String?);
-        } catch (_) {
-          return (success: false, error: '저장에 실패했습니다. 다시 시도해 주세요.', log: null as String?);
-        }
-      }),
-    );
-
-    for (final result in uploadResults) {
-      if (result.success) {
-        successCount++;
-        if (result.log != null) logLines.add(result.log!);
-      } else {
-        lastError = result.error;
+      final raw = await xFile.readAsBytes();
+      if (raw.isEmpty) {
+        _showSnackBar('이미지 데이터를 읽을 수 없습니다.');
+        setState(() => _isSaving = false);
+        return;
       }
+      images.add((bytes: raw, fileName: xFile.name));
     }
 
     if (!mounted) return;
-    if (successCount > 0) {
-      final refreshStart = sw.elapsedMilliseconds;
-      final refreshTiming = await ref.read(homeProvider.notifier).refresh();
-      final refreshMs = sw.elapsedMilliseconds - refreshStart;
-      logLines.add('refresh: ${refreshMs}ms  (fetchHomeData: ${refreshTiming.fetchMs}ms  applyHomeData: ${refreshTiming.applyMs}ms)');
-      logLines.add('총 소요: ${sw.elapsedMilliseconds}ms');
-      debugPrint('\n$benchmarkReport\n\n[저장 타이밍]\n${logLines.join('\n')}\n');
-      ref.invalidate(pageItemsProvider(folderId));
-      _showSnackBar(
-        successCount == _pickedImages.length
-            ? '이미지가 저장되었습니다.'
-            : '$successCount장 저장됨. 일부 실패.',
-      );
-      Navigator.of(context).pop(true);
-    } else {
-      _showSnackBar(lastError ?? '저장에 실패했습니다. 다시 시도해 주세요.');
-    }
-    setState(() => _isSaving = false);
+    ref.read(pendingUploadsProvider.notifier).add(
+          folderId: folderId,
+          textContent: textContent,
+          images: images,
+        );
+    Navigator.of(context).pop(true);
   }
 
   void _showSnackBar(String message) {

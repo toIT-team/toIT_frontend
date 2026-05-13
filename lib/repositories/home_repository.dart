@@ -1,7 +1,13 @@
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
+import '../core/utils/attachment_upload_utils.dart'; // resolveContentType
 import '../datasources/remote/home_remote_datasource.dart';
+import '../models/dto/attachment_confirm_dto.dart';
+import '../models/dto/attachment_presign_dto.dart';
 import '../models/dto/home_response_dto.dart';
 import '../models/dto/link_preview_response_dto.dart';
 import '../models/dto/page_items_response_dto.dart';
@@ -184,6 +190,90 @@ class HomeRepository {
       textContent: textContent,
       imageBytes: imageBytes,
       fileName: fileName,
+    );
+  }
+
+  /// 자료 이미지 추가 (presign → S3 PUT 병렬 → confirm)
+  Future<void> createImages({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<({List<int> bytes, String fileName})> images,
+  }) async {
+    final totalSw = Stopwatch()..start();
+
+    // 1. 메타 준비
+    final compressed = <Uint8List>[];
+    final fileNames = <String>[];
+    final contentTypes = <String>[];
+
+    for (final img in images) {
+      final bytes = img.bytes is Uint8List
+          ? img.bytes as Uint8List
+          : Uint8List.fromList(img.bytes);
+      compressed.add(bytes);
+      fileNames.add(img.fileName);
+      contentTypes.add(resolveContentType(img.fileName));
+    }
+
+    // 2. presign 1회
+    final presignSw = Stopwatch()..start();
+    final presignedList = await _remoteDatasource.presignAttachment(
+      PresignRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: 'IMAGE',
+        textContent: textContent,
+        files: [
+          for (int i = 0; i < images.length; i++)
+            PresignFileDto(
+              contentType: contentTypes[i],
+              fileName: fileNames[i],
+              fileSize: compressed[i].length,
+            ),
+        ],
+      ),
+    );
+    final presignMs = presignSw.elapsedMilliseconds;
+
+    if (presignedList.length != images.length) {
+      throw Exception('presign 응답 수 불일치: ${presignedList.length}/${images.length}');
+    }
+
+    // 3. S3 PUT 병렬
+    final s3Sw = Stopwatch()..start();
+    await Future.wait([
+      for (int i = 0; i < images.length; i++)
+        _remoteDatasource.uploadToS3(
+          uploadUrl: presignedList[i].uploadUrl,
+          bytes: compressed[i],
+          contentType: contentTypes[i],
+        ),
+    ]);
+    final s3Ms = s3Sw.elapsedMilliseconds;
+
+    // 4. confirm 1회
+    final confirmSw = Stopwatch()..start();
+    await _remoteDatasource.confirmAttachment(
+      ConfirmRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: 'IMAGE',
+        textContent: textContent,
+        files: [
+          for (int i = 0; i < images.length; i++)
+            ConfirmFileDto(
+              objectKey: presignedList[i].objectKey,
+              fileName: fileNames[i],
+              fileSize: compressed[i].length,
+              contentType: contentTypes[i],
+            ),
+        ],
+      ),
+    );
+    final confirmMs = confirmSw.elapsedMilliseconds;
+
+    debugPrint(
+      '[이미지 업로드] ${images.length}장  '
+      'presign=${presignMs}ms  s3=${s3Ms}ms  confirm=${confirmMs}ms  '
+      'total=${totalSw.elapsedMilliseconds}ms',
     );
   }
 

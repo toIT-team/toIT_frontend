@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
+import '../../models/pending_image_upload.dart';
+import '../../providers/pending_uploads_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
@@ -738,8 +740,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             onFileKebabTap: _showFileKebabSheet,
           );
         case FolderTab.images:
+          final pending = ref
+              .watch(pendingUploadsProvider)
+              .where((u) => u.folderId == widget.foldersId)
+              .toList();
           return _ImageTabContent(
             images: data.images,
+            pendingUploads: pending,
             onImageLongPress: _showImageKebabSheet,
             onImageTap: _openImageDetail,
           );
@@ -1643,13 +1650,15 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
 }
 
 // ─── 이미지 탭 (API images[]) ───
-class _ImageTabContent extends StatelessWidget {
+class _ImageTabContent extends ConsumerWidget {
   final List<AttachmentImageDto> images;
+  final List<PendingImageUpload> pendingUploads;
   final void Function(AttachmentImageDto image) onImageLongPress;
   final void Function(AttachmentImageDto image) onImageTap;
 
   const _ImageTabContent({
     required this.images,
+    required this.pendingUploads,
     required this.onImageLongPress,
     required this.onImageTap,
   });
@@ -1667,8 +1676,13 @@ class _ImageTabContent extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (images.isEmpty) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingItems = pendingUploads
+        .expand((u) => u.items.map((item) => (item: item, upload: u)))
+        .toList();
+    final totalCount = pendingItems.length + images.length;
+
+    if (totalCount == 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1688,7 +1702,7 @@ class _ImageTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(images.length),
+        _buildSectionToolbar(totalCount),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1706,9 +1720,21 @@ class _ImageTabContent extends StatelessWidget {
                     mainAxisSpacing: AppSpacing.md,
                     childAspectRatio: _tileAspect,
                   ),
-                  itemCount: images.length,
+                  itemCount: totalCount,
                   itemBuilder: (context, index) {
-                    final img = images[index];
+                    if (index < pendingItems.length) {
+                      final (:item, :upload) = pendingItems[index];
+                      return _PendingImageCell(
+                        width: tileW,
+                        height: tileH,
+                        item: item,
+                        upload: upload,
+                        onRetry: () => ref
+                            .read(pendingUploadsProvider.notifier)
+                            .retry(upload.id),
+                      );
+                    }
+                    final img = images[index - pendingItems.length];
                     return _TapScale(
                       onTap: () => onImageTap(img),
                       onLongPress: () => onImageLongPress(img),
@@ -1772,6 +1798,78 @@ class _FolderImageCell extends StatelessWidget {
                 ),
               )
             : Container(color: AppColors.borderLight),
+      ),
+    );
+  }
+}
+
+/// 업로드 중/실패 pending 이미지 셀
+class _PendingImageCell extends StatelessWidget {
+  const _PendingImageCell({
+    required this.width,
+    required this.height,
+    required this.item,
+    required this.upload,
+    required this.onRetry,
+  });
+
+  final double width;
+  final double height;
+  final PendingImageItem item;
+  final PendingImageUpload upload;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFailed = upload.status == PendingUploadStatus.failed;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.memory(item.bytes, fit: BoxFit.cover),
+            Container(
+              color: isFailed
+                  ? Colors.red.withOpacity(0.45)
+                  : Colors.white.withOpacity(0.55),
+            ),
+            if (isFailed)
+              Center(
+                child: GestureDetector(
+                  onTap: onRetry,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.refresh, color: Colors.white, size: 28),
+                      const SizedBox(height: 4),
+                      Text(
+                        '재시도',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
