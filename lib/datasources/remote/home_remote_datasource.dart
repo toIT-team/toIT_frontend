@@ -4,8 +4,6 @@ import 'package:dio/dio.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
-import '../../models/dto/attachment_confirm_dto.dart';
-import '../../models/dto/attachment_presign_dto.dart';
 import '../../models/dto/home_response_dto.dart';
 import '../../models/dto/link_preview_response_dto.dart';
 import '../../models/dto/page_items_response_dto.dart';
@@ -231,6 +229,31 @@ class HomeRemoteDatasource {
     );
   }
 
+  /// 자료 이미지 추가 (POST /attachments/images)
+  /// Query: foldersIdList
+  /// Body: multipart/form-data (image, textContent 파트)
+  Future<void> createImage({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> imageBytes,
+    required String fileName,
+  }) async {
+    final formData = FormData.fromMap({
+      'image': MultipartFile.fromBytes(
+        imageBytes is Uint8List ? imageBytes : Uint8List.fromList(imageBytes),
+        filename: fileName,
+      ),
+      'textContent': textContent,
+    });
+    await _apiClient.post(
+      ApiConstants.attachmentsImagesEndpoint,
+      queryParameters: {
+        'foldersIdList': ListParam(foldersIdList, ListFormat.multi),
+      },
+      data: formData,
+    );
+  }
+
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
   Future<void> moveAttachment({
     required int foldersId,
@@ -300,53 +323,6 @@ class HomeRemoteDatasource {
         'color': color,
         'iconIdx': iconIdx,
       },
-    );
-  }
-
-  /// presigned URL 발급 (POST /attachments/presign)
-  Future<List<PresignResponseDto>> presignAttachment(
-    PresignRequestDto request,
-  ) async {
-    final response = await _apiClient.post(
-      ApiConstants.attachmentsPresignEndpoint,
-      data: request.toJson(),
-    );
-    final data = response.data;
-    if (data is List) {
-      return data
-          .whereType<Map<String, dynamic>>()
-          .map(PresignResponseDto.fromJson)
-          .toList();
-    }
-    return const [];
-  }
-
-  /// S3 직접 PUT 업로드 (인증 헤더 없이 별도 Dio 사용)
-  Future<void> uploadToS3({
-    required String uploadUrl,
-    required Uint8List bytes,
-    required String contentType,
-  }) async {
-    final rawDio = Dio();
-    await rawDio.put(
-      uploadUrl,
-      data: Stream<List<int>>.fromIterable([bytes]),
-      options: Options(
-        headers: {
-          Headers.contentTypeHeader: contentType,
-          Headers.contentLengthHeader: bytes.length,
-        },
-        contentType: contentType,
-        responseType: ResponseType.plain,
-      ),
-    );
-  }
-
-  /// 업로드 완료 확인 (POST /attachments/confirm)
-  Future<void> confirmAttachment(ConfirmRequestDto request) async {
-    await _apiClient.post(
-      ApiConstants.attachmentsConfirmEndpoint,
-      data: request.toJson(),
     );
   }
 }

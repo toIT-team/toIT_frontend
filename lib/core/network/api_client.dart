@@ -57,8 +57,14 @@ class ApiClient {
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
+    void Function(int, int)? onSendProgress,
   }) async {
-    return _dio.post<T>(path, data: data, queryParameters: queryParameters);
+    return _dio.post<T>(
+      path,
+      data: data,
+      queryParameters: queryParameters,
+      onSendProgress: onSendProgress,
+    );
   }
 
   /// PUT 요청

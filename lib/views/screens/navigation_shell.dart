@@ -151,29 +151,39 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     int savedCount = 0;
     String? failReason;
 
-    final results = await Future.wait(
-      imagePaths.map((imagePath) async {
-        final file = File(imagePath);
-        if (!await file.exists()) {
-          return false;
-        }
-        try {
-          final raw = await file.readAsBytes();
-          if (raw.isEmpty) return false;
-          await repository.createImages(
-            foldersIdList: [selectedFolder.foldersId],
-            textContent: memo,
-            images: [(bytes: raw, fileName: _extractFileName(imagePath))],
-          );
-          return true;
-        } catch (_) {
-          return false;
-        }
-      }),
-    );
+    for (final imagePath in imagePaths) {
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        failReason = '이미지 파일을 찾을 수 없습니다.';
+        continue;
+      }
 
-    savedCount = results.where((r) => r).length;
-    if (results.any((r) => !r)) failReason = '일부 이미지 저장에 실패했습니다.';
+      List<int> imageBytes;
+      try {
+        imageBytes = await file.readAsBytes();
+      } catch (_) {
+        failReason = '이미지 파일을 읽을 수 없습니다.';
+        continue;
+      }
+      if (imageBytes.isEmpty) {
+        failReason = '이미지 파일을 읽을 수 없습니다.';
+        continue;
+      }
+
+      try {
+        await repository.createImage(
+          foldersIdList: [selectedFolder.foldersId],
+          textContent: memo,
+          imageBytes: imageBytes,
+          fileName: _extractFileName(imagePath),
+        );
+        savedCount++;
+      } on DioException catch (_) {
+        failReason = '이미지 저장 중 오류가 발생했습니다.';
+      } catch (_) {
+        failReason = '이미지 저장에 실패했습니다.';
+      }
+    }
 
     if (savedCount <= 0) {
       _showSnackBar(failReason ?? '공유 이미지 저장에 실패했습니다.');
