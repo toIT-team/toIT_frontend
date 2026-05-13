@@ -59,8 +59,11 @@ class ApiConstants {
   /// 자료 파일 추가 (POST, multipart)
   static const String attachmentsFilesEndpoint = '/attachments/files';
 
-  /// 자료 이미지 추가 (POST, multipart)
-  static const String attachmentsImagesEndpoint = '/attachments/images';
+  /// presigned URL 발급 (POST)
+  static const String attachmentsPresignEndpoint = '/attachments/presign';
+
+  /// 업로드 완료 확인 (POST)
+  static const String attachmentsConfirmEndpoint = '/attachments/confirm';
 
   /// 자료 파일 이름 수정 (PATCH)
   static const String attachmentsUpdateEndpoint = '/attachments/update';

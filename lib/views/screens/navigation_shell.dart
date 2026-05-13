@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
-import '../../core/utils/image_compress_utils.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -161,14 +160,10 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         try {
           final raw = await file.readAsBytes();
           if (raw.isEmpty) return false;
-          final (:bytes, :fileName) = await compressImageForUpload(
-            raw,
-            _extractFileName(imagePath),
-          );
           await repository.createImages(
             foldersIdList: [selectedFolder.foldersId],
             textContent: memo,
-            images: [(bytes: bytes, fileName: fileName)],
+            images: [(bytes: raw, fileName: _extractFileName(imagePath))],
           );
           return true;
         } catch (_) {

@@ -1,10 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
+import '../core/utils/attachment_upload_utils.dart';
+import '../core/utils/image_compress_utils.dart';
+import '../models/dto/attachment_confirm_dto.dart';
+import '../models/dto/attachment_presign_dto.dart';
 
-/// 단일 업로드 측정 결과
 class UploadBenchmarkSample {
   final int totalRequestMs;
 
@@ -21,69 +26,127 @@ class UploadBenchmarkService {
   // Public API
   // ────────────────────────────────────────────────
 
-  Future<void> runImageBenchmark({
-    required List<int> foldersIdList,
-    required List<int> imageBytes,
-    required String fileName,
-    String textContent = '',
-    int iterations = 20,
-  }) async {
-    final samples = <UploadBenchmarkSample>[];
-
-    for (int i = 0; i < iterations; i++) {
-      final formData = FormData.fromMap({
-        'image': MultipartFile.fromBytes(
-          Uint8List.fromList(imageBytes),
-          filename: fileName,
-        ),
-        'textContent': textContent,
-      });
-      final sample = await _measure(
-        () => _apiClient.post<dynamic>(
-          ApiConstants.attachmentsImagesEndpoint,
-          queryParameters: {'foldersIdList': foldersIdList},
-          data: formData,
-        ),
-      );
-      if (sample != null) samples.add(sample);
-    }
-
-    _printReport('이미지', iterations, samples);
-  }
-
-  /// N장을 순차 업로드하는 실제 패턴을 반복 측정. 보고서 문자열을 반환한다.
+  /// presign → S3 PUT (압축본만) → confirm 플로우를 반복 측정
   Future<String> runImageBatchBenchmark({
     required List<int> foldersIdList,
     required List<({List<int> bytes, String fileName})> images,
     String textContent = '',
     int iterations = 20,
   }) async {
-    final samples = <({List<int> perImageMs, int totalMs})>[];
+    // 이터레이션마다 재압축하지 않도록 1회 준비
+    final compressed = <Uint8List>[];
+    final fileNames = <String>[];
+    final contentTypes = <String>[];
+    final compressedDims = <ImageDimensions?>[];
+
+    for (final img in images) {
+      final raw = img.bytes is Uint8List
+          ? img.bytes as Uint8List
+          : Uint8List.fromList(img.bytes);
+      final (:bytes, :fileName) =
+          await compressImageForUpload(raw, img.fileName);
+      final compressedBytes =
+          bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
+
+      compressed.add(compressedBytes);
+      fileNames.add(fileName);
+      contentTypes.add(resolveContentType(fileName));
+      compressedDims.add(await readImageDimensions(compressedBytes));
+    }
+
+    final n = images.length;
+    final samples =
+        <({int presignMs, int s3Ms, int confirmMs, int totalMs})>[];
 
     for (int i = 0; i < iterations; i++) {
-      final formData = FormData.fromMap({
-        'images': images
-            .map((img) => MultipartFile.fromBytes(
-                  Uint8List.fromList(img.bytes),
-                  filename: img.fileName,
-                ))
-            .toList(),
-        'textContent': textContent,
-      });
-      final sw = Stopwatch()..start();
+      final totalSw = Stopwatch()..start();
       try {
-        await _apiClient.post<dynamic>(
-          ApiConstants.attachmentsImagesEndpoint,
-          queryParameters: {'foldersIdList': foldersIdList},
-          data: formData,
+        // 1. presign
+        final presignSw = Stopwatch()..start();
+        final presignResp = await _apiClient.post<dynamic>(
+          ApiConstants.attachmentsPresignEndpoint,
+          data: PresignRequestDto(
+            foldersIdList: foldersIdList,
+            attachmentsType: 'IMAGE',
+            textContent: textContent,
+            files: [
+              for (int j = 0; j < n; j++)
+                PresignFileDto(
+                  contentType: contentTypes[j],
+                  fileName: fileNames[j],
+                  fileSize: compressed[j].length,
+                  width: compressedDims[j]?.width,
+                  height: compressedDims[j]?.height,
+                ),
+            ],
+          ).toJson(),
         );
-        samples.add((perImageMs: [], totalMs: sw.elapsedMilliseconds));
+        presignSw.stop();
+
+        final rawData = presignResp.data;
+        if (rawData is! List || rawData.length != n) continue;
+        final presignedList = rawData
+            .whereType<Map<String, dynamic>>()
+            .map(PresignResponseDto.fromJson)
+            .toList();
+        if (presignedList.length != n) continue;
+
+        // 2. S3 PUT 병렬 (압축본만)
+        final rawDio = Dio();
+        final s3Sw = Stopwatch()..start();
+        await Future.wait([
+          for (int j = 0; j < n; j++)
+            rawDio.put(
+              presignedList[j].uploadUrl,
+              data: Stream<List<int>>.fromIterable([compressed[j]]),
+              options: Options(
+                headers: {
+                  Headers.contentTypeHeader: contentTypes[j],
+                  Headers.contentLengthHeader: compressed[j].length,
+                },
+                contentType: contentTypes[j],
+                responseType: ResponseType.plain,
+              ),
+            ),
+        ]);
+        s3Sw.stop();
+
+        // 3. confirm
+        final confirmSw = Stopwatch()..start();
+        await _apiClient.post<dynamic>(
+          ApiConstants.attachmentsConfirmEndpoint,
+          data: ConfirmRequestDto(
+            foldersIdList: foldersIdList,
+            attachmentsType: 'IMAGE',
+            textContent: textContent,
+            files: [
+              for (int j = 0; j < n; j++)
+                ConfirmFileDto(
+                  objectKey: presignedList[j].objectKey,
+                  fileName: fileNames[j],
+                  fileSize: compressed[j].length,
+                  contentType: contentTypes[j],
+                  width: compressedDims[j]?.width,
+                  height: compressedDims[j]?.height,
+                ),
+            ],
+          ).toJson(),
+        );
+        confirmSw.stop();
+        totalSw.stop();
+
+        samples.add((
+          presignMs: presignSw.elapsedMilliseconds,
+          s3Ms: s3Sw.elapsedMilliseconds,
+          confirmMs: confirmSw.elapsedMilliseconds,
+          totalMs: totalSw.elapsedMilliseconds,
+        ));
       } catch (_) {
         continue;
       }
     }
 
-    return _buildBatchReport(images.length, iterations, samples);
+    return _buildBatchReport(n, iterations, samples);
   }
 
   Future<void> runFileBenchmark({
@@ -124,10 +187,10 @@ class UploadBenchmarkService {
     Future<Response<dynamic>> Function() request,
   ) async {
     try {
-      final requestWatch = Stopwatch()..start();
+      final sw = Stopwatch()..start();
       await request();
-      requestWatch.stop();
-      return UploadBenchmarkSample(totalRequestMs: requestWatch.elapsedMilliseconds);
+      sw.stop();
+      return UploadBenchmarkSample(totalRequestMs: sw.elapsedMilliseconds);
     } catch (_) {
       return null;
     }
@@ -173,19 +236,23 @@ class UploadBenchmarkService {
   String _buildBatchReport(
     int imageCount,
     int iterations,
-    List<({List<int> perImageMs, int totalMs})> samples,
+    List<({int presignMs, int s3Ms, int confirmMs, int totalMs})> samples,
   ) {
     final buf = StringBuffer();
     final n = samples.length;
 
     buf.writeln('══════════════════════════════════════════════════════');
-    buf.writeln('  이미지 업로드 벤치마크  (${imageCount}장 × ${iterations}회)  성공: $n');
+    buf.writeln(
+        '  이미지 업로드 벤치마크  (${imageCount}장 × ${iterations}회)  성공: $n');
     buf.writeln('══════════════════════════════════════════════════════');
 
     final w = iterations.toString().length;
     for (int i = 0; i < n; i++) {
+      final s = samples[i];
       final idx = '[${(i + 1).toString().padLeft(w, '0')}/$iterations]';
-      buf.writeln('$idx  req=${samples[i].totalMs}ms');
+      buf.writeln(
+        '$idx  presign=${s.presignMs}ms  s3=${s.s3Ms}ms  confirm=${s.confirmMs}ms  total=${s.totalMs}ms',
+      );
     }
 
     if (n == 0) {
@@ -194,7 +261,10 @@ class UploadBenchmarkService {
     }
 
     buf.writeln('──────────────────────────────────────────────────────');
-    _appendStats(buf, 'req(${imageCount}장)  ', samples.map((s) => s.totalMs).toList());
+    _appendStats(buf, 'presign ', samples.map((s) => s.presignMs).toList());
+    _appendStats(buf, 's3      ', samples.map((s) => s.s3Ms).toList());
+    _appendStats(buf, 'confirm ', samples.map((s) => s.confirmMs).toList());
+    _appendStats(buf, 'total   ', samples.map((s) => s.totalMs).toList());
     buf.write('══════════════════════════════════════════════════════');
     return buf.toString();
   }
