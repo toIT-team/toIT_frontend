@@ -18,45 +18,59 @@ class AlarmPickerSheet extends StatelessWidget {
     required this.currentMinutes,
     required this.onOptionSelected,
     required this.onCustomSettingTap,
+    this.options = AlarmUtils.predefinedOptions,
+    this.showCustomSetting = true,
+    this.onDisabledOptionTap,
   });
 
   final int? currentMinutes;
   final ValueChanged<int> onOptionSelected;
   final VoidCallback onCustomSettingTap;
+  final List<AlarmOptionItem> options;
+  final bool showCustomSetting;
+  final ValueChanged<AlarmOptionItem>? onDisabledOptionTap;
 
   @override
   Widget build(BuildContext context) {
     final displayMinutes = currentMinutes ?? 0;
-    final isCustomSelected = currentMinutes != null &&
-        !AlarmUtils.predefinedMinutes.contains(currentMinutes);
+    final isCustomSelected =
+        currentMinutes != null &&
+        !options.map((option) => option.minutes).contains(currentMinutes);
 
     return SystemSafeArea(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
-          ...AlarmUtils.predefinedOptions.map((option) {
+          ...options.map((option) {
             final isSelected =
-                !isCustomSelected && displayMinutes == option.$1;
+                !isCustomSelected && displayMinutes == option.minutes;
             return _AlarmOptionTile(
-              label: option.$2,
+              label: option.label,
               isSelected: isSelected,
               isCustomOption: false,
+              enabled: option.enabled,
               onTap: () {
-                onOptionSelected(option.$1);
+                if (!option.enabled) {
+                  onDisabledOptionTap?.call(option);
+                  return;
+                }
+                onOptionSelected(option.minutes);
                 Navigator.pop(context);
               },
             );
           }),
-          _AlarmOptionTile(
-            label: '직접 설정',
-            isSelected: isCustomSelected,
-            isCustomOption: true,
-            onTap: () {
-              Navigator.pop(context);
-              onCustomSettingTap();
-            },
-          ),
+          if (showCustomSetting)
+            _AlarmOptionTile(
+              label: '직접 설정',
+              isSelected: isCustomSelected,
+              isCustomOption: true,
+              enabled: true,
+              onTap: () {
+                Navigator.pop(context);
+                onCustomSettingTap();
+              },
+            ),
           const SizedBox(height: 16),
         ],
       ),
@@ -69,18 +83,21 @@ class _AlarmOptionTile extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.isCustomOption,
+    required this.enabled,
     required this.onTap,
   });
 
   final String label;
   final bool isSelected;
   final bool isCustomOption;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         child: Row(
@@ -90,7 +107,7 @@ class _AlarmOptionTile extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[800],
+                  color: enabled ? Colors.grey[800] : Colors.grey[400],
                 ),
               ),
             ),
@@ -115,13 +132,17 @@ class _AlarmOptionTile extends StatelessWidget {
       height: 24,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isSelected ? AppColorTokens.blue500 : Colors.transparent,
+        color: isSelected && enabled
+            ? AppColorTokens.blue500
+            : Colors.transparent,
         border: Border.all(
-          color: isSelected ? AppColorTokens.blue500 : Colors.grey[400]!,
+          color: enabled
+              ? (isSelected ? AppColorTokens.blue500 : Colors.grey[400]!)
+              : Colors.grey[300]!,
           width: 1.5,
         ),
       ),
-      child: isSelected
+      child: isSelected && enabled
           ? const Icon(Icons.check, color: Colors.white, size: 16)
           : null,
     );
@@ -159,9 +180,7 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
     _valueController = FixedExtentScrollController(
       initialItem: _value.clamp(0, 99),
     );
-    _unitController = FixedExtentScrollController(
-      initialItem: _unit.index,
-    );
+    _unitController = FixedExtentScrollController(initialItem: _unit.index);
   }
 
   @override
@@ -196,7 +215,8 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
                   itemCount: AlarmUnit.values.length,
                   selectedIndex: _unit.index,
                   builder: (_, i) => Text(AlarmUnit.values[i].label),
-                  onSelected: (i) => setState(() => _unit = AlarmUnit.values[i]),
+                  onSelected: (i) =>
+                      setState(() => _unit = AlarmUnit.values[i]),
                 ),
               ],
             ),
@@ -279,6 +299,8 @@ class BottomSheetStyle {
       context: context,
       backgroundColor: Colors.white,
       shape: shape,
+      useSafeArea: true,
+      isScrollControlled: true,
       showDragHandle: showDragHandle,
       builder: (context) => child,
     );

@@ -825,6 +825,7 @@ mixin _$AttachmentFileDto {
   String get attachmentsType => throw _privateConstructorUsedError;
   String get textContent => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readPresignedUrlKey)
   String get presignedUrl => throw _privateConstructorUsedError;
   String get attachmentsExtension => throw _privateConstructorUsedError;
   double get attachmentsSize => throw _privateConstructorUsedError;
@@ -854,7 +855,7 @@ abstract class $AttachmentFileDtoCopyWith<$Res> {
     String attachmentsType,
     String textContent,
     String objectKey,
-    String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) String presignedUrl,
     String attachmentsExtension,
     double attachmentsSize,
     String fileName,
@@ -951,7 +952,7 @@ abstract class _$$AttachmentFileDtoImplCopyWith<$Res>
     String attachmentsType,
     String textContent,
     String objectKey,
-    String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) String presignedUrl,
     String attachmentsExtension,
     double attachmentsSize,
     String fileName,
@@ -1040,7 +1041,7 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
     this.attachmentsType = '',
     this.textContent = '',
     this.objectKey = '',
-    this.presignedUrl = '',
+    @JsonKey(readValue: _readPresignedUrlKey) this.presignedUrl = '',
     this.attachmentsExtension = '',
     this.attachmentsSize = 0.0,
     this.fileName = '',
@@ -1066,7 +1067,7 @@ class _$AttachmentFileDtoImpl implements _AttachmentFileDto {
   @JsonKey()
   final String objectKey;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readPresignedUrlKey)
   final String presignedUrl;
   @override
   @JsonKey()
@@ -1151,7 +1152,7 @@ abstract class _AttachmentFileDto implements AttachmentFileDto {
     final String attachmentsType,
     final String textContent,
     final String objectKey,
-    final String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) final String presignedUrl,
     final String attachmentsExtension,
     final double attachmentsSize,
     final String fileName,
@@ -1174,6 +1175,7 @@ abstract class _AttachmentFileDto implements AttachmentFileDto {
   @override
   String get objectKey;
   @override
+  @JsonKey(readValue: _readPresignedUrlKey)
   String get presignedUrl;
   @override
   String get attachmentsExtension;
@@ -1205,6 +1207,7 @@ mixin _$AttachmentImageDto {
   String get attachmentsType => throw _privateConstructorUsedError;
   String get textContent => throw _privateConstructorUsedError;
   String get objectKey => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readPresignedUrlKey)
   String get presignedUrl => throw _privateConstructorUsedError;
   String get attachmentsExtension => throw _privateConstructorUsedError;
   double get attachmentsSize => throw _privateConstructorUsedError;
@@ -1236,7 +1239,7 @@ abstract class $AttachmentImageDtoCopyWith<$Res> {
     String attachmentsType,
     String textContent,
     String objectKey,
-    String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) String presignedUrl,
     String attachmentsExtension,
     double attachmentsSize,
     String fileName,
@@ -1345,7 +1348,7 @@ abstract class _$$AttachmentImageDtoImplCopyWith<$Res>
     String attachmentsType,
     String textContent,
     String objectKey,
-    String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) String presignedUrl,
     String attachmentsExtension,
     double attachmentsSize,
     String fileName,
@@ -1446,7 +1449,7 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
     this.attachmentsType = '',
     this.textContent = '',
     this.objectKey = '',
-    this.presignedUrl = '',
+    @JsonKey(readValue: _readPresignedUrlKey) this.presignedUrl = '',
     this.attachmentsExtension = '',
     this.attachmentsSize = 0.0,
     this.fileName = '',
@@ -1474,7 +1477,7 @@ class _$AttachmentImageDtoImpl implements _AttachmentImageDto {
   @JsonKey()
   final String objectKey;
   @override
-  @JsonKey()
+  @JsonKey(readValue: _readPresignedUrlKey)
   final String presignedUrl;
   @override
   @JsonKey()
@@ -1571,7 +1574,7 @@ abstract class _AttachmentImageDto implements AttachmentImageDto {
     final String attachmentsType,
     final String textContent,
     final String objectKey,
-    final String presignedUrl,
+    @JsonKey(readValue: _readPresignedUrlKey) final String presignedUrl,
     final String attachmentsExtension,
     final double attachmentsSize,
     final String fileName,
@@ -1596,6 +1599,7 @@ abstract class _AttachmentImageDto implements AttachmentImageDto {
   @override
   String get objectKey;
   @override
+  @JsonKey(readValue: _readPresignedUrlKey)
   String get presignedUrl;
   @override
   String get attachmentsExtension;

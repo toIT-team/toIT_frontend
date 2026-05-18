@@ -111,19 +111,19 @@ class ScheduleApiClient {
       'alarmOffsetMinutes': alarmOffsetMinutes,
     };
 
-    debugPrint('[일정 추가 API] Request: POST ${ApiConstants.baseUrl}/schedules');
-    debugPrint('[일정 추가 API] Request body: $body');
+    // debugPrint('[일정 추가 API] Request: POST ${ApiConstants.baseUrl}/schedules');
+    // debugPrint('[일정 추가 API] Request body: $body');
 
     final response = await _dio.post<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/schedules',
       data: body,
     );
 
-    debugPrint('[일정 추가 API] Response status: ${response.statusCode}');
-    debugPrint('[일정 추가 API] Response data: ${response.data}');
+    // debugPrint('[일정 추가 API] Response status: ${response.statusCode}');
+    // debugPrint('[일정 추가 API] Response data: ${response.data}');
 
     if (response.data == null) {
-      debugPrint('[일정 추가 API] Error: 응답 데이터가 비어있습니다.');
+      // debugPrint('[일정 추가 API] Error: 응답 데이터가 비어있습니다.');
       throw Exception('일정 생성 응답이 비어있습니다.');
     }
 
@@ -172,19 +172,19 @@ class ScheduleApiClient {
       'alarmOffsetMinutes': alarmOffsetMinutes,
     };
 
-    print('[일정 수정 API] Request: PATCH ${ApiConstants.baseUrl}/schedules');
-    print('[일정 수정 API] Request body: $body');
+    // print('[일정 수정 API] Request: PATCH ${ApiConstants.baseUrl}/schedules');
+    // print('[일정 수정 API] Request body: $body');
 
     final response = await _dio.patch<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/schedules',
       data: body,
     );
 
-    print('[일정 수정 API] Response status: ${response.statusCode}');
-    print('[일정 수정 API] Response data: ${response.data}');
+    // print('[일정 수정 API] Response status: ${response.statusCode}');
+    // print('[일정 수정 API] Response data: ${response.data}');
 
     if (response.data == null) {
-      print('[일정 수정 API] Error: 응답 데이터가 비어있습니다.');
+      // print('[일정 수정 API] Error: 응답 데이터가 비어있습니다.');
       throw Exception('일정 수정 응답이 비어있습니다.');
     }
 
@@ -207,15 +207,15 @@ class ScheduleApiClient {
   Future<void> deleteSchedule({required int schedulesId}) async {
     final body = {'schedulesId': schedulesId};
     // TODO: 개발 단계 - 디버그 로그. 운영 시 제거 또는 레벨 조정
-    debugPrint('[일정 삭제 API] DELETE ${ApiConstants.baseUrl}/schedules');
-    debugPrint('[일정 삭제 API] Request body: $body');
+    // debugPrint('[일정 삭제 API] DELETE ${ApiConstants.baseUrl}/schedules');
+    // debugPrint('[일정 삭제 API] Request body: $body');
 
     final response = await _dio.delete<Map<String, dynamic>>(
       '${ApiConstants.baseUrl}/schedules',
       data: body,
     );
 
-    debugPrint('[일정 삭제 API] Response: ${response.statusCode} ${response.data}');
+    // debugPrint('[일정 삭제 API] Response: ${response.statusCode} ${response.data}');
   }
 
   CalendarEvent _toCalendarEvent(ScheduleItemResponse item) {
@@ -246,11 +246,16 @@ class ScheduleApiClient {
   ) {
     final color = EventColorTokens.fromToken(item.appColor);
     final hasTime = item.startTime != null && item.endTime != null;
+    final startAt =
+        item.startDate.isNotEmpty ? item.startDate : selectedDayStr;
+    // endDate가 없는 응답은 "하루 내 시간 범위"로 간주해야 하므로 빈 값 유지
+    // (UI에서 날짜 없이 시간만 노출).
+    final endAt = item.endDate;
     return CalendarEvent(
       id: item.schedulesId.toString(),
       title: item.title,
-      startAt: selectedDayStr,
-      endAt: selectedDayStr,
+      startAt: startAt,
+      endAt: endAt,
       startTime: _toHhMm(item.startTime),
       endTime: _toHhMm(item.endTime),
       timeSetting: hasTime,

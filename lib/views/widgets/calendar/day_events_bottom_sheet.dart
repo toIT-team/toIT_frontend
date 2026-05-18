@@ -24,6 +24,9 @@ void showDayEventsBottomSheet(
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
+    isDismissible: true,
+    enableDrag: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     builder: (context) => DayEventsBottomSheet(date: date, events: events),
   );
@@ -56,41 +59,52 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
   Widget build(BuildContext context) {
     final bottomPadding = systemBottomBarPadding(context);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.65,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) {
-        return Stack(
-          children: [
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: widget.events.isEmpty
-                        ? _buildEmptyState()
-                        : _buildEventsList(scrollController),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).pop(),
+            child: const SizedBox.expand(),
+          ),
+        ),
+        DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (context, scrollController) {
+            return Stack(
+              children: [
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
                   ),
-                ],
-              ),
-            ),
-            // 오른쪽 하단 버튼 positon 고정.
-            Positioned(
-              right: 20,
-              bottom: bottomPadding + _fabBottomPadding,
-              child: AddActionButton(key: _fabKey, onTap: _handleFabTap),
-            ),
-          ],
-        );
-      },
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      Expanded(
+                        child: widget.events.isEmpty
+                            ? _buildEmptyState()
+                            : _buildEventsList(scrollController),
+                      ),
+                    ],
+                  ),
+                ),
+                // 오른쪽 하단 버튼 positon 고정.
+                Positioned(
+                  right: 20,
+                  bottom: bottomPadding + _fabBottomPadding,
+                  child: AddActionButton(key: _fabKey, onTap: _handleFabTap),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -180,7 +194,9 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
           event: event,
           onEdit: () => _handleEdit(event),
           onDelete: () => _handleDelete(event),
-          onShare: () => _handleShare(event),
+          // TODO(share-ui): 공유 기능 구현 전까지 메뉴 노출 비활성화.
+          // 필요 시 아래 라인 주석 해제.
+          // onShare: () => _handleShare(event),
         );
       },
     );
@@ -193,9 +209,10 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
     ).push(MaterialPageRoute(builder: (_) => EventFormScreen(event: event)));
   }
 
-  void _handleShare(CalendarEvent _) {
-    // TODO: 공유 시트 열기 (일정 상세 하단 바와 동일 플로우)
-  }
+  // TODO(share-ui): 공유 기능 구현 후 다시 활성화.
+  // void _handleShare(CalendarEvent _) {
+  //   // TODO: 공유 시트 열기 (일정 상세 하단 바와 동일 플로우)
+  // }
 
   Future<void> _handleDelete(CalendarEvent event) async {
     final confirmed = await showConfirmDialog(

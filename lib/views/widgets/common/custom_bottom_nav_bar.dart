@@ -34,9 +34,13 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     final isAndroid = Theme.of(context).platform == TargetPlatform.android;
     final mq = MediaQuery.of(context);
     // 갤럭시 제스처 내비 등: padding.bottom은 0인데 viewPadding만 있는 경우
-    final systemBottom = math.max(mq.viewPadding.bottom, mq.padding.bottom);
-    final comfort = isAndroid ? 12.0 : 8.0;
-    final bottomMin = math.max(systemBottom, comfort);
+    final systemBottom = math.max(
+      math.max(mq.viewPadding.bottom, mq.padding.bottom),
+      mq.systemGestureInsets.bottom,
+    );
+    // 시스템 내비 영역 위로 내부 네비를 항상 조금 띄운다.
+    final navGap = isAndroid ? 12.0 : 8.0;
+    final bottomMin = systemBottom + navGap;
 
     return SafeArea(
       top: false,

@@ -196,9 +196,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
     final dateText = _formatDate(_note.createdAt);
     final charCount = content.length;
 
-    return WillPopScope(
-      onWillPop: _saveNoteOnBack,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -301,7 +299,6 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }

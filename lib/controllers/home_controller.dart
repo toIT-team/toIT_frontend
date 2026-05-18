@@ -219,10 +219,10 @@ class HomeController extends Notifier<HomeState> {
     // 네트워크 재호출 없이 즉시 화면에 반영한다. (중복 요청 방지)
     final prefetched = ref.read(homePrefetchProvider);
     if (prefetched != null) {
-      debugPrint('[BOOT] home_build source=prefetch_cache');
+      // debugPrint('[BOOT] home_build source=prefetch_cache');
       _consumePrefetchedHomeData(prefetched);
     } else {
-      debugPrint('[BOOT] home_build source=network');
+      // debugPrint('[BOOT] home_build source=network');
       _loadHomeData();
     }
     return const HomeState(isLoading: true);

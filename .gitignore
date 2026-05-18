@@ -53,3 +53,10 @@ app.*.map.json
 # 환경변수
 .env
 .env.*
+
+# Firebase 설정 파일(로컬/CI 주입)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# FVM Version Cache
+.fvm/

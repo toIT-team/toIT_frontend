@@ -103,17 +103,17 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// `elapsedMs` 로 기록한다. 이 수치는 추후 p50/p95 지표화의 원시 데이터가 된다.
   Future<void> run() async {
     if (_isRunning) {
-      debugPrint('[BOOT] run_ignored reason=already_running');
+      // debugPrint('[BOOT] run_ignored reason=already_running');
       return;
     }
     _isRunning = true;
     final generation = ++_runGeneration;
     state = const BootstrapState(status: BootstrapStatus.running);
     final stopwatch = Stopwatch()..start();
-    debugPrint(
-      '[BOOT] bootstrap_start '
-      'timeoutMs=${_bootstrapTimeout.inMilliseconds} gen=$generation',
-    );
+    // debugPrint(
+      // '[BOOT] bootstrap_start '
+      // 'timeoutMs=${_bootstrapTimeout.inMilliseconds} gen=$generation',
+    // );
 
     try {
       await _executeSequence(generation).timeout(_bootstrapTimeout);
@@ -122,11 +122,11 @@ class BootstrapController extends Notifier<BootstrapState> {
       // 현재 세대를 즉시 무효화해서, 뒤늦게 완주하는 내부 await 가
       // state/prefetch 를 덮어쓰지 못하도록 좀비 전환을 차단한다.
       _runGeneration++;
-      debugPrint(
-        '[BOOT] bootstrap_end result=retryable reason=timeout '
-        'elapsedMs=${stopwatch.elapsedMilliseconds} '
-        'gen=$generation invalidated_to=$_runGeneration',
-      );
+      // debugPrint(
+        // '[BOOT] bootstrap_end result=retryable reason=timeout '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+        // 'gen=$generation invalidated_to=$_runGeneration',
+      // );
       state = const BootstrapState(
         status: BootstrapStatus.retryable,
         errorMessage: 'bootstrap-timeout',
@@ -135,12 +135,12 @@ class BootstrapController extends Notifier<BootstrapState> {
     } catch (e, st) {
       stopwatch.stop();
       _runGeneration++;
-      debugPrint(
-        '[BOOT] bootstrap_end result=retryable reason=exception '
-        'error=$e elapsedMs=${stopwatch.elapsedMilliseconds} '
-        'gen=$generation invalidated_to=$_runGeneration',
-      );
-      debugPrint('[BOOT] stackTrace: $st');
+      // debugPrint(
+        // '[BOOT] bootstrap_end result=retryable reason=exception '
+        // 'error=$e elapsedMs=${stopwatch.elapsedMilliseconds} '
+        // 'gen=$generation invalidated_to=$_runGeneration',
+      // );
+      // debugPrint('[BOOT] stackTrace: $st');
       state = BootstrapState(
         status: BootstrapStatus.retryable,
         errorMessage: e.toString(),
@@ -151,15 +151,15 @@ class BootstrapController extends Notifier<BootstrapState> {
     }
 
     stopwatch.stop();
-    debugPrint(
-      '[BOOT] bootstrap_end result=${state.status.name} '
-      'elapsedMs=${stopwatch.elapsedMilliseconds}',
-    );
+    // debugPrint(
+      // '[BOOT] bootstrap_end result=${state.status.name} '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+    // );
   }
 
   /// 재시도 화면에서 "다시 시도" 를 눌렀을 때 호출.
   Future<void> retry() {
-    debugPrint('[BOOT] retry_requested');
+    // debugPrint('[BOOT] retry_requested');
     return run();
   }
 
@@ -170,13 +170,13 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// 단계별 `*_start/*_end` 로그를 남겨 외부에서 어느 구간이 느렸는지
   /// 즉시 식별할 수 있도록 한다.
   Future<void> _executeSequence(int generation) async {
-    debugPrint('[BOOT] checkTokenPair_start');
+    // debugPrint('[BOOT] checkTokenPair_start');
     final hasLocalTokens = await _authService.hasTokens();
-    debugPrint('[BOOT] checkTokenPair_end hasTokens=$hasLocalTokens');
+    // debugPrint('[BOOT] checkTokenPair_end hasTokens=$hasLocalTokens');
     if (_isStale(generation, stage: 'checkTokenPair_end')) return;
 
     if (!hasLocalTokens) {
-      debugPrint('[BOOT] route=unauthenticated reason=no_local_tokens');
+      // debugPrint('[BOOT] route=unauthenticated reason=no_local_tokens');
       await _authController.checkAuthStatus();
       _setStateIfActive(
         generation,
@@ -185,20 +185,20 @@ class BootstrapController extends Notifier<BootstrapState> {
       return;
     }
 
-    debugPrint('[BOOT] reissue_start');
+    // debugPrint('[BOOT] reissue_start');
     final reissueStopwatch = Stopwatch()..start();
     final newAccessToken = await _authService.reissueAccessToken();
     reissueStopwatch.stop();
-    debugPrint(
-      '[BOOT] reissue_end status=${newAccessToken == null ? 'fail' : 'success'} '
-      'elapsedMs=${reissueStopwatch.elapsedMilliseconds}',
-    );
+    // debugPrint(
+      // '[BOOT] reissue_end status=${newAccessToken == null ? 'fail' : 'success'} '
+      // 'elapsedMs=${reissueStopwatch.elapsedMilliseconds}',
+    // );
     if (_isStale(generation, stage: 'reissue_end')) return;
 
     if (newAccessToken == null) {
       // 재발급 실패 = refresh 만료 또는 서버 401. 보수적으로 로그아웃 처리.
       // 네트워크 일시 오류는 외부 타임아웃이 먼저 잡아서 retryable 로 빠진다.
-      debugPrint('[BOOT] route=unauthenticated reason=reissue_failed');
+      // debugPrint('[BOOT] route=unauthenticated reason=reissue_failed');
       await _authController.forceLogout();
       _setStateIfActive(
         generation,
@@ -208,9 +208,9 @@ class BootstrapController extends Notifier<BootstrapState> {
     }
 
     // 재발급 성공. 기존 인증 복원 루틴(userId/AppGroup/FCM) 재사용.
-    debugPrint('[BOOT] restoreSession_start');
+    // debugPrint('[BOOT] restoreSession_start');
     await _authController.checkAuthStatus();
-    debugPrint('[BOOT] restoreSession_end');
+    // debugPrint('[BOOT] restoreSession_end');
     if (_isStale(generation, stage: 'restoreSession_end')) return;
 
     // 메인 첫 화면(홈 + 캘린더) 데이터 선요청.
@@ -227,7 +227,7 @@ class BootstrapController extends Notifier<BootstrapState> {
       generation,
       const BootstrapState(status: BootstrapStatus.authenticated),
     );
-    debugPrint('[BOOT] route=authenticated');
+    // debugPrint('[BOOT] route=authenticated');
   }
 
   /// 현재 `generation` 이 최신이 아니면 true 를 반환한다(= 늦게 도착한 좀비 실행).
@@ -235,20 +235,20 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// 해당 stage 로그를 남겨 "어디에서 차단되었는지" 추적 가능하게 한다.
   bool _isStale(int generation, {required String stage}) {
     if (generation == _runGeneration) return false;
-    debugPrint(
-      '[BOOT] stage_aborted stage=$stage '
-      'gen=$generation current=$_runGeneration',
-    );
+    // debugPrint(
+      // '[BOOT] stage_aborted stage=$stage '
+      // 'gen=$generation current=$_runGeneration',
+    // );
     return true;
   }
 
   /// 현재 `generation` 이 최신일 때만 state 를 갱신한다.
   void _setStateIfActive(int generation, BootstrapState next) {
     if (generation != _runGeneration) {
-      debugPrint(
-        '[BOOT] state_write_ignored '
-        'gen=$generation current=$_runGeneration target=${next.status.name}',
-      );
+      // debugPrint(
+        // '[BOOT] state_write_ignored '
+        // 'gen=$generation current=$_runGeneration target=${next.status.name}',
+      // );
       return;
     }
     state = next;
@@ -261,7 +261,7 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// 이 메서드는 예외를 밖으로 던지지 않는다. 외부 상한(`_bootstrapTimeout`)
   /// 안에서만 동작하도록 보장된다.
   Future<void> _prefetchHomeData(int generation) async {
-    debugPrint('[BOOT] prefetch_home_start');
+    // debugPrint('[BOOT] prefetch_home_start');
     final stopwatch = Stopwatch()..start();
     try {
       final now = DateTime.now();
@@ -275,32 +275,32 @@ class BootstrapController extends Notifier<BootstrapState> {
       // 늦게 도착한 성공 응답이 이미 취소된(retryable 등) 세션의 캐시를 오염시키지 않도록 가드.
       if (generation != _runGeneration) {
         stopwatch.stop();
-        debugPrint(
-          '[BOOT] prefetch_home_end status=stale '
-          'elapsedMs=${stopwatch.elapsedMilliseconds} '
-          'gen=$generation current=$_runGeneration',
-        );
+        // debugPrint(
+          // '[BOOT] prefetch_home_end status=stale '
+          // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+          // 'gen=$generation current=$_runGeneration',
+        // );
         return;
       }
       ref.read(homePrefetchProvider.notifier).state = dto;
       stopwatch.stop();
-      debugPrint(
-        '[BOOT] prefetch_home_end status=success '
-        'elapsedMs=${stopwatch.elapsedMilliseconds} '
-        'schedules=${dto.schedules.length} folders=${dto.folders.length}',
-      );
+      // debugPrint(
+        // '[BOOT] prefetch_home_end status=success '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+        // 'schedules=${dto.schedules.length} folders=${dto.folders.length}',
+      // );
     } on TimeoutException {
       stopwatch.stop();
-      debugPrint(
-        '[BOOT] prefetch_home_end status=timeout '
-        'elapsedMs=${stopwatch.elapsedMilliseconds}',
-      );
+      // debugPrint(
+        // '[BOOT] prefetch_home_end status=timeout '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // );
     } catch (e) {
       stopwatch.stop();
-      debugPrint(
-        '[BOOT] prefetch_home_end status=fail error=$e '
-        'elapsedMs=${stopwatch.elapsedMilliseconds}',
-      );
+      // debugPrint(
+        // '[BOOT] prefetch_home_end status=fail error=$e '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // );
     }
   }
 
@@ -311,7 +311,7 @@ class BootstrapController extends Notifier<BootstrapState> {
   /// 홈 프리패치와 동일하게 개별 타임아웃(`_prefetchTimeout`) 과 부분 실패
   /// 허용 정책을 따르며, 이 메서드는 예외를 밖으로 던지지 않는다.
   Future<void> _prefetchCalendarData(int generation) async {
-    debugPrint('[BOOT] prefetch_calendar_start');
+    // debugPrint('[BOOT] prefetch_calendar_start');
     final stopwatch = Stopwatch()..start();
     try {
       final now = DateTime.now();
@@ -324,11 +324,11 @@ class BootstrapController extends Notifier<BootstrapState> {
       // 좀비 응답이 이미 취소된 세션의 캐시를 오염시키지 못하도록 가드.
       if (generation != _runGeneration) {
         stopwatch.stop();
-        debugPrint(
-          '[BOOT] prefetch_calendar_end status=stale '
-          'elapsedMs=${stopwatch.elapsedMilliseconds} '
-          'gen=$generation current=$_runGeneration',
-        );
+        // debugPrint(
+          // '[BOOT] prefetch_calendar_end status=stale '
+          // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+          // 'gen=$generation current=$_runGeneration',
+        // );
         return;
       }
       ref.read(calendarPrefetchProvider.notifier).state = CalendarPrefetchData(
@@ -336,23 +336,23 @@ class BootstrapController extends Notifier<BootstrapState> {
         events: events,
       );
       stopwatch.stop();
-      debugPrint(
-        '[BOOT] prefetch_calendar_end status=success '
-        'elapsedMs=${stopwatch.elapsedMilliseconds} '
-        'events=${events.length}',
-      );
+      // debugPrint(
+        // '[BOOT] prefetch_calendar_end status=success '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+        // 'events=${events.length}',
+      // );
     } on TimeoutException {
       stopwatch.stop();
-      debugPrint(
-        '[BOOT] prefetch_calendar_end status=timeout '
-        'elapsedMs=${stopwatch.elapsedMilliseconds}',
-      );
+      // debugPrint(
+        // '[BOOT] prefetch_calendar_end status=timeout '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // );
     } catch (e) {
       stopwatch.stop();
-      debugPrint(
-        '[BOOT] prefetch_calendar_end status=fail error=$e '
-        'elapsedMs=${stopwatch.elapsedMilliseconds}',
-      );
+      // debugPrint(
+        // '[BOOT] prefetch_calendar_end status=fail error=$e '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // );
     }
   }
 }

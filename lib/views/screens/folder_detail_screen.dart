@@ -1,7 +1,14 @@
+import 'dart:math' as math;
+
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
@@ -11,6 +18,7 @@ import '../../providers/pending_uploads_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
+import '../../core/utils/attachment_download_utils.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -33,6 +41,7 @@ import 'save_image_screen.dart';
 import 'save_link_screen.dart';
 import 'save_note_screen.dart';
 import 'event_form_screen.dart';
+import 'search_screen.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -245,28 +254,28 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     switch (selected) {
       case 0:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveLinkScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 1:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveNoteScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 2:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveFileScreen(initialFolderId: widget.foldersId),
           ),
         );
         break;
       case 3:
         Navigator.of(context).push(
-          MaterialPageRoute(
+          CupertinoPageRoute<void>(
             builder: (_) => SaveImageScreen(initialFolderId: widget.foldersId),
           ),
         );
@@ -306,12 +315,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             }
             break;
           case LinkKebabAction.share:
-            // TODO: 공유
-            if (mounted) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('공유 (준비 중)')));
-            }
+            if (mounted) _shareLinkUrl(link.linksUrl);
             break;
           case LinkKebabAction.delete:
             if (mounted) _confirmAndDeleteLink(link);
@@ -360,7 +364,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   void _openNoteDetail(TextDto note) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      CupertinoPageRoute<void>(
         builder: (_) =>
             NoteDetailScreen(note: note, foldersId: widget.foldersId),
       ),
@@ -556,8 +560,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
             break;
           case FileKebabAction.share:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            _downloadFileAttachment(
+              presignedUrl: file.presignedUrl,
+              fileName: file.fileName,
+              attachmentsExtension: file.attachmentsExtension,
+            );
+            break;
+          case FileKebabAction.download:
+            _downloadFileAttachment(
+              presignedUrl: file.presignedUrl,
+              fileName: file.fileName,
+              attachmentsExtension: file.attachmentsExtension,
             );
             break;
           case FileKebabAction.delete:
@@ -637,8 +650,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
             break;
           case FileKebabAction.share:
-            messenger.showSnackBar(
-              const SnackBar(content: Text('공유 기능은 준비 중입니다.')),
+            _shareImageAttachment(
+              presignedUrl: image.presignedUrl,
+              fileName: image.fileName,
+              attachmentsExtension: image.attachmentsExtension,
+            );
+            break;
+          case FileKebabAction.download:
+            _downloadImageAttachment(
+              presignedUrl: image.presignedUrl,
+              fileName: image.fileName,
+              attachmentsExtension: image.attachmentsExtension,
             );
             break;
           case FileKebabAction.delete:
@@ -719,6 +741,173 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
   }
 
+  Future<void> _downloadFileAttachment({
+    required String presignedUrl,
+    required String fileName,
+    String attachmentsExtension = '',
+  }) async {
+    String? tempPath;
+    try {
+      final result = await downloadAttachmentFromPresignedUrl(
+        presignedUrl: presignedUrl,
+        fileName: fileName,
+        attachmentsExtension: attachmentsExtension,
+      );
+      tempPath = result.savedPath;
+      // debugPrint('[download][file] temp saved: $tempPath');
+      final shareResult = await SharePlus.instance.share(
+        ShareParams(files: [XFile(result.savedPath)]),
+      );
+      // debugPrint('[download][file] share result: ${shareResult.status}');
+      if (!mounted) return;
+      if (shareResult.status == ShareResultStatus.success) {
+        _showSnack('${result.fileName} 내보내기를 완료했습니다.');
+      }
+    } on AttachmentDownloadException catch (e) {
+      if (!mounted) return;
+      _showSnack(_messageForDownloadError(e));
+    } catch (e, st) {
+      // debugPrint('[download][file] unexpected error: $e\n$st');
+      if (!mounted) return;
+      _showSnack('다운로드에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      await _tryDeleteTempFile(tempPath);
+    }
+  }
+
+  Future<void> _downloadImageAttachment({
+    required String presignedUrl,
+    required String fileName,
+    String attachmentsExtension = '',
+  }) async {
+    String? tempPath;
+    try {
+      final result = await downloadAttachmentFromPresignedUrl(
+        presignedUrl: presignedUrl,
+        fileName: fileName,
+        attachmentsExtension: attachmentsExtension,
+      );
+      tempPath = result.savedPath;
+      // debugPrint('[download][image] temp saved: $tempPath');
+      final saveResult = await saveDownloadedMediaToGallery(
+        filePath: result.savedPath,
+      );
+      // debugPrint('[download][image] gallery save result: $saveResult');
+      if (!mounted) return;
+
+      switch (saveResult) {
+        case GallerySaveResult.success:
+          _showSnack('${result.fileName} 갤러리에 저장되었습니다.');
+        case GallerySaveResult.permissionDenied:
+        case GallerySaveResult.permissionPermanentlyDenied:
+          await _showPhotoSavePermissionGuideDialog();
+        case GallerySaveResult.failed:
+          _showSnack('사진 앱에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      }
+    } on AttachmentDownloadException catch (e) {
+      if (!mounted) return;
+      _showSnack(_messageForDownloadError(e));
+    } catch (e, st) {
+      // debugPrint('[download][image] unexpected error: $e\n$st');
+      if (!mounted) return;
+      _showSnack('다운로드에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      await _tryDeleteTempFile(tempPath);
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _messageForDownloadError(AttachmentDownloadException e) {
+    switch (e.kind) {
+      case AttachmentDownloadErrorKind.emptyUrl:
+        return '다운로드 링크가 없습니다.';
+      case AttachmentDownloadErrorKind.emptyFile:
+        return '다운로드한 파일이 비어 있어 저장하지 못했습니다.';
+      case AttachmentDownloadErrorKind.network:
+        return e.statusCode == 403
+            ? '다운로드 링크가 만료되었습니다. 다시 시도해 주세요.'
+            : '네트워크 오류로 다운로드에 실패했습니다. 다시 시도해 주세요.';
+      case AttachmentDownloadErrorKind.unknown:
+        return '다운로드에 실패했습니다. 다시 시도해 주세요.';
+    }
+  }
+
+  Future<void> _tryDeleteTempFile(String? path) async {
+    if (path == null || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+        // debugPrint('[download] temp deleted: $path');
+      } else {
+        // debugPrint('[download] temp already missing: $path');
+      }
+    } catch (e) {
+      // debugPrint('[download] temp delete failed: $path, error: $e');
+    }
+  }
+
+  void _shareLinkUrl(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) {
+      _showSnack('공유할 링크가 없습니다.');
+      return;
+    }
+    SharePlus.instance.share(ShareParams(text: trimmed));
+  }
+
+  Future<void> _shareImageAttachment({
+    required String presignedUrl,
+    required String fileName,
+    String attachmentsExtension = '',
+  }) async {
+    String? tempPath;
+    try {
+      final result = await downloadAttachmentFromPresignedUrl(
+        presignedUrl: presignedUrl,
+        fileName: fileName,
+        attachmentsExtension: attachmentsExtension,
+      );
+      tempPath = result.savedPath;
+      // debugPrint('[share][image] temp saved: $tempPath');
+      final shareResult = await SharePlus.instance.share(
+        ShareParams(files: [XFile(result.savedPath)]),
+      );
+      // debugPrint('[share][image] share result: ${shareResult.status}');
+    } on AttachmentDownloadException catch (e) {
+      if (!mounted) return;
+      _showSnack(_messageForDownloadError(e));
+    } catch (e, st) {
+      // debugPrint('[share][image] unexpected error: $e\n$st');
+      if (!mounted) return;
+      _showSnack('공유에 실패했습니다. 다시 시도해 주세요.');
+    } finally {
+      await _tryDeleteTempFile(tempPath);
+    }
+  }
+
+  /// 사진 라이브러리 접근이 거부된 상태일 때 안내한다.
+  /// 갤러리 선택과 저장 모두 동일한 \"사진 접근\" 권한을 사용한다.
+  Future<void> _showPhotoSavePermissionGuideDialog() async {
+    if (!mounted) return;
+
+    final confirmed = await showDeleteDialog(
+      context,
+      message: '사진 접근 권한',
+      warningMessage: '사진 앱에 저장하려면 설정에서 toIT의 사진 접근을 허용해 주세요.',
+      cancelLabel: '취소',
+      confirmLabel: '설정으로 이동',
+      confirmColor: AppColors.blue500,
+    );
+    if (confirmed) await openAppSettings();
+  }
+
   List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {
     return FolderTab.order.map((tab) {
       switch (tab) {
@@ -756,6 +945,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final systemBottom = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+    final addButtonBottomInset = math.max(systemBottom, 8.0);
+
     // 즐겨찾기 토글 시 AppBar 아이콘도 즉시 리빌드되도록 구독
     ref.watch(homeProvider.select((state) => state.folders));
     final isFavoriteFolder = ref
@@ -788,7 +981,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ),
         actions: [
           _TapScaleIconButton(
-            onTap: () {},
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+              );
+            },
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),
           ),
           _TapScaleIconButton(
@@ -815,7 +1012,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
           _TapScaleIconButton(
             onTap: _openFolderOptions,
-            icon: const Icon(Icons.more_horiz, color: AppColors.gray900),
+            icon: const Icon(Icons.more_vert, color: AppColors.gray900),
           ),
         ],
       ),
@@ -855,58 +1052,58 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             ),
           Expanded(
             child: pageItemsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '항목을 불러오지 못했습니다.',
-                style: TextStyle(color: AppColors.gray600, fontSize: 16),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '항목을 불러오지 못했습니다.',
+                      style: TextStyle(color: AppColors.gray600, fontSize: 16),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextButton(
+                      onPressed: () =>
+                          ref.invalidate(pageItemsProvider(widget.foldersId)),
+                      child: const Text('다시 시도'),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                onPressed: () =>
-                    ref.invalidate(pageItemsProvider(widget.foldersId)),
-                child: const Text('다시 시도'),
+              data: (data) => Column(
+                children: [
+                  TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.gray900,
+                    unselectedLabelColor: AppColors.gray600,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
+                    labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    indicatorColor: AppColors.blue500,
+                    indicatorWeight: 2,
+                    dividerColor: AppColors.neutral50,
+                    tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: _buildTabViewChildren(data),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        data: (data) => Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: AppColors.gray900,
-              unselectedLabelColor: AppColors.gray600,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorPadding: const EdgeInsets.symmetric(horizontal: 0),
-              labelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.025 * 16,
-                height: 1.4,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                letterSpacing: -0.025 * 16,
-                height: 1.4,
-              ),
-              indicatorColor: AppColors.blue500,
-              indicatorWeight: 2,
-              dividerColor: AppColors.neutral50,
-              tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
             ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: _buildTabViewChildren(data),
-              ),
-            ),
-          ],
-        ),
-      ),
           ),
         ],
       ),
@@ -937,7 +1134,6 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -954,7 +1150,7 @@ class _TapScaleIconButton extends StatelessWidget {
       onTap: onTap,
       pressedScale: 0.92,
       borderRadius: BorderRadius.circular(999),
-      child: SizedBox(width: 44, height: 44, child: Center(child: icon)),
+      child: SizedBox(width: 48, height: 48, child: Center(child: icon)),
     );
   }
 }
@@ -1024,10 +1220,7 @@ class _TapScaleState extends State<_TapScale> {
 }
 
 /// 상단 툴바: "전체 N개"
-Widget _buildSectionToolbar(
-  int count, {
-  bool removeBottomPadding = false,
-}) {
+Widget _buildSectionToolbar(int count, {bool removeBottomPadding = false}) {
   return Padding(
     padding: EdgeInsets.fromLTRB(
       AppSpacing.lg,
@@ -1122,6 +1315,7 @@ class _LinkItemRow extends StatelessWidget {
     final dateText = _formatCreatedAt(link.createdAt);
     return _TapScale(
       onTap: onTap,
+      onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(
@@ -1192,12 +1386,14 @@ class _LinkItemRow extends StatelessWidget {
                   pressedScale: 0.92,
                   borderRadius: BorderRadius.circular(999),
                   child: const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: Icon(
-                      Icons.more_vert,
-                      size: 20,
-                      color: AppColors.gray600,
+                    width: 44,
+                    height: 44,
+                    child: Center(
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: AppColors.gray600,
+                      ),
                     ),
                   ),
                 ),
@@ -1369,6 +1565,7 @@ class _NoteCard extends StatelessWidget {
 
     return _TapScale(
       onTap: onTap,
+      onLongPress: onKebabTap,
       pressedScale: 0.99,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Column(
@@ -1428,17 +1625,25 @@ class _NoteCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _TapScale(
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: onKebabTap,
-                pressedScale: 0.92,
-                borderRadius: BorderRadius.circular(999),
-                child: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: AppColors.gray600,
+                onLongPress: onKebabTap,
+                child: Container(
+                  width: 32,
+                  height: 36,
+                  alignment: Alignment.centerRight,
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 2),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Icon(
+                        Icons.more_vert,
+                        size: 20,
+                        color: AppColors.gray600,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1517,6 +1722,7 @@ class _FileItemRow extends StatelessWidget {
     );
     return _TapScale(
       onTap: () {},
+      onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: Padding(
@@ -1563,10 +1769,16 @@ class _FileItemRow extends StatelessWidget {
               onTap: onMoreTap,
               pressedScale: 0.92,
               borderRadius: BorderRadius.circular(999),
-              child: const Icon(
-                Icons.more_horiz,
-                size: 20,
-                color: AppColors.gray600,
+              child: const SizedBox(
+                width: 44,
+                height: 44,
+                child: Center(
+                  child: Icon(
+                    Icons.more_horiz,
+                    size: 20,
+                    color: AppColors.gray600,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1607,11 +1819,15 @@ String? _resolveFileIconAssetPath({
     'hwp',
     'pdf',
     'ppt',
+    'txt',
     'xlsx',
+    'zip',
   };
 
   final extensionFromField = _normalizeFileExtension(attachmentsExtension);
-  final extensionFromName = _normalizeFileExtension(_extractExtension(fileName));
+  final extensionFromName = _normalizeFileExtension(
+    _extractExtension(fileName),
+  );
 
   // 서버 확장자 필드가 일반 MIME(예: application/octet-stream)인 경우를
   // 대비해, 지원 가능한 확장자를 순서대로 탐색한다.
@@ -1652,8 +1868,10 @@ String _normalizeFileExtension(String raw) {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation':
         'ppt',
     'application/vnd.ms-excel': 'xlsx',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-        'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'text/plain': 'txt',
+    'application/zip': 'zip',
+    'application/x-zip-compressed': 'zip',
   };
   if (mimeToExtension.containsKey(value)) {
     return mimeToExtension[value]!;
@@ -1686,8 +1904,30 @@ String _formatFileSubtitle(String? createdAt, double attachmentsSize) {
   final dateStr = createdAt != null && createdAt.isNotEmpty
       ? _formatCreatedAt(createdAt)
       : '';
-  final sizeStr = '${attachmentsSize.toStringAsFixed(1)}KB';
+  final sizeStr = _formatAttachmentSize(attachmentsSize);
   return dateStr.isEmpty ? sizeStr : '$dateStr | $sizeStr';
+}
+
+String _formatAttachmentSize(double sizeInBytes) {
+  if (sizeInBytes <= 0) return '0B';
+
+  final bytes = sizeInBytes;
+  if (bytes < 1024) {
+    return '${bytes.toStringAsFixed(0)}B';
+  }
+
+  final sizeInKb = bytes / 1024;
+  if (sizeInKb < 1024) {
+    return '${sizeInKb.toStringAsFixed(1)}KB';
+  }
+
+  final sizeInMb = sizeInKb / 1024;
+  if (sizeInMb < 1024) {
+    return '${sizeInMb.toStringAsFixed(1)}MB';
+  }
+
+  final sizeInGb = sizeInMb / 1024;
+  return '${sizeInGb.toStringAsFixed(1)}GB';
 }
 
 // ─── 이미지 탭 (API images[]) ───
@@ -1834,9 +2074,8 @@ class _FolderImageCell extends StatelessWidget {
                     ),
                   );
                 },
-                errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.borderLight,
-                ),
+                errorBuilder: (_, __, ___) =>
+                    Container(color: AppColors.borderLight),
               )
             : Container(color: AppColors.borderLight),
       ),

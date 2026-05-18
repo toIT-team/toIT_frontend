@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/models/dto/notifications_page_response_dto.dart';
+import 'package:toit/models/dto/notifications_page_response_dto.dart';
 
 void main() {
   group('NotificationsPageResponseDto', () {

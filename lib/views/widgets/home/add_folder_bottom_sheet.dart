@@ -46,13 +46,8 @@ class _AddFolderSheet extends StatefulWidget {
   State<_AddFolderSheet> createState() => _AddFolderSheetState();
 }
 
-class _AddFolderSheetState extends State<_AddFolderSheet> {
-  /// 우하단 글자 수(예: 999/1000)와 본문이 겹치지 않도록 확보
-  static const EdgeInsets _memoFieldContentPadding = EdgeInsets.only(
-    right: 96,
-    bottom: 28,
-  );
-
+class _AddFolderSheetState extends State<_AddFolderSheet>
+    with WidgetsBindingObserver {
   late final TextEditingController _nameController;
   late final TextEditingController _memoController;
   late int _selectedColorIndex;
@@ -63,10 +58,12 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
   final GlobalKey _contentStackKey = GlobalKey();
   final GlobalKey _iconButtonKey = GlobalKey();
   final GlobalKey _memoInputBoxKey = GlobalKey();
+  double _retainedKeyboardInset = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _nameController = TextEditingController(text: widget.initialName ?? '');
     _memoController = TextEditingController(text: widget.initialMemo ?? '');
     _selectedColorIndex = widget.initialColorIndex ?? 5;
@@ -75,13 +72,46 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
     _memoController.addListener(() {
       setState(() => _memoLength = _memoController.text.length);
     });
+    _syncKeyboardInsetRetention();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _memoController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _syncKeyboardInsetRetention();
+  }
+
+  void _syncKeyboardInsetRetention() {
+    final firstView = WidgetsBinding.instance.platformDispatcher.views.first;
+    final keyboardInset =
+        firstView.viewInsets.bottom / firstView.devicePixelRatio;
+
+    if (!mounted) return;
+    if (keyboardInset <= _retainedKeyboardInset) return;
+    setState(() {
+      _retainedKeyboardInset = keyboardInset;
+    });
+  }
+
+  void _releaseRetainedInsetIfNeeded() {
+    final firstView = WidgetsBinding.instance.platformDispatcher.views.first;
+    final keyboardInset =
+        firstView.viewInsets.bottom / firstView.devicePixelRatio;
+
+    if (!mounted) return;
+    if (keyboardInset > 0) return;
+    if (_retainedKeyboardInset == 0) return;
+    setState(() {
+      _retainedKeyboardInset = 0;
+    });
   }
 
   void _onSave() {
@@ -99,69 +129,87 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final liveKeyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final appliedKeyboardInset =
+        _retainedKeyboardInset > liveKeyboardInset
+            ? _retainedKeyboardInset
+            : liveKeyboardInset;
     final systemNav = systemBottomBarPadding(context);
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.neutral50)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.overlayScrim,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerMove: (event) {
+// 민감도 조절
+        if (event.delta.dy > 16) {
+          _releaseRetainedInsetIfNeeded();
+        }
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: AppColors.neutral50)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.overlayScrim,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
           ),
-        ],
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      padding: EdgeInsets.only(bottom: bottomInset + systemNav),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Stack(
-            key: _contentStackKey,
-            clipBehavior: Clip.none,
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+          padding: EdgeInsets.only(bottom: appliedKeyboardInset + systemNav),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Stack(
+                key: _contentStackKey,
+                clipBehavior: Clip.none,
                 children: [
-                  const SizedBox(height: 10),
-                  _buildDragHandle(),
-                  const SizedBox(height: 20),
-                  _buildHeader(),
-                  const SizedBox(height: 13),
-                  _buildNameInput(),
-                  const SizedBox(height: 20),
-                  _buildMemoSection(),
-                  const SizedBox(height: 20),
-                  _buildColorSection(),
-                  const SizedBox(height: 24),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      _buildDragHandle(),
+                      const SizedBox(height: 20),
+                      _buildHeader(),
+                      const SizedBox(height: 13),
+                      _buildNameInput(),
+                      const SizedBox(height: 20),
+                      _buildMemoSection(),
+                      const SizedBox(height: 20),
+                      _buildColorSection(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                  if (_isIconModalVisible)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          setState(() {
+                            _isIconModalVisible = false;
+                          });
+                        },
+                      ),
+                    ),
+                  if (_isIconModalVisible)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: _iconModalTop,
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: _buildIconModal(),
+                      ),
+                    ),
                 ],
               ),
-              if (_isIconModalVisible)
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () {
-                      setState(() {
-                        _isIconModalVisible = false;
-                      });
-                    },
-                  ),
-                ),
-              if (_isIconModalVisible)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: _iconModalTop,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: _buildIconModal(),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),
@@ -482,36 +530,41 @@ class _AddFolderSheetState extends State<_AddFolderSheet> {
             borderRadius: BorderRadius.circular(8),
           ),
           padding: const EdgeInsets.all(13),
-          child: Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextField(
-                controller: _memoController,
-                maxLines: null,
-                maxLength: 1000,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.gray900,
-                  letterSpacing: -0.025 * 16,
-                  height: 1.4,
-                ),
-                decoration: const InputDecoration(
-                  hintText: '보관함에 대한 정보를 간단하게\n메모해보세요.',
-                  hintStyle: TextStyle(
+              Expanded(
+                child: TextField(
+                  controller: _memoController,
+                  maxLines: null,
+                  expands: true,
+                  maxLength: 1000,
+                  textAlignVertical: TextAlignVertical.top,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.gray600,
+                    color: AppColors.gray900,
                     letterSpacing: -0.025 * 16,
                     height: 1.4,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: _memoFieldContentPadding,
-                  counterText: '',
+                  decoration: const InputDecoration(
+                    hintText: '보관함에 대한 정보를 간단하게\n메모해보세요.',
+                    hintStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.gray600,
+                      letterSpacing: -0.025 * 16,
+                      height: 1.4,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                    counterText: '',
+                  ),
                 ),
               ),
-              Positioned(
-                right: 0,
-                bottom: 0,
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerRight,
                 child: Text(
                   '$_memoLength/1000',
                   style: const TextStyle(

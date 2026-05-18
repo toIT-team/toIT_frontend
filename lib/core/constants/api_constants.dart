@@ -41,6 +41,10 @@ class ApiConstants {
   static String notificationReadPath(int notificationId) =>
       '/api/notifications/$notificationId/read';
 
+  /// 미읽음 알림 개수 (GET /api/notifications/unread-count)
+  static const String notificationsUnreadCountEndpoint =
+      '/api/notifications/unread-count';
+
   /// 자료 링크 추가 (POST)
   static const String linksEndpoint = '/links';
 
@@ -56,16 +60,16 @@ class ApiConstants {
   /// 자료 텍스트(노트) 수정 (PATCH)
   static const String textsUpdateEndpoint = '/texts/update';
 
-  /// 자료 파일 추가 (POST, multipart)
+  /// 자료 파일 추가 (POST, multipart) - legacy
   static const String attachmentsFilesEndpoint = '/attachments/files';
 
-  /// 자료 이미지 추가 (POST, multipart)
+  /// 자료 이미지 추가 (POST, multipart) - legacy
   static const String attachmentsImagesEndpoint = '/attachments/images';
 
-  /// presigned URL 발급 (POST)
+  /// S3 업로드용 presigned URL 발급 (POST)
   static const String attachmentsPresignEndpoint = '/attachments/presign';
 
-  /// 업로드 완료 확인 (POST)
+  /// S3 업로드 완료 후 DB 저장 확정 (POST)
   static const String attachmentsConfirmEndpoint = '/attachments/confirm';
 
   /// 자료 파일 이름 수정 (PATCH)

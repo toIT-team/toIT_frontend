@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
+import '../../core/utils/upload_validation_utils.dart';
 import '../../models/pending_image_upload.dart';
 import '../../providers/pending_uploads_provider.dart';
 import '../../models/home/folder_item.dart';
@@ -38,7 +40,7 @@ class NavigationShell extends ConsumerStatefulWidget {
 }
 
 class _NavigationShellState extends ConsumerState<NavigationShell> {
-  static const _deepLinkChannel = MethodChannel('com.example.pojTodo/deeplink');
+  static const _deepLinkChannel = MethodChannel('com.toit/deeplink');
 
   StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
   bool _isShareSheetVisible = false;
@@ -101,12 +103,12 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   Future<void> _handleSharedMedia(List<SharedMediaFile> mediaFiles) async {
     if (!mounted || _isShareSheetVisible || mediaFiles.isEmpty) return;
 
-    final sharedImagePaths = mediaFiles
-        .map((file) => _normalizeFilePath(file.path))
-        .where(_isImagePath)
+    final sharedAttachments = mediaFiles
+        .map((file) => _toSharedAttachment(file.path))
+        .whereType<_SharedAttachment>()
         .toList();
 
-    if (sharedImagePaths.isEmpty) return;
+    if (sharedAttachments.isEmpty) return;
 
     _isShareSheetVisible = true;
     try {
@@ -123,8 +125,8 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         folders: folders,
         initialSelectedFolder: folders.where((f) => f.isDefault).firstOrNull,
         onSave: (selectedFolder, memo) async {
-          await _saveSharedImages(
-            imagePaths: sharedImagePaths,
+          await _saveSharedAttachments(
+            attachments: sharedAttachments,
             selectedFolder: selectedFolder,
             memo: memo,
           );
@@ -145,8 +147,8 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     return state.folders;
   }
 
-  Future<void> _saveSharedImages({
-    required List<String> imagePaths,
+  Future<void> _saveSharedAttachments({
+    required List<_SharedAttachment> attachments,
     required FolderItem selectedFolder,
     required String memo,
   }) async {
@@ -154,51 +156,88 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     int savedCount = 0;
     String? failReason;
 
-    for (final imagePath in imagePaths) {
-      final file = File(imagePath);
+    for (final attachment in attachments) {
+      final file = File(attachment.path);
       if (!await file.exists()) {
-        failReason = '이미지 파일을 찾을 수 없습니다.';
+        failReason = '공유된 파일을 찾을 수 없습니다.';
         continue;
       }
 
-      List<int> imageBytes;
+      List<int> fileBytes;
       try {
-        imageBytes = await file.readAsBytes();
+        fileBytes = await file.readAsBytes();
       } catch (_) {
-        failReason = '이미지 파일을 읽을 수 없습니다.';
+        failReason = '공유된 파일을 읽을 수 없습니다.';
         continue;
       }
-      if (imageBytes.isEmpty) {
-        failReason = '이미지 파일을 읽을 수 없습니다.';
+      if (fileBytes.isEmpty) {
+        failReason = '공유된 파일을 읽을 수 없습니다.';
+        continue;
+      }
+
+      final fileName = _extractFileName(attachment.path);
+      final validateMessage = attachment.isImage
+          ? validateImageSectionUpload(
+              fileName: fileName,
+              fileSizeBytes: fileBytes.length,
+            )
+          : validateFileSectionUpload(
+              fileName: fileName,
+              fileSizeBytes: fileBytes.length,
+            );
+      if (validateMessage != null) {
+        failReason = validateMessage;
         continue;
       }
 
       try {
-        await repository.createImage(
-          foldersIdList: [selectedFolder.foldersId],
-          textContent: memo,
-          imageBytes: imageBytes,
-          fileName: _extractFileName(imagePath),
-        );
+        if (attachment.isImage) {
+          await repository.createImage(
+            foldersIdList: [selectedFolder.foldersId],
+            textContent: memo,
+            imageBytes: fileBytes,
+            fileName: fileName,
+          );
+        } else {
+          await repository.createFile(
+            foldersIdList: [selectedFolder.foldersId],
+            textContent: memo,
+            fileBytes: fileBytes,
+            fileName: fileName,
+          );
+        }
         savedCount++;
-      } on DioException catch (_) {
-        failReason = '이미지 저장 중 오류가 발생했습니다.';
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          failReason = '인증이 만료되었습니다. 앱에서 다시 로그인해주세요.';
+        } else {
+          failReason = '공유 항목 저장 중 오류가 발생했습니다.';
+        }
       } catch (_) {
-        failReason = '이미지 저장에 실패했습니다.';
+        failReason = '공유 항목 저장에 실패했습니다.';
       }
     }
 
     if (savedCount <= 0) {
-      _showSnackBar(failReason ?? '공유 이미지 저장에 실패했습니다.');
-      throw Exception('Failed to save shared images.');
+      _showSnackBar(failReason ?? '공유 항목 저장에 실패했습니다.');
+      throw Exception('Failed to save shared attachments.');
     }
 
     await ref.read(homeProvider.notifier).refresh();
     ref.invalidate(pageItemsProvider(selectedFolder.foldersId));
     _showSnackBar(
-      savedCount == imagePaths.length
-          ? '공유 이미지가 저장되었습니다.'
-          : '$savedCount장 저장됨. 일부 실패.',
+      savedCount == attachments.length
+          ? '공유 항목이 저장되었습니다.'
+          : '$savedCount개 저장됨. 일부 실패.',
+    );
+  }
+
+  _SharedAttachment? _toSharedAttachment(String rawPath) {
+    final normalizedPath = _normalizeFilePath(rawPath);
+    if (normalizedPath.trim().isEmpty) return null;
+    return _SharedAttachment(
+      path: normalizedPath,
+      isImage: _isImagePath(normalizedPath),
     );
   }
 
@@ -286,22 +325,30 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
                 switch (menuIndex) {
                   case 0:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveLinkScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveLinkScreen(),
+                      ),
                     );
                     break;
                   case 1:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveNoteScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveNoteScreen(),
+                      ),
                     );
                     break;
                   case 2:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveFileScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveFileScreen(),
+                      ),
                     );
                     break;
                   case 3:
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SaveImageScreen()),
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const SaveImageScreen(),
+                      ),
                     );
                     break;
                   case 4:
@@ -365,4 +412,11 @@ class _UploadingBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SharedAttachment {
+  final String path;
+  final bool isImage;
+
+  const _SharedAttachment({required this.path, required this.isImage});
 }

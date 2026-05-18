@@ -56,12 +56,14 @@ class SelectedSchedulesResponse with _$SelectedSchedulesResponse {
       _$SelectedSchedulesResponseFromJson(json);
 }
 
-/// 선택된 날짜 일정 항목 (startDate/endDate 없음, selectedDay로 대체)
+/// 선택된 날짜 일정 항목 (`GET /page/schedules/selected`)
 @freezed
 class SelectedScheduleItemResponse with _$SelectedScheduleItemResponse {
   const factory SelectedScheduleItemResponse({
     @JsonKey(fromJson: _intFromJson) required int schedulesId,
     @JsonKey(fromJson: _stringFromJson) required String title,
+    @JsonKey(fromJson: _stringFromJson) required String startDate,
+    @JsonKey(fromJson: _stringFromJson) required String endDate,
     String? startTime,
     String? endTime,
     String? appColor,

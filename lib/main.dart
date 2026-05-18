@@ -1,14 +1,18 @@
 import 'dart:async';
-import 'dart:developer' show log;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/bootstrap_controller.dart';
+import 'controllers/notifications_page_controller.dart';
+import 'controllers/notifications_unread_count_controller.dart';
+import 'core/constants/api_constants.dart';
 import 'core/deep_link/toit_deep_link.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
@@ -20,29 +24,14 @@ import 'views/screens/navigation_shell.dart'
     show NavigationShell, pendingDeepLinkUrlProvider;
 import 'views/screens/splash_retry_screen.dart';
 import 'views/screens/splash_screen.dart';
+import 'views/widgets/common/app_alert_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  _initFcm();
-
   runApp(const ProviderScope(child: MyApp()));
-}
-
-/// FCM 초기화(비동기). OS 알림 권한 요청은 로그인 후
-/// [FcmRegistrationService.syncServerRegistration]에서 수행한다.
-Future<void> _initFcm() async {
-  // TODO(FCM-콘솔정리): 릴리스 전 삭제 — 선조회 로그·catch의 debugPrint/log·필요 시 import
-  try {
-    final token = await FirebaseMessaging.instance.getToken();
-    logFcmTokenSnapshot('main 선조회(getToken)', token);
-  } catch (e, st) {
-    final text = '[FCM] main 선조회 실패(무시 가능): $e';
-    debugPrint('$text\n$st');
-    log(text, name: 'FCM', error: e, stackTrace: st);
-  }
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -53,15 +42,24 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  static const _launchInfoChannel = MethodChannel(
+    'com.toit/launch_info',
+  );
+  final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
   /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
   /// 부트스트랩이 너무 빨라 화면이 깜빡이는 인상을 주지 않기 위함.
   static const _minSplashDuration = Duration(milliseconds: 1500);
 
   StreamSubscription<String>? _fcmTokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _fcmOnMessageSub;
 
   /// 스플래시 최소 노출 시간이 지난 뒤에만 true.
   /// `authState`가 먼저 확정되더라도 이 값이 false인 동안에는 스플래시를 유지한다.
   bool _isSplashFinished = false;
+  bool _showSessionExpiredNotice = false;
+  bool _isSessionExpiredDialogShowing = false;
+  int? _pendingReadNotificationId;
 
   @override
   void initState() {
@@ -75,12 +73,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     });
     _bindFcmDeepLinks();
     _bindFcmTokenRefresh();
+    _bindFcmForegroundIncoming();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _fcmTokenRefreshSub?.cancel();
+    _fcmOnMessageSub?.cancel();
     super.dispose();
   }
 
@@ -95,6 +95,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           .read(fcmRegistrationServiceProvider)
           .syncServerRegistration(promptForPermission: false),
     );
+    // 백그라운드/종료 상태에서 도착한 알림은 포그라운드 핸들러를 거치지 못하므로
+    // resume 시점에 카운트는 즉시 갱신하고, 리스트는 dirty만 찍어 다음 진입 시
+    // 자동 동기화되도록 한다.
+    _refreshUnreadCountIfAuthenticated();
+    _markNotificationsPageDirtyIfAuthenticated();
   }
 
   /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
@@ -125,9 +130,74 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   }
 
   void _onFcmMessageOpened(RemoteMessage message) {
+    final didScheduleRead = _markNotificationAsReadFromFcm(message);
+    if (!didScheduleRead) {
+      _refreshUnreadCountIfAuthenticated();
+    }
     final url = ToitDeepLink.extractUrlFromFcmData(message.data);
     if (url == null) return;
     ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
+  }
+
+  bool _markNotificationAsReadFromFcm(RemoteMessage message) {
+    final notificationId = ToitDeepLink.extractNotificationIdFromFcmData(
+      message.data,
+    );
+    if (notificationId == null) return false;
+    final authState = ref.read(authProvider);
+    if (authState.status != AuthStatus.authenticated) {
+      // cold start에서 인증 복구보다 push open 콜백이 먼저 들어오면
+      // 읽음 PATCH를 놓치지 않도록 인증 완료 시점까지 보관한다.
+      _pendingReadNotificationId = notificationId;
+      return false;
+    }
+    unawaited(_patchNotificationRead(notificationId));
+    return true;
+  }
+
+  Future<void> _patchNotificationRead(int notificationId) async {
+    try {
+      await ref
+          .read(apiClientProvider)
+          .patch<void>(ApiConstants.notificationReadPath(notificationId));
+    } catch (_) {
+      return;
+    }
+    _refreshUnreadCountIfAuthenticated();
+  }
+
+  /// 포그라운드 알림 수신 시 배지(count)는 즉시 갱신하고,
+  /// 리스트 캐시는 dirty 표시만 남겨 진입 시점에 동기화되도록 한다.
+  void _bindFcmForegroundIncoming() {
+    _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((_) {
+      _refreshUnreadCountIfAuthenticated();
+      _markNotificationsPageDirtyIfAuthenticated();
+    });
+  }
+
+  void _refreshUnreadCountIfAuthenticated() {
+    final cacheKey = _resolveAuthenticatedCacheKey();
+    if (cacheKey == null) return;
+    unawaited(
+      ref.read(notificationsUnreadCountProvider(cacheKey).notifier).refresh(),
+    );
+  }
+
+  void _markNotificationsPageDirtyIfAuthenticated() {
+    final cacheKey = _resolveAuthenticatedCacheKey();
+    if (cacheKey == null) return;
+    ref.read(notificationsPageDirtyProvider(cacheKey).notifier).state = true;
+  }
+
+  /// 인증된 사용자에 대한 (userId, refreshTick) 캐시 키를 반환.
+  /// 미인증이면 null을 돌려 호출자가 조용히 빠져나오게 한다.
+  (int, int)? _resolveAuthenticatedCacheKey() {
+    final authState = ref.read(authProvider);
+    final userId = authState.userId;
+    if (authState.status != AuthStatus.authenticated || userId == null) {
+      return null;
+    }
+    return (userId, ref.read(authSessionRefreshTickProvider));
   }
 
   Future<void> _initAuth() async {
@@ -140,34 +210,59 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     apiClient.enableAuth(
       authService: authService,
       onForceLogout: () {
+        _showSessionExpiredNotice = true;
         ref.read(authProvider.notifier).forceLogout();
       },
     );
 
+    final skipMinSplashDelay = await _shouldSkipMinSplashDelay();
+
     // 부트스트랩(토큰 확인 + 선제 재발급 + 세션 복원)과 스플래시 최소
     // 노출 시간을 병렬 대기한다. `BootstrapController` 가 실패/재시도 경로를
     // 관리하므로 여기서는 "끝났는가" 여부만 플래그로 남긴다.
-    debugPrint(
-      '[BOOT] splash_start minDurationMs=${_minSplashDuration.inMilliseconds}',
-    );
+    // debugPrint(
+      // '[BOOT] splash_start minDurationMs='
+      // '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
+    // );
     final splashStopwatch = Stopwatch()..start();
     await Future.wait<void>([
       ref.read(bootstrapProvider.notifier).run(),
-      Future<void>.delayed(_minSplashDuration),
+      if (!skipMinSplashDelay) Future<void>.delayed(_minSplashDuration),
     ]);
     splashStopwatch.stop();
     if (!mounted) {
-      debugPrint('[BOOT] splash_end aborted=unmounted');
+      // debugPrint('[BOOT] splash_end aborted=unmounted');
       return;
     }
-    debugPrint(
-      '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
-    );
+    // debugPrint(
+      // '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
+    // );
     setState(() => _isSplashFinished = true);
+  }
+
+  /// Android 외부 공유 진입에서는 스플래시 최소 노출을 건너뛰어
+  /// iOS 공유 시트와 유사한 즉시 진입 체감을 맞춘다.
+  Future<bool> _shouldSkipMinSplashDelay() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      final result = await _launchInfoChannel.invokeMethod<bool>(
+        'isShareLaunch',
+      );
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthStatus>(
+      authProvider.select((state) => state.status),
+      _handleAuthStatusChanged,
+    );
+
     final bootstrapStatus = ref.watch(
       bootstrapProvider.select((state) => state.status),
     );
@@ -176,6 +271,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     return MaterialApp(
       title: 'toIT',
       debugShowCheckedModeBanner: false,
+      navigatorKey: _rootNavigatorKey,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       home: _buildHome(bootstrapStatus, authStatus),
@@ -243,6 +339,52 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     final name = route.runtimeType.toString();
     if (_lastRouteLog == name) return;
     _lastRouteLog = name;
-    debugPrint('[BOOT] route_decided home=$name');
+    // debugPrint('[BOOT] route_decided home=$name');
+  }
+
+  void _handleAuthStatusChanged(AuthStatus? previous, AuthStatus next) {
+    if (next == AuthStatus.authenticated) {
+      _showSessionExpiredNotice = false;
+      _consumePendingNotificationRead();
+      return;
+    }
+    if (next != AuthStatus.unauthenticated || !_showSessionExpiredNotice) {
+      return;
+    }
+
+    if (_isSessionExpiredDialogShowing) return;
+    _showSessionExpiredNotice = false;
+    _isSessionExpiredDialogShowing = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        _isSessionExpiredDialogShowing = false;
+        return;
+      }
+
+      final navigator = _rootNavigatorKey.currentState;
+      final dialogContext = _rootNavigatorKey.currentContext;
+      if (navigator == null || dialogContext == null) {
+        _isSessionExpiredDialogShowing = false;
+        return;
+      }
+
+      await showAppAlertDialog(
+        dialogContext,
+        message: '세션이 만료되어 다시 로그인해 주세요.',
+        confirmLabel: '확인',
+      );
+
+      if (mounted) {
+        navigator.popUntil((route) => route.isFirst);
+      }
+      _isSessionExpiredDialogShowing = false;
+    });
+  }
+
+  void _consumePendingNotificationRead() {
+    final notificationId = _pendingReadNotificationId;
+    if (notificationId == null) return;
+    _pendingReadNotificationId = null;
+    unawaited(_patchNotificationRead(notificationId));
   }
 }

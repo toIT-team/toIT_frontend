@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
-import '../core/utils/attachment_upload_utils.dart'; // resolveContentType
+import '../core/utils/attachment_upload_utils.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/attachment_confirm_dto.dart';
 import '../models/dto/attachment_presign_dto.dart';
@@ -163,33 +163,36 @@ class HomeRepository {
     );
   }
 
-  /// 자료 파일 추가 (POST /attachments/files)
-  Future<void> createFile({
+  /// 자료 파일 추가 (presign → S3 PUT → confirm)
+  /// 기존 multipart 단일 호출을 presigned URL 기반 3단계로 교체
+  Future<List<ConfirmResponseItem>> createFile({
     required List<int> foldersIdList,
     required String textContent,
     required List<int> fileBytes,
     required String fileName,
   }) async {
-    await _remoteDatasource.createFile(
+    return _uploadViaPresign(
       foldersIdList: foldersIdList,
       textContent: textContent,
-      fileBytes: fileBytes,
+      bytes: fileBytes,
       fileName: fileName,
+      attachmentsType: AttachmentsType.file,
     );
   }
 
-  /// 자료 이미지 추가 (POST /attachments/images)
-  Future<void> createImage({
+  /// 자료 이미지 추가 (presign → S3 PUT → confirm) - 단일
+  Future<List<ConfirmResponseItem>> createImage({
     required List<int> foldersIdList,
     required String textContent,
     required List<int> imageBytes,
     required String fileName,
   }) async {
-    await _remoteDatasource.createImage(
+    return _uploadViaPresign(
       foldersIdList: foldersIdList,
       textContent: textContent,
-      imageBytes: imageBytes,
+      bytes: imageBytes,
       fileName: fileName,
+      attachmentsType: AttachmentsType.image,
     );
   }
 
@@ -201,7 +204,6 @@ class HomeRepository {
   }) async {
     final totalSw = Stopwatch()..start();
 
-    // 1. 메타 준비
     final compressed = <Uint8List>[];
     final fileNames = <String>[];
     final contentTypes = <String>[];
@@ -215,7 +217,6 @@ class HomeRepository {
       contentTypes.add(resolveContentType(img.fileName));
     }
 
-    // 2. presign 1회
     final presignSw = Stopwatch()..start();
     final presignedList = await _remoteDatasource.presignAttachment(
       PresignRequestDto(
@@ -238,7 +239,6 @@ class HomeRepository {
       throw Exception('presign 응답 수 불일치: ${presignedList.length}/${images.length}');
     }
 
-    // 3. S3 PUT 병렬
     final s3Sw = Stopwatch()..start();
     await Future.wait([
       for (int i = 0; i < images.length; i++)
@@ -250,7 +250,6 @@ class HomeRepository {
     ]);
     final s3Ms = s3Sw.elapsedMilliseconds;
 
-    // 4. confirm 1회
     final confirmSw = Stopwatch()..start();
     await _remoteDatasource.confirmAttachment(
       ConfirmRequestDto(

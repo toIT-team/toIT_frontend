@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:poj_todo/views/widgets/common/app_alert_dialog.dart';
+import 'package:toit/views/widgets/common/app_alert_dialog.dart';
 
 void main() {
   testWidgets('showAppAlertDialog shows title, message, confirm', (
@@ -12,10 +12,8 @@ void main() {
           builder: (context) {
             return Scaffold(
               body: TextButton(
-                onPressed: () => showAppAlertDialog(
-                  context,
-                  message: 'test message',
-                ),
+                onPressed: () =>
+                    showAppAlertDialog(context, message: 'test message'),
                 child: const Text('open'),
               ),
             );

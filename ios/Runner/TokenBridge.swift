@@ -3,7 +3,7 @@ import Foundation
 
 /// Flutter MethodChannel → App Group `UserDefaults`로 Share Extension과 공유.
 final class TokenBridge {
-  static let channelName = "com.example.pojTodo/token"
+  static let channelName = "com.toit/token"
 
   static let keyAccessToken = "access_token"
   static let keyUserId = "user_id"
@@ -75,21 +75,21 @@ final class TokenBridge {
   ) {
     guard let defaults = AppGroupConfig.sharedUserDefaults
     else {
-      NSLog(
-        "[TokenBridge] App Group UserDefaults nil — AppGroupId: "
-        + "\(String(describing: AppGroupConfig.identifier))"
-      )
+      // NSLog(
+      //   "[TokenBridge] App Group UserDefaults nil — AppGroupId: "
+      //   + "\(String(describing: AppGroupConfig.identifier))"
+      // )
       return
     }
     defaults.set(accessToken, forKey: keyAccessToken)
     defaults.set(userId, forKey: keyUserId)
     defaults.set(baseUrl, forKey: keyBaseUrl)
     defaults.synchronize()
-    let verify = defaults.string(forKey: keyAccessToken)
-    NSLog(
-      "[TokenBridge] 저장 token: \(verify != nil ? "있음" : "nil"),"
-      + " userId: \(userId), baseUrl: \(baseUrl)"
-    )
+    // let verify = defaults.string(forKey: keyAccessToken)
+    // NSLog(
+    //   "[TokenBridge] 저장 token: \(verify != nil ? "있음" : "nil"),"
+    //   + " userId: \(userId), baseUrl: \(baseUrl)"
+    // )
   }
 
   private static func clear() {

@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '998768329067',
     projectId: 'toit-e1670',
     storageBucket: 'toit-e1670.firebasestorage.app',
-    iosBundleId: 'com.example.pojTodo',
+    iosBundleId: 'com.toit.macos',
   );
 }
