@@ -51,6 +51,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _consumePendingDeepLinkIfAny();
       _bindShareReceiver();
+      ref.read(pendingUploadsProvider.notifier).restoreFromDb();
     });
   }
 

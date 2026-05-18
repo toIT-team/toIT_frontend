@@ -1,12 +1,3 @@
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
-class ImageDimensions {
-  final int width;
-  final int height;
-  const ImageDimensions(this.width, this.height);
-}
-
 String resolveContentType(String fileName) {
   final ext = fileName.split('.').last.toLowerCase();
   return switch (ext) {
@@ -29,17 +20,4 @@ String resolveContentType(String fileName) {
     'txt' => 'text/plain',
     _ => 'application/octet-stream',
   };
-}
-
-Future<ImageDimensions?> readImageDimensions(Uint8List bytes) async {
-  try {
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
-    final dimensions = ImageDimensions(image.width, image.height);
-    image.dispose();
-    return dimensions;
-  } catch (_) {
-    return null;
-  }
 }

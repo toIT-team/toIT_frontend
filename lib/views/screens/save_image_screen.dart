@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,7 +12,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
+import '../../core/network/api_client.dart';
 import '../../providers/pending_uploads_provider.dart';
+import '../../services/upload_benchmark_service.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -102,12 +105,26 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     }
 
     if (!mounted) return;
-    ref.read(pendingUploadsProvider.notifier).add(
+    await ref.read(pendingUploadsProvider.notifier).add(
           folderId: folderId,
           textContent: textContent,
           images: images,
         );
+    if (!mounted) return;
     Navigator.of(context).pop(true);
+
+    // // 벤치마크: 저장 완료 후 백그라운드 실행
+    // final apiClient = ref.read(apiClientProvider);
+    // unawaited(
+    //   UploadBenchmarkService(apiClient: apiClient)
+    //       .runImageBatchBenchmark(
+    //         foldersIdList: [folderId],
+    //         images: images,
+    //         textContent: textContent,
+    //         iterations: 20,
+    //       )
+    //       .then((report) => debugPrint('\n[벤치마크]\n$report\n')),
+    // );
   }
 
   void _showSnackBar(String message) {

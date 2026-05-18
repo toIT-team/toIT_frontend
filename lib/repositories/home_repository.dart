@@ -194,7 +194,7 @@ class HomeRepository {
   }
 
   /// 자료 이미지 추가 (presign → S3 PUT 병렬 → confirm)
-  Future<void> createImages({
+  Future<({int presignMs, int s3Ms, int confirmMs, int totalMs})> createImages({
     required List<int> foldersIdList,
     required String textContent,
     required List<({List<int> bytes, String fileName})> images,
@@ -270,11 +270,13 @@ class HomeRepository {
     );
     final confirmMs = confirmSw.elapsedMilliseconds;
 
+    final totalMs = totalSw.elapsedMilliseconds;
     debugPrint(
       '[이미지 업로드] ${images.length}장  '
       'presign=${presignMs}ms  s3=${s3Ms}ms  confirm=${confirmMs}ms  '
-      'total=${totalSw.elapsedMilliseconds}ms',
+      'total=${totalMs}ms',
     );
+    return (presignMs: presignMs, s3Ms: s3Ms, confirmMs: confirmMs, totalMs: totalMs);
   }
 
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)

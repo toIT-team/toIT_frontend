@@ -21,6 +21,8 @@ class UploadBenchmarkService {
   UploadBenchmarkService({required ApiClient apiClient})
       : _apiClient = apiClient;
 
+  static final _s3Dio = Dio();
+
   // ────────────────────────────────────────────────
   // Public API
   // ────────────────────────────────────────────────
@@ -34,7 +36,6 @@ class UploadBenchmarkService {
   }) async {
     final n = images.length;
 
-    // 이터레이션마다 재가공하지 않도록 1회 준비 (압축 없이 raw)
     final bytesList = images
         .map((img) => img.bytes is Uint8List
             ? img.bytes as Uint8List
@@ -45,7 +46,7 @@ class UploadBenchmarkService {
 
     final samples = <({
       int presignMs,
-      List<({int uploadMs, int waitMs, int totalMs})> perS3,
+      List<int> perS3Ms,
       int confirmMs,
       int totalMs,
     })>[];
@@ -81,14 +82,12 @@ class UploadBenchmarkService {
             .toList();
         if (presignedList.length != n) continue;
 
-        // 2. S3 PUT 병렬 (upload/wait 분리)
-        final rawDio = Dio();
+        // 2. S3 PUT 병렬
         final s3Results = await Future.wait([
           for (int j = 0; j < n; j++)
             () async {
               final sw = Stopwatch()..start();
-              int? uploadDoneMs;
-              await rawDio.put(
+              await _s3Dio.put(
                 presignedList[j].uploadUrl,
                 data: Stream<List<int>>.fromIterable([bytesList[j]]),
                 options: Options(
@@ -99,17 +98,8 @@ class UploadBenchmarkService {
                   contentType: contentTypes[j],
                   responseType: ResponseType.plain,
                 ),
-                onSendProgress: (sent, total) {
-                  if (sent == total) uploadDoneMs = sw.elapsedMilliseconds;
-                },
               );
-              final totalMs = sw.elapsedMilliseconds;
-              final uploadMs = uploadDoneMs ?? totalMs;
-              return (
-                uploadMs: uploadMs,
-                waitMs: totalMs - uploadMs,
-                totalMs: totalMs,
-              );
+              return sw.elapsedMilliseconds;
             }(),
         ]);
 
@@ -128,18 +118,15 @@ class UploadBenchmarkService {
                   fileName: fileNames[j],
                   fileSize: bytesList[j].length,
                   contentType: contentTypes[j],
-                  width: dims[j]?.width,
-                  height: dims[j]?.height,
                 ),
             ],
           ).toJson(),
         );
         final confirmMs = confirmSw.elapsedMilliseconds;
-        totalSw.stop();
 
         samples.add((
           presignMs: presignMs,
-          perS3: s3Results,
+          perS3Ms: s3Results,
           confirmMs: confirmMs,
           totalMs: totalSw.elapsedMilliseconds,
         ));
@@ -234,12 +221,7 @@ class UploadBenchmarkService {
   String _buildBatchReport(
     int imageCount,
     int iterations,
-    List<({
-      int presignMs,
-      List<({int uploadMs, int waitMs, int totalMs})> perS3,
-      int confirmMs,
-      int totalMs,
-    })> samples,
+    List<({int presignMs, List<int> perS3Ms, int confirmMs, int totalMs})> samples,
   ) {
     final buf = StringBuffer();
     final n = samples.length;
@@ -257,26 +239,21 @@ class UploadBenchmarkService {
     for (int i = 0; i < n; i++) {
       final s = samples[i];
       final idx = '[${(i + 1).toString().padLeft(w, '0')}/$iterations]';
-      final s3 = s.perS3
+      final s3 = s.perS3Ms
           .asMap()
           .entries
-          .map((e) =>
-              'img${e.key + 1}(upload=${e.value.uploadMs}ms wait=${e.value.waitMs}ms total=${e.value.totalMs}ms)')
+          .map((e) => 'img${e.key + 1}=${e.value}ms')
           .join('  ');
-      buf.writeln(
-        '$idx  presign=${s.presignMs}ms  $s3  confirm=${s.confirmMs}ms  total=${s.totalMs}ms',
-      );
+      buf.writeln('$idx  presign=${s.presignMs}ms  $s3  confirm=${s.confirmMs}ms  total=${s.totalMs}ms');
     }
 
     buf.writeln('──────────────────────────────────────────────────────');
-    _appendStats(buf, 'presign      ', samples.map((s) => s.presignMs).toList());
+    _appendStats(buf, 'presign   ', samples.map((s) => s.presignMs).toList());
     for (int i = 0; i < imageCount; i++) {
-      _appendStats(buf, 'img${i + 1} upload  ', samples.map((s) => s.perS3[i].uploadMs).toList());
-      _appendStats(buf, 'img${i + 1} wait    ', samples.map((s) => s.perS3[i].waitMs).toList());
-      _appendStats(buf, 'img${i + 1} total   ', samples.map((s) => s.perS3[i].totalMs).toList());
+      _appendStats(buf, 'img${i + 1}       ', samples.map((s) => s.perS3Ms[i]).toList());
     }
-    _appendStats(buf, 'confirm      ', samples.map((s) => s.confirmMs).toList());
-    _appendStats(buf, 'total        ', samples.map((s) => s.totalMs).toList());
+    _appendStats(buf, 'confirm   ', samples.map((s) => s.confirmMs).toList());
+    _appendStats(buf, 'total     ', samples.map((s) => s.totalMs).toList());
     buf.write('══════════════════════════════════════════════════════');
     return buf.toString();
   }

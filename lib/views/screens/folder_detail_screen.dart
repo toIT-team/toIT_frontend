@@ -762,6 +762,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         .read(homeProvider.notifier)
         .isFavoriteFolder(widget.foldersId);
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
+    final isUploading = ref.watch(pendingUploadsProvider).any(
+      (u) => u.status == PendingUploadStatus.uploading,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -816,7 +819,42 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ],
       ),
-      body: pageItemsAsync.when(
+      body: Column(
+        children: [
+          if (isUploading)
+            Material(
+              color: Colors.transparent,
+              child: Container(
+                width: double.infinity,
+                color: const Color(0xFF1A1A1A).withValues(alpha: 0.88),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '이미지 저장 중입니다. 앱을 종료하지 말아주세요.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(
+            child: pageItemsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(
           child: Column(
@@ -868,6 +906,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             ),
           ],
         ),
+      ),
+          ),
+        ],
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(right: 4, bottom: 16),
