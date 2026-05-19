@@ -1,38 +1,32 @@
-/// 첨부 종류 (백엔드 enum: IMAGE / FILE)
-class AttachmentsType {
-  AttachmentsType._();
-
-  static const String image = 'IMAGE';
-  static const String file = 'FILE';
-}
-
-/// POST /attachments/presign 요청
+/// POST /attachments/presign 요청 DTO
 class PresignRequestDto {
+  final List<int> foldersIdList;
+  final String attachmentsType;
+  final String textContent;
+  final List<PresignFileDto> files;
+
   const PresignRequestDto({
     required this.foldersIdList,
     required this.attachmentsType,
+    required this.textContent,
     required this.files,
-    this.textContent,
   });
 
-  final List<int> foldersIdList;
-  final String attachmentsType;
-  final List<PresignFileDto> files;
-  final String? textContent;
-
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{
-      'foldersIdList': foldersIdList,
-      'attachmentsType': attachmentsType,
-      'files': files.map((file) => file.toJson()).toList(),
-    };
-    if (textContent != null) map['textContent'] = textContent;
-    return map;
-  }
+  Map<String, dynamic> toJson() => {
+        'foldersIdList': foldersIdList,
+        'attachmentsType': attachmentsType,
+        'textContent': textContent,
+        'files': files.map((f) => f.toJson()).toList(),
+      };
 }
 
-/// /attachments/presign 의 files 배열 항목
 class PresignFileDto {
+  final String contentType;
+  final String fileName;
+  final int fileSize;
+  final int? width;
+  final int? height;
+
   const PresignFileDto({
     required this.contentType,
     required this.fileName,
@@ -40,12 +34,6 @@ class PresignFileDto {
     this.width,
     this.height,
   });
-
-  final String contentType;
-  final String fileName;
-  final int fileSize;
-  final int? width;
-  final int? height;
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{
@@ -59,23 +47,23 @@ class PresignFileDto {
   }
 }
 
-/// POST /attachments/presign 응답
+/// POST /attachments/presign 응답 DTO (파일 1개당)
 class PresignResponseDto {
+  final String objectKey;
+  final String uploadUrl;
+  final int expiresInSeconds;
+
   const PresignResponseDto({
     required this.objectKey,
     required this.uploadUrl,
     required this.expiresInSeconds,
   });
 
-  final String objectKey;
-  final String uploadUrl;
-  final int expiresInSeconds;
-
   factory PresignResponseDto.fromJson(Map<String, dynamic> json) {
     return PresignResponseDto(
-      objectKey: json['objectKey'] as String? ?? '',
-      uploadUrl: json['uploadUrl'] as String? ?? '',
-      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt() ?? 0,
+      objectKey: json['objectKey'] as String,
+      uploadUrl: json['uploadUrl'] as String,
+      expiresInSeconds: json['expiresInSeconds'] as int,
     );
   }
 }

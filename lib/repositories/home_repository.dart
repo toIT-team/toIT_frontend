@@ -196,163 +196,86 @@ class HomeRepository {
     );
   }
 
-  /// 자료 이미지 배치 추가 (presign 1회 → S3 PUT × N → confirm 1회)
-  Future<List<ConfirmResponseItem>> createImages({
+  /// 자료 이미지 추가 (presign → S3 PUT 병렬 → confirm)
+  Future<({int presignMs, int s3Ms, int confirmMs, int totalMs})> createImages({
     required List<int> foldersIdList,
     required String textContent,
     required List<({List<int> bytes, String fileName})> images,
   }) async {
-    // 1. 각 이미지 메타 준비
-    final payloads = <Uint8List>[];
+    final totalSw = Stopwatch()..start();
+
+    final compressed = <Uint8List>[];
+    final fileNames = <String>[];
     final contentTypes = <String>[];
-    final dimensionsList = <ImageDimensions?>[];
 
     for (final img in images) {
-      final raw = img.bytes is Uint8List
+      final bytes = img.bytes is Uint8List
           ? img.bytes as Uint8List
           : Uint8List.fromList(img.bytes);
-      final payload = await compressImageForUpload(raw, img.fileName);
-      payloads.add(payload);
+      compressed.add(bytes);
+      fileNames.add(img.fileName);
       contentTypes.add(resolveContentType(img.fileName));
-      dimensionsList.add(await readImageDimensions(payload));
     }
 
-    // 2. presign 1회 (전체 이미지)
+    final presignSw = Stopwatch()..start();
     final presignedList = await _remoteDatasource.presignAttachment(
       PresignRequestDto(
         foldersIdList: foldersIdList,
-        attachmentsType: AttachmentsType.image,
+        attachmentsType: 'IMAGE',
         textContent: textContent,
         files: [
           for (int i = 0; i < images.length; i++)
             PresignFileDto(
               contentType: contentTypes[i],
-              fileName: images[i].fileName,
-              fileSize: payloads[i].length,
-              width: dimensionsList[i]?.width,
-              height: dimensionsList[i]?.height,
+              fileName: fileNames[i],
+              fileSize: compressed[i].length,
             ),
         ],
       ),
     );
+    final presignMs = presignSw.elapsedMilliseconds;
 
     if (presignedList.length != images.length) {
       throw Exception('presign 응답 수 불일치: ${presignedList.length}/${images.length}');
     }
 
-    // 3. S3 PUT 병렬 업로드
+    final s3Sw = Stopwatch()..start();
     await Future.wait([
       for (int i = 0; i < images.length; i++)
         _remoteDatasource.uploadToS3(
           uploadUrl: presignedList[i].uploadUrl,
-          bytes: payloads[i],
+          bytes: compressed[i],
           contentType: contentTypes[i],
         ),
     ]);
+    final s3Ms = s3Sw.elapsedMilliseconds;
 
-    // 4. confirm 1회 (전체 이미지)
-    return _remoteDatasource.confirmAttachment(
+    final confirmSw = Stopwatch()..start();
+    await _remoteDatasource.confirmAttachment(
       ConfirmRequestDto(
         foldersIdList: foldersIdList,
-        attachmentsType: AttachmentsType.image,
+        attachmentsType: 'IMAGE',
         textContent: textContent,
         files: [
           for (int i = 0; i < images.length; i++)
             ConfirmFileDto(
               objectKey: presignedList[i].objectKey,
-              fileName: images[i].fileName,
+              fileName: fileNames[i],
+              fileSize: compressed[i].length,
               contentType: contentTypes[i],
-              fileSize: payloads[i].length,
-              width: dimensionsList[i]?.width,
-              height: dimensionsList[i]?.height,
             ),
         ],
       ),
     );
-  }
+    final confirmMs = confirmSw.elapsedMilliseconds;
 
-  /// presign → S3 PUT → confirm 3단계 업로드 공통 로직
-  Future<List<ConfirmResponseItem>> _uploadViaPresign({
-    required List<int> foldersIdList,
-    required String textContent,
-    required List<int> bytes,
-    required String fileName,
-    required String attachmentsType,
-  }) async {
-    final raw = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
-    final payload = attachmentsType == AttachmentsType.image
-        ? await compressImageForUpload(raw, fileName)
-        : raw;
-    final fileSize = payload.length;
-    final contentType = resolveContentType(fileName);
-    // 백엔드가 textContent null 처리에서 NPE를 내는 경우가 있어 빈 문자열도 명시 전달한다.
-    final normalizedTextContent = textContent;
-
-    int? width;
-    int? height;
-    if (attachmentsType == AttachmentsType.image) {
-      final dimensions = await readImageDimensions(payload);
-      width = dimensions?.width;
-      height = dimensions?.height;
-    }
-
-    final presignedFiles = await _remoteDatasource.presignAttachment(
-      PresignRequestDto(
-        foldersIdList: foldersIdList,
-        attachmentsType: attachmentsType,
-        files: [
-          PresignFileDto(
-            contentType: contentType,
-            fileName: fileName,
-            fileSize: fileSize,
-            width: width,
-            height: height,
-          ),
-        ],
-        textContent: normalizedTextContent,
-      ),
+    final totalMs = totalSw.elapsedMilliseconds;
+    debugPrint(
+      '[이미지 업로드] ${images.length}장  '
+      'presign=${presignMs}ms  s3=${s3Ms}ms  confirm=${confirmMs}ms  '
+      'total=${totalMs}ms',
     );
-    if (presignedFiles.isEmpty) {
-      throw Exception('presign 응답이 비어 있습니다.');
-    }
-    final presign = presignedFiles.first;
-    // if (kDebugMode) {
-      // debugPrint(
-        // '[upload] presign ok type=$attachmentsType '
-        // 'objectKey=${presign.objectKey} size=$fileSize',
-      // );
-    // }
-
-    await _remoteDatasource.uploadToS3(
-      uploadUrl: presign.uploadUrl,
-      bytes: payload,
-      contentType: contentType,
-    );
-
-    final confirmed = await _remoteDatasource.confirmAttachment(
-      ConfirmRequestDto(
-        foldersIdList: foldersIdList,
-        attachmentsType: attachmentsType,
-        files: [
-          ConfirmFileDto(
-            objectKey: presign.objectKey,
-            fileName: fileName,
-            contentType: contentType,
-            fileSize: fileSize,
-            width: width,
-            height: height,
-          ),
-        ],
-        textContent: normalizedTextContent,
-      ),
-    );
-    // if (kDebugMode) {
-      // debugPrint(
-        // '[upload] confirm ok count=${confirmed.length} '
-        // 'objectKey=${presign.objectKey}',
-      // );
-    // }
-    return confirmed;
+    return (presignMs: presignMs, s3Ms: s3Ms, confirmMs: confirmMs, totalMs: totalMs);
   }
 
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
