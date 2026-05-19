@@ -163,36 +163,68 @@ class HomeRepository {
     );
   }
 
-  /// 자료 파일 추가 (presign → S3 PUT → confirm)
-  /// 기존 multipart 단일 호출을 presigned URL 기반 3단계로 교체
-  Future<List<ConfirmResponseItem>> createFile({
-    required List<int> foldersIdList,
-    required String textContent,
-    required List<int> fileBytes,
-    required String fileName,
-  }) async {
-    return _uploadViaPresign(
-      foldersIdList: foldersIdList,
-      textContent: textContent,
-      bytes: fileBytes,
-      fileName: fileName,
-      attachmentsType: AttachmentsType.file,
-    );
-  }
-
-  /// 자료 이미지 추가 (presign → S3 PUT → confirm) - 단일
-  Future<List<ConfirmResponseItem>> createImage({
+  /// 자료 이미지 추가 - 단건 (공유 확장 전용)
+  Future<void> createImage({
     required List<int> foldersIdList,
     required String textContent,
     required List<int> imageBytes,
     required String fileName,
   }) async {
-    return _uploadViaPresign(
+    await createImages(
       foldersIdList: foldersIdList,
       textContent: textContent,
-      bytes: imageBytes,
-      fileName: fileName,
-      attachmentsType: AttachmentsType.image,
+      images: [(bytes: imageBytes, fileName: fileName)],
+    );
+  }
+
+  /// 자료 파일 추가 - 단건 (공유 확장 전용, presign → S3 PUT → confirm)
+  Future<void> createFile({
+    required List<int> foldersIdList,
+    required String textContent,
+    required List<int> fileBytes,
+    required String fileName,
+  }) async {
+    final contentType = resolveContentType(fileName);
+    final bytes = fileBytes is Uint8List
+        ? fileBytes as Uint8List
+        : Uint8List.fromList(fileBytes);
+
+    final presignedList = await _remoteDatasource.presignAttachment(
+      PresignRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: 'FILE',
+        textContent: textContent,
+        files: [
+          PresignFileDto(
+            contentType: contentType,
+            fileName: fileName,
+            fileSize: bytes.length,
+          ),
+        ],
+      ),
+    );
+    if (presignedList.isEmpty) throw Exception('presign 응답 없음');
+
+    await _remoteDatasource.uploadToS3(
+      uploadUrl: presignedList[0].uploadUrl,
+      bytes: bytes,
+      contentType: contentType,
+    );
+
+    await _remoteDatasource.confirmAttachment(
+      ConfirmRequestDto(
+        foldersIdList: foldersIdList,
+        attachmentsType: 'FILE',
+        textContent: textContent,
+        files: [
+          ConfirmFileDto(
+            objectKey: presignedList[0].objectKey,
+            fileName: fileName,
+            fileSize: bytes.length,
+            contentType: contentType,
+          ),
+        ],
+      ),
     );
   }
 
