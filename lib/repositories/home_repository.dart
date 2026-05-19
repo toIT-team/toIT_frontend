@@ -163,39 +163,6 @@ class HomeRepository {
     );
   }
 
-  /// 자료 파일 추가 (presign → S3 PUT → confirm)
-  /// 기존 multipart 단일 호출을 presigned URL 기반 3단계로 교체
-  Future<List<ConfirmResponseItem>> createFile({
-    required List<int> foldersIdList,
-    required String textContent,
-    required List<int> fileBytes,
-    required String fileName,
-  }) async {
-    return _uploadViaPresign(
-      foldersIdList: foldersIdList,
-      textContent: textContent,
-      bytes: fileBytes,
-      fileName: fileName,
-      attachmentsType: AttachmentsType.file,
-    );
-  }
-
-  /// 자료 이미지 추가 (presign → S3 PUT → confirm) - 단일
-  Future<List<ConfirmResponseItem>> createImage({
-    required List<int> foldersIdList,
-    required String textContent,
-    required List<int> imageBytes,
-    required String fileName,
-  }) async {
-    return _uploadViaPresign(
-      foldersIdList: foldersIdList,
-      textContent: textContent,
-      bytes: imageBytes,
-      fileName: fileName,
-      attachmentsType: AttachmentsType.image,
-    );
-  }
-
   /// 자료 이미지 추가 (presign → S3 PUT 병렬 → confirm)
   Future<({int presignMs, int s3Ms, int confirmMs, int totalMs})> createImages({
     required List<int> foldersIdList,
