@@ -788,11 +788,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         attachmentsExtension: attachmentsExtension,
       );
       tempPath = result.savedPath;
-      // debugPrint('[download][image] temp saved: $tempPath');
       final saveResult = await saveDownloadedMediaToGallery(
         filePath: result.savedPath,
       );
-      // debugPrint('[download][image] gallery save result: $saveResult');
       if (!mounted) return;
 
       switch (saveResult) {
@@ -844,13 +842,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       final file = File(path);
       if (await file.exists()) {
         await file.delete();
-        // debugPrint('[download] temp deleted: $path');
-      } else {
-        // debugPrint('[download] temp already missing: $path');
       }
-    } catch (e) {
-      // debugPrint('[download] temp delete failed: $path, error: $e');
-    }
+    } catch (_) {}
   }
 
   void _shareLinkUrl(String url) {

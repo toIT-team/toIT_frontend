@@ -48,7 +48,9 @@ subprojects {
     if (state.executed) {
         applyJvmAlignment()
     } else {
-        afterEvaluate { applyJvmAlignment() }
+        afterEvaluate {
+            applyJvmAlignment()
+        }
     }
 }
 
