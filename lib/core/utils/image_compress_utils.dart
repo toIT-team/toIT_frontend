@@ -1,3 +1,4 @@
+/*
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -51,3 +52,4 @@ Future<({List<int> bytes, String fileName})> compressImageForUpload(
 
   return (bytes: outBytes, fileName: outName);
 }
+*/
