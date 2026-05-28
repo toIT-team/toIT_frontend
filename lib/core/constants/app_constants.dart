@@ -2,7 +2,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'POJ Todo';
-  
+  static const String appName = 'toIT';
+
   // TODO: 필요한 상수 추가
 }

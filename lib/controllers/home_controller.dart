@@ -1,0 +1,541 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'auth_controller.dart';
+import '../services/auth_service.dart';
+import '../core/constants/app_colors.dart';
+import '../core/constants/event_color_tokens.dart';
+import '../models/dto/home_response_dto.dart';
+import '../models/home/folder_item.dart';
+import '../models/home/schedule.dart';
+import '../repositories/home_repository.dart';
+
+part 'home_controller.freezed.dart';
+
+/// 홈 화면 상태
+@freezed
+class HomeState with _$HomeState {
+  const factory HomeState({
+    /// 사용자 이름
+    @Default('') String userName,
+
+    /// 오늘 일정 개수
+    @Default(0) int todayScheduleCount,
+
+    /// 오늘 일정 목록
+    @Default([]) List<Schedule> schedules,
+
+    /// 폴더 목록
+    @Default([]) List<FolderItem> folders,
+
+    /// 필터 목록
+    @Default([]) List<String> filters,
+
+    /// 선택된 필터 인덱스
+    @Default(0) int selectedFilterIndex,
+
+    /// 로딩 상태
+    @Default(true) bool isLoading,
+
+    /// 에러 메시지
+    String? errorMessage,
+  }) = _HomeState;
+}
+
+/// 시간 문자열 포맷 변환 ("21:00:00" → "오후 9:00")
+String _formatTime(String? timeStr) {
+  if (timeStr == null || timeStr.isEmpty) return '';
+  final parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+
+  var hour = int.tryParse(parts[0]) ?? 0;
+  final minute = parts[1];
+  final period = hour < 12 ? '오전' : '오후';
+
+  if (hour > 12) hour -= 12;
+  if (hour == 0) hour = 12;
+
+  return '$period $hour:$minute';
+}
+
+/// 일정 색상 매핑
+Color _mapScheduleColor(String colorStr, int index) {
+  // 서버 appColor 토큰(또는 hex)을 우선 사용
+  // 예: blue300, yellow200, #FEEC88, blue_300
+  final resolvedColor = EventColorTokens.fromToken(colorStr);
+  return resolvedColor;
+}
+
+bool _isAllDaySchedule(ScheduleDto dto) {
+  return (dto.startTime == null || dto.startTime!.isEmpty) &&
+      (dto.endTime == null || dto.endTime!.isEmpty);
+}
+
+String _buildScheduleTimeLeftText({
+  required String? endTime,
+  required String? startTime,
+}) {
+  if (startTime == null ||
+      startTime.isEmpty ||
+      endTime == null ||
+      endTime.isEmpty) {
+    return '하루종일';
+  }
+
+  final startParts = startTime.split(':');
+  final endParts = endTime.split(':');
+  if (startParts.length < 2 || endParts.length < 2) return '하루종일';
+
+  final startHour = int.tryParse(startParts[0]);
+  final startMinute = int.tryParse(startParts[1]);
+  final endHour = int.tryParse(endParts[0]);
+  final endMinute = int.tryParse(endParts[1]);
+  if (startHour == null ||
+      startMinute == null ||
+      endHour == null ||
+      endMinute == null) {
+    return '하루종일';
+  }
+
+  final now = DateTime.now();
+  var startDateTime = DateTime(
+    now.year,
+    now.month,
+    now.day,
+    startHour,
+    startMinute,
+  );
+  var endDateTime = DateTime(now.year, now.month, now.day, endHour, endMinute);
+
+  // 자정을 넘기는 일정(end < start)은 현재 시각 기준으로
+  // [어제 시작 ~ 오늘 종료] 또는 [오늘 시작 ~ 내일 종료] 중 맞는 구간을 선택
+  if (endDateTime.isBefore(startDateTime) ||
+      endDateTime.isAtSameMomentAs(startDateTime)) {
+    final overnightEndToday = endDateTime;
+    final overnightStartYesterday = startDateTime.subtract(
+      const Duration(days: 1),
+    );
+
+    if (now.isBefore(overnightEndToday)) {
+      startDateTime = overnightStartYesterday;
+      endDateTime = overnightEndToday;
+    } else {
+      endDateTime = overnightEndToday.add(const Duration(days: 1));
+    }
+  }
+
+  if (now.isAfter(endDateTime) || now.isAtSameMomentAs(endDateTime)) {
+    return '마감됨';
+  }
+
+  if ((now.isAfter(startDateTime) || now.isAtSameMomentAs(startDateTime)) &&
+      now.isBefore(endDateTime)) {
+    return '진행중';
+  }
+
+  final diff = startDateTime.difference(now);
+  if (diff.inMinutes <= 0) return '진행중';
+
+  if (diff.inHours >= 1) {
+    return '${diff.inHours}시간 전';
+  }
+  return '${diff.inMinutes}분 전';
+}
+
+/// DTO → Domain 변환: ScheduleDto → Schedule
+Schedule _mapSchedule(ScheduleDto dto, int index) {
+  final startFormatted = _formatTime(dto.startTime);
+  final endFormatted = _formatTime(dto.endTime);
+  final isAllDay = _isAllDaySchedule(dto);
+  final timeRange = isAllDay ? '하루종일' : '$startFormatted - $endFormatted';
+
+  return Schedule(
+    schedulesId: dto.schedulesId,
+    title: dto.title,
+    timeRangeText: timeRange,
+    scheduleTime: isAllDay
+        ? '하루종일'
+        : _buildScheduleTimeLeftText(
+            endTime: dto.endTime,
+            startTime: dto.startTime,
+          ),
+    accentColor: _mapScheduleColor(dto.appColor, index),
+  );
+}
+
+/// 색상 문자열 → colorIndex 변환
+int _resolveColorIndex(String colorStr, int fallback) {
+  if (colorStr.isEmpty) return fallback;
+  final tokenIdx = AppColors.folderColorTokens.indexOf(colorStr);
+  if (tokenIdx != -1) return tokenIdx;
+  final color = AppColors.fromColorString(colorStr);
+  final colorIdx = AppColors.folderColors.indexOf(color);
+  return colorIdx != -1 ? colorIdx : fallback;
+}
+
+/// DTO → Domain 변환: FolderDto → FolderItem
+FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
+  final ci = _resolveColorIndex(
+    dto.color,
+    index % AppColors.folderColors.length,
+  );
+  return FolderItem(
+    foldersId: dto.foldersId,
+    title: dto.name,
+    memo: dto.memo,
+    countText: countText,
+    colorIndex: ci,
+    iconIndex: dto.iconIdx,
+    isDefault: dto.isDefault,
+    isFavorite: dto.isFavorite,
+    accentColor: AppColors.folderColors[ci],
+  );
+}
+
+/// 홈 화면 컨트롤러 (Notifier)
+class HomeController extends Notifier<HomeState> {
+  static const int maxFolderCount = 20;
+  static const String allFilterToken = '__all__';
+  static const String favoriteFilterToken = '__favorite__';
+  static const String folderFilterPrefix = '__folder__';
+
+  Set<int> _favoriteFolderIds = <int>{};
+
+  @override
+  HomeState build() {
+    // 사용자 세션(로그인/로그아웃/복구) 변경 시 홈 상태 캐시를 재생성
+    ref.watch(authSessionRefreshTickProvider);
+
+    // 로그아웃/강제 로그아웃 상태에서 홈 데이터를 다시 가져오면
+    // 서버가 401 → 토큰 재발급 실패 → forceLogout → tick 증가 → 재빌드 로
+    // 이어지는 무한 루프가 발생한다. 비인증 상태에서는 네트워크 호출을 막는다.
+    final authStatus = ref.read(authProvider).status;
+    if (authStatus != AuthStatus.authenticated) {
+      _favoriteFolderIds = <int>{};
+      return const HomeState(isLoading: false);
+    }
+
+    // 스플래시 부트스트랩 단계에서 선요청된 홈 데이터가 있으면 소비하고
+    // 네트워크 재호출 없이 즉시 화면에 반영한다. (중복 요청 방지)
+    final prefetched = ref.read(homePrefetchProvider);
+    if (prefetched != null) {
+      // debugPrint('[BOOT] home_build source=prefetch_cache');
+      _consumePrefetchedHomeData(prefetched);
+    } else {
+      // debugPrint('[BOOT] home_build source=network');
+      _loadHomeData();
+    }
+    return const HomeState(isLoading: true);
+  }
+
+  /// 홈 화면 데이터 로드 (API)
+  Future<({int fetchMs, int applyMs})> _loadHomeData() async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final now = DateTime.now();
+      final today =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final sw = Stopwatch()..start();
+      final dto = await repository.fetchHomeData(todayDate: today);
+      final fetchMs = sw.elapsedMilliseconds;
+      await _applyHomeDataDto(dto);
+      return (fetchMs: fetchMs, applyMs: sw.elapsedMilliseconds - fetchMs);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '데이터를 불러오지 못했습니다: $e',
+      );
+      return (fetchMs: 0, applyMs: 0);
+    }
+  }
+
+  /// 스플래시에서 선요청한 DTO 를 적용. 네트워크 재호출 없이 즉시 반영한다.
+  ///
+  /// 이 메서드는 `build()` 에서 fire-and-forget 으로 호출되므로
+  /// 첫 `microtask` 경계까지는 빌드 사이클 안에서 실행될 수 있다.
+  /// Riverpod 은 빌드 중 다른 Provider 의 state 수정을 금지하므로,
+  /// `homePrefetchProvider` 초기화는 한 틱 뒤로 미룬다.
+  Future<void> _consumePrefetchedHomeData(HomeResponseDto dto) async {
+    await Future<void>.microtask(() {});
+    ref.read(homePrefetchProvider.notifier).state = null;
+    try {
+      await _applyHomeDataDto(dto);
+    } catch (e) {
+      // 주입 중 변환 오류가 나면 안전하게 실데이터 재요청으로 폴백.
+      await _loadHomeData();
+    }
+  }
+
+  /// DTO → HomeState 반영 로직. `_loadHomeData` 와 프리페치 주입 경로가 공유한다.
+  Future<void> _applyHomeDataDto(HomeResponseDto dto) async {
+    final authService = ref.read(authServiceProvider);
+    final tokenNickname = await authService.getNicknameFromToken();
+    final resolvedUserName =
+        (tokenNickname != null && tokenNickname.trim().isNotEmpty)
+        ? tokenNickname.trim()
+        : '사용자';
+
+    final schedules = dto.schedules
+        .asMap()
+        .entries
+        .map((e) => _mapSchedule(e.value, e.key))
+        .toList();
+
+    final folders = dto.folders.asMap().entries.map((e) {
+      return _mapFolder(e.value, e.key, countText: '${e.value.itemsCount}개');
+    }).toList();
+
+    _favoriteFolderIds = dto.folders
+        .where((folder) => folder.isFavorite)
+        .map((folder) => folder.foldersId)
+        .toSet();
+
+    final filters = _buildFilterTokens(
+      folders: folders,
+      foldersViews: dto.foldersViews,
+    );
+    final nextSelectedIndex = state.selectedFilterIndex.clamp(
+      0,
+      filters.isEmpty ? 0 : filters.length - 1,
+    );
+
+    state = state.copyWith(
+      userName: resolvedUserName,
+      todayScheduleCount: schedules.length,
+      schedules: schedules,
+      folders: folders,
+      filters: filters,
+      selectedFilterIndex: nextSelectedIndex,
+      isLoading: false,
+      errorMessage: null,
+    );
+  }
+
+  /// 데이터 새로고침
+  /// [silent]이 true면 전체 화면 로딩 없이 백그라운드로 갱신 (다른 화면 복귀 시 등)
+  Future<({int fetchMs, int applyMs})> refresh({bool silent = false}) async {
+    if (silent) {
+      state = state.copyWith(errorMessage: null);
+    } else {
+      state = state.copyWith(isLoading: true, errorMessage: null);
+    }
+    return _loadHomeData();
+  }
+
+  /// 보관함 삭제 (API 호출 → 목록 새로고침)
+  Future<bool> deleteFolder({required int foldersId}) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      await repository.deleteFolder(foldersId: foldersId);
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: '보관함 삭제에 실패했습니다: $e');
+      return false;
+    }
+  }
+
+  /// 보관함 수정 (API 호출 → 목록 새로고침)
+  Future<bool> updateFolder({
+    required int foldersId,
+    required String name,
+    required String memo,
+    required int colorIndex,
+    required int iconIndex,
+  }) async {
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final colorToken = AppColors.folderColorTokens[colorIndex];
+
+      await repository.updateFolder(
+        foldersId: foldersId,
+        name: name,
+        memo: memo,
+        color: colorToken,
+        iconIdx: iconIndex,
+      );
+
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: '보관함 수정에 실패했습니다: $e');
+      return false;
+    }
+  }
+
+  /// 보관함 생성 (API 호출 → 목록 새로고침)
+  Future<bool> createFolder({
+    required String name,
+    required String memo,
+    required int colorIndex,
+    required int iconIndex,
+  }) async {
+    if (state.folders.length >= maxFolderCount) {
+      state = state.copyWith(errorMessage: '보관함은 최대 20개까지 생성할 수 있습니다.');
+      return false;
+    }
+
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final colorToken = AppColors.folderColorTokens[colorIndex];
+
+      await repository.createFolder(
+        name: name,
+        memo: memo,
+        color: colorToken,
+        iconIdx: iconIndex,
+      );
+
+      await refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: '보관함 생성에 실패했습니다: $e');
+      return false;
+    }
+  }
+
+  /// 필터 선택
+  void selectFilter(int index) {
+    if (index < 0 || index >= state.filters.length) return;
+    state = state.copyWith(selectedFilterIndex: index);
+  }
+
+  List<FolderItem> getFilteredFolders({
+    required List<FolderItem> folders,
+    required String selectedFilterToken,
+  }) {
+    if (selectedFilterToken == allFilterToken) {
+      return folders;
+    }
+
+    if (selectedFilterToken == favoriteFilterToken) {
+      return folders.where((folder) => folder.isFavorite).toList();
+    }
+
+    final folderId = _tryParseFolderFilterId(selectedFilterToken);
+    if (folderId == null) return folders;
+    return folders.where((folder) => folder.foldersId == folderId).toList();
+  }
+
+  bool isFavoriteFolder(int foldersId) {
+    return _favoriteFolderIds.contains(foldersId);
+  }
+
+  Future<bool?> toggleFavoriteFolder({required int foldersId}) async {
+    final isCurrentFavorite = _favoriteFolderIds.contains(foldersId);
+    final targetFavorite = !isCurrentFavorite;
+
+    // 사용자 체감 지연을 줄이기 위해 UI는 먼저 반영하고, 실패 시 롤백한다.
+    _setFavoriteLocal(foldersId: foldersId, isFavorite: targetFavorite);
+    try {
+      final repository = ref.read(homeRepositoryProvider);
+      final confirmedFavorite = await repository.toggleFolderFavorite(
+        foldersId: foldersId,
+        isFavorite: targetFavorite,
+      );
+      _setFavoriteLocal(foldersId: foldersId, isFavorite: confirmedFavorite);
+      return confirmedFavorite;
+    } catch (_) {
+      _setFavoriteLocal(foldersId: foldersId, isFavorite: isCurrentFavorite);
+      return null;
+    }
+  }
+
+  void _setFavoriteLocal({required int foldersId, required bool isFavorite}) {
+    if (isFavorite) {
+      _favoriteFolderIds.add(foldersId);
+    } else {
+      _favoriteFolderIds.remove(foldersId);
+    }
+
+    final nextFolders = state.folders
+        .map(
+          (f) => f.foldersId == foldersId
+              ? f.copyWith(isFavorite: isFavorite)
+              : f,
+        )
+        .toList();
+    state = state.copyWith(folders: nextFolders);
+  }
+
+  String getFilterLabel(String filterToken) {
+    if (filterToken == allFilterToken) return '전체';
+    if (filterToken == favoriteFilterToken) return '즐겨찾기';
+
+    if (filterToken.startsWith('$folderFilterPrefix:')) {
+      final parts = filterToken.split(':');
+      if (parts.length >= 3) {
+        return parts.sublist(2).join(':');
+      }
+    }
+    return filterToken;
+  }
+
+  bool isFolderShortcutFilter(String filterToken) {
+    return filterToken.startsWith('$folderFilterPrefix:');
+  }
+
+  int? getFolderShortcutId(String filterToken) {
+    return _tryParseFolderFilterId(filterToken);
+  }
+
+  List<String> _buildFilterTokens({
+    required List<FolderItem> folders,
+    required List<FolderViewDto> foldersViews,
+  }) {
+    final tokens = <String>[allFilterToken, favoriteFilterToken];
+    final addedFolderIds = <int>{};
+
+    for (final viewedFolder in foldersViews) {
+      final viewedFolderId = viewedFolder.folderId;
+      if (viewedFolderId <= 0 || addedFolderIds.contains(viewedFolderId)) {
+        continue;
+      }
+
+      final folder = folders.where((item) => item.foldersId == viewedFolderId);
+      if (folder.isEmpty) continue;
+
+      final folderName = viewedFolder.name.trim().isNotEmpty
+          ? viewedFolder.name.trim()
+          : folder.first.title;
+      tokens.add('$folderFilterPrefix:$viewedFolderId:$folderName');
+      addedFolderIds.add(viewedFolderId);
+    }
+
+    return tokens;
+  }
+
+  int? _tryParseFolderFilterId(String filterToken) {
+    if (!filterToken.startsWith('$folderFilterPrefix:')) return null;
+    final parts = filterToken.split(':');
+    if (parts.length < 3) return null;
+    return int.tryParse(parts[1]);
+  }
+}
+
+/// 홈 화면 Provider
+final homeProvider = NotifierProvider<HomeController, HomeState>(
+  HomeController.new,
+);
+
+/// 스플래시 부트스트랩에서 선요청해둔 `/page/home` 응답을 1회 주입하는 캐시.
+///
+/// - 스플래시 단계에서 `BootstrapController` 가 값을 세팅한다.
+/// - `HomeController.build()` 가 기동될 때 1회 소비되며 즉시 `null` 로 초기화된다.
+/// - 이 값이 존재하면 홈 화면은 네트워크 재호출 없이 즉시 렌더된다.
+final homePrefetchProvider = StateProvider<HomeResponseDto?>((ref) => null);
+
+/// 일정 목록 Provider (최적화용)
+final homeSchedulesProvider = Provider<List<Schedule>>((ref) {
+  return ref.watch(homeProvider.select((s) => s.schedules));
+});
+
+/// 폴더 목록 Provider (최적화용)
+final homeFoldersProvider = Provider<List<FolderItem>>((ref) {
+  return ref.watch(homeProvider.select((s) => s.folders));
+});
+
+/// 선택된 필터 인덱스 Provider
+final selectedFilterIndexProvider = Provider<int>((ref) {
+  return ref.watch(homeProvider.select((s) => s.selectedFilterIndex));
+});

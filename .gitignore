@@ -1,3 +1,6 @@
+# Environment (API URL 등 민감 정보)
+.env
+
 # Miscellaneous
 *.class
 *.log
@@ -21,7 +24,7 @@ migrate_working_dir/
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -43,3 +46,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android Gradle 루트 빌드 산출물 (reports, intermediates 등)
+/android/build/
+
+# 환경변수
+.env
+.env.*
+
+# Firebase 설정 파일(로컬/CI 주입)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# FVM Version Cache
+.fvm/

@@ -1,0 +1,33 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'calendar_event.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$CalendarEventImpl _$$CalendarEventImplFromJson(Map<String, dynamic> json) =>
+    _$CalendarEventImpl(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      startAt: json['startAt'] as String,
+      endAt: json['endAt'] as String,
+      startTime: json['startTime'] as String?,
+      endTime: json['endTime'] as String?,
+      timeSetting: json['timeSetting'] as bool? ?? false,
+      folderName: json['folderName'] as String?,
+      createdAt: _dateTimeFromJson(json['createdAt'] as String?),
+    );
+
+Map<String, dynamic> _$$CalendarEventImplToJson(_$CalendarEventImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'title': instance.title,
+      'startAt': instance.startAt,
+      'endAt': instance.endAt,
+      'startTime': instance.startTime,
+      'endTime': instance.endTime,
+      'timeSetting': instance.timeSetting,
+      'folderName': instance.folderName,
+      'createdAt': _dateTimeToJson(instance.createdAt),
+    };

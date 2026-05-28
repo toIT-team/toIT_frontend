@@ -1,0 +1,404 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../controllers/home_controller.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_spacing.dart';
+import '../../../core/constants/app_assets.dart';
+import 'add_folder_bottom_sheet.dart';
+import '../common/app_alert_dialog.dart';
+import 'folder_memo_bottom_sheet.dart';
+import 'folder_delete_dialog.dart';
+import 'folder_options_bottom_sheet.dart';
+import '../../screens/folder_detail_screen.dart';
+
+/// 폴더 타일 위젯
+/// [onTap]이 있으면 카드 탭 시 해당 콜백만 호출하고(보관함 이동 시트 등),
+/// 없으면 상세 화면으로 이동 + 더보기 옵션 표시
+class FolderTile extends ConsumerStatefulWidget {
+  final int foldersId;
+  final String title;
+  final String memo;
+  final String countText;
+  final Color accentColor;
+  final int colorIndex;
+  final int iconIndex;
+  final bool isDefault;
+  final VoidCallback? onTap;
+
+  const FolderTile({
+    super.key,
+    this.foldersId = 0,
+    required this.title,
+    this.memo = '',
+    required this.countText,
+    required this.accentColor,
+    this.colorIndex = 5,
+    this.iconIndex = 0,
+    this.isDefault = false,
+    this.onTap,
+  });
+
+  @override
+  ConsumerState<FolderTile> createState() => _FolderTileState();
+}
+
+class _FolderTileState extends ConsumerState<FolderTile> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  void handleTileTap() {
+    if (widget.onTap != null) {
+      widget.onTap!.call();
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => FolderDetailScreen(
+          foldersId: widget.foldersId,
+          folderName: widget.title,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openFolderOptions() async {
+    final option = await showFolderOptionsBottomSheet(
+      context,
+      isFavorite: ref
+          .read(homeProvider.notifier)
+          .isFavoriteFolder(widget.foldersId),
+    );
+    if (option == null || !context.mounted) return;
+
+    switch (option) {
+      case FolderOption.viewMemo:
+        showFolderMemoBottomSheet(context, memo: widget.memo);
+        break;
+      case FolderOption.edit:
+        final editResult = await showAddFolderBottomSheet(
+          context,
+          initialName: widget.title,
+          initialMemo: widget.memo,
+          initialColorIndex: widget.colorIndex,
+          initialIconIndex: widget.iconIndex,
+          isEditMode: true,
+        );
+        if (editResult != null) {
+          final success = await ref
+              .read(homeProvider.notifier)
+              .updateFolder(
+                foldersId: widget.foldersId,
+                name: editResult['name'] as String,
+                memo: editResult['memo'] as String,
+                colorIndex: editResult['colorIndex'] as int,
+                iconIndex: editResult['iconIndex'] as int,
+              );
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('보관함 수정에 실패했습니다.')));
+          }
+        }
+        break;
+      case FolderOption.delete:
+        if (widget.isDefault) {
+          await showAppAlertDialog(context, message: '기본 보관함은 삭제할 수 없습니다.');
+          break;
+        }
+        final confirmed = await showDeleteDialog(
+          context,
+          message: '[${widget.title}]을 정말 삭제하시겠습니까?',
+          warningMessage: '보관함을 삭제하면 포함된 모든 자료가 같이 삭제됩니다.',
+        );
+        if (!confirmed || !context.mounted) break;
+        final deleted = await ref
+            .read(homeProvider.notifier)
+            .deleteFolder(foldersId: widget.foldersId);
+        if (!deleted && context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('보관함 삭제에 실패했습니다.')));
+        }
+        break;
+      case FolderOption.toggleFavorite:
+        final nextFavoriteState = await ref
+            .read(homeProvider.notifier)
+            .toggleFavoriteFolder(foldersId: widget.foldersId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                nextFavoriteState == null
+                    ? '즐겨찾기 변경에 실패했습니다.'
+                    : nextFavoriteState
+                    ? '즐겨찾기에 추가되었습니다.'
+                    : '즐겨찾기가 해제되었습니다.',
+              ),
+            ),
+          );
+        }
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.95 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        child: InkWell(
+          onTap: handleTileTap,
+          onLongPress: widget.onTap == null ? _openFolderOptions : null,
+          onHighlightChanged: setPressed,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadowCard,
+                    blurRadius: 12,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final height = constraints.maxHeight;
+                  final colorBoxBottom = height * 0.35; // 하단 35% 남기기
+                  final overlayTop = height * 0.25;
+                  final overlayBottom = height * 0.2;
+
+                  return Stack(
+                    children: [
+                      // 상단 컬러 박스
+                      Positioned(
+                        left: 8,
+                        right: 8,
+                        top: 8,
+                        bottom: colorBoxBottom,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: widget.accentColor,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: AppColors.shadowAccent,
+                                blurRadius: 8,
+                              ),
+                            ],
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                      // 유리 느낌의 흰색 오버레이 (블러)
+                      Positioned(
+                        left: 8,
+                        right: 8,
+                        top: overlayTop,
+                        bottom: overlayBottom,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: Container(color: AppColors.overlayWhite90),
+                          ),
+                        ),
+                      ),
+                      // 폴더 아이콘
+                      Positioned(
+                        left: 4,
+                        top: 6,
+                        child: _buildFolderIconImage(
+                          'assets/icons/FolderIcon/'
+                          '${widget.iconIndex.clamp(0, 11)}.png',
+                          width: 44,
+                          height: 44,
+                        ),
+                      ),
+                      // 내용
+                      Positioned(
+                        left: AppSpacing.sm,
+                        right: AppSpacing.sm,
+                        bottom: AppSpacing.sm,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              widget.title,
+                              style: const TextStyle(
+                                color: AppColors.gray900,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.25,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  widget.countText,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: -0.25,
+                                    height: 1.2,
+                                  ),
+                                ),
+                                if (widget.onTap != null)
+                                  const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  )
+                                else
+                                  _FolderKebabButton(onTap: _openFolderOptions),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // 레이아웃은 유지하고 케밥 상단 방향 터치 영역만 확장한다.
+                      if (widget.onTap == null)
+                        Positioned(
+                          // 케밥 아이콘 중심 기준으로 36x36 원형 터치/피드백 영역
+                          right: AppSpacing.sm - 2,
+                          bottom: AppSpacing.sm - 8,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkResponse(
+                              onTap: _openFolderOptions,
+                              radius: 18,
+                              containedInkWell: true,
+                              customBorder: const CircleBorder(),
+                              highlightShape: BoxShape.circle,
+                              splashColor: Colors.transparent,
+                              highlightColor: AppColors.neutral100.withOpacity(
+                                0.5,
+                              ),
+                              child: const SizedBox(width: 36, height: 36),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFolderIconImage(
+    String imagePath, {
+    required double width,
+    required double height,
+  }) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: ClipRect(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: 120,
+            height: 120,
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (_, _, _) => Image.asset(
+                AppAssets.folderIcon,
+                width: width,
+                height: height,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FolderKebabButton extends StatefulWidget {
+  const _FolderKebabButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_FolderKebabButton> createState() => _FolderKebabButtonState();
+}
+
+class _FolderKebabButtonState extends State<_FolderKebabButton> {
+  bool isPressed = false;
+
+  void setPressed(bool nextValue) {
+    if (isPressed == nextValue) return;
+    setState(() {
+      isPressed = nextValue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 110),
+      curve: Curves.easeOut,
+      scale: isPressed ? 0.94 : 1.0,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: setPressed,
+          borderRadius: BorderRadius.circular(999),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: SizedBox(
+            width: 44,
+            height: 18,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                color: isPressed
+                    ? AppColors.neutral100.withOpacity(0.5)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Image.asset(AppAssets.moreIcon, width: 24, height: 14),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

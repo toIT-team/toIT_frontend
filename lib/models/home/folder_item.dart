@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'folder_item.freezed.dart';
+
+/// 폴더 카드 모델 (홈 화면용)
+@freezed
+class FolderItem with _$FolderItem {
+  const factory FolderItem({
+    /// 폴더 ID
+    @Default(0) int foldersId,
+
+    /// 폴더 제목
+    required String title,
+
+    /// 메모
+    @Default('') String memo,
+
+    /// 항목 개수 텍스트 (예: "2개")
+    required String countText,
+
+    /// 색상 인덱스 (folderColors 기준)
+    @Default(5) int colorIndex,
+
+    /// 폴더 아이콘 인덱스 (assets/icons/FolderIcon/0~11.png)
+    @Default(0) int iconIndex,
+
+    /// 기본 보관함 여부 (자동 선택용)
+    @Default(false) bool isDefault,
+
+    /// 즐겨찾기 여부 (홈·검색 응답과 동기)
+    @Default(false) bool isFavorite,
+
+    /// 강조 색상 (JSON 제외)
+    @Default(Color(0xFFA2CAFF))
+    Color accentColor,
+  }) = _FolderItem;
+}
