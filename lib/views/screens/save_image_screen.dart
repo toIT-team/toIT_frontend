@@ -1,24 +1,22 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/image_picker_permission_utils.dart';
 import '../../core/utils/system_ui_insets.dart';
-import '../../core/utils/upload_validation_utils.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
-import '../../repositories/home_repository.dart';
+import '../../core/network/api_client.dart';
+import '../../providers/pending_uploads_provider.dart';
+// import '../../services/upload_benchmark_service.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
-import '../widgets/home/folder_delete_dialog.dart';
 
 /// 이미지 저장 화면 (POST /attachments/images API 연동)
 class SaveImageScreen extends ConsumerStatefulWidget {
@@ -43,10 +41,6 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
   bool get _hasDraft {
     return _imageAttached || _memoController.text.trim().isNotEmpty;
-  }
-
-  bool get _canSave {
-    return _imageAttached && _selectedFolder != null && !_isSaving;
   }
 
   Future<bool> _handleExitAttempt() async {
@@ -87,110 +81,56 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
 
   Future<void> _onSave() async {
     if (!_imageAttached) {
+      _showSnackBar('이미지를 선택해 주세요.');
       return;
     }
     if (_selectedFolder == null) {
+      _showSnackBar('보관함을 선택해 주세요.');
       return;
     }
 
     setState(() => _isSaving = true);
-    final repository = ref.read(homeRepositoryProvider);
     final folderId = _selectedFolder!.foldersId;
     final textContent = _memoController.text.trim();
-    int successCount = 0;
-    String? lastError;
 
-    // 1. 유효성 검사 + bytes 읽기
-    final validImages = <({List<int> bytes, String fileName})>[];
+    final images = <({List<int> bytes, String fileName})>[];
     for (final xFile in _pickedImages) {
-      if (!mounted) break;
-      final fileSizeBytes = await xFile.length();
-      final validateMessage = validateImageSectionUpload(
-        fileName: xFile.name,
-        fileSizeBytes: fileSizeBytes,
-      );
-      if (validateMessage != null) {
-        lastError = validateMessage;
-        continue;
+      final raw = await xFile.readAsBytes();
+      if (raw.isEmpty) {
+        _showSnackBar('이미지 데이터를 읽을 수 없습니다.');
+        setState(() => _isSaving = false);
+        return;
       }
-      try {
-        final bytes = await xFile.readAsBytes();
-        if (bytes.isEmpty) {
-          lastError = '이미지 데이터를 읽을 수 없습니다.';
-          continue;
-        }
-        validImages.add((bytes: bytes, fileName: xFile.name));
-      } catch (_) {
-        lastError = '이미지 데이터를 읽을 수 없습니다.';
-      }
-    }
-
-    // 2. 배치 업로드 (presign 1회 → S3 PUT × N 병렬 → confirm 1회)
-    if (validImages.isNotEmpty) {
-      try {
-        await repository.createImages(
-          foldersIdList: [folderId],
-          textContent: textContent,
-          images: validImages,
-        );
-        successCount = validImages.length;
-      } on DioException catch (e) {
-        final statusCode = e.response?.statusCode;
-        final data = e.response?.data;
-        if (statusCode == 413) {
-          lastError = '이미지 크기가 서버 제한을 초과했습니다. 더 작은 이미지를 선택해 주세요.';
-        } else if (statusCode == 500) {
-          lastError = '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
-        } else if (statusCode == 400 &&
-            data is Map &&
-            data['message'] != null) {
-          lastError = data['message'] as String;
-        } else {
-          lastError = '저장에 실패했습니다. 다시 시도해 주세요.';
-        }
-      } catch (_) {
-        lastError = '저장에 실패했습니다. 다시 시도해 주세요.';
-      }
+      images.add((bytes: raw, fileName: xFile.name));
     }
 
     if (!mounted) return;
-    if (successCount > 0) {
-      await ref.read(homeProvider.notifier).refresh();
-      ref.invalidate(pageItemsProvider(folderId));
-      _showSnackBar(
-        successCount == _pickedImages.length
-            ? '이미지가 저장되었습니다.'
-            : '$successCount장 저장됨. 일부 실패.',
-      );
-      Navigator.of(context).pop(true);
-    } else {
-      _showSnackBar(lastError ?? '저장에 실패했습니다. 다시 시도해 주세요.');
-    }
-    setState(() => _isSaving = false);
+    await ref.read(pendingUploadsProvider.notifier).add(
+          folderId: folderId,
+          textContent: textContent,
+          images: images,
+        );
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+
+    // // 벤치마크: 저장 완료 후 백그라운드 실행
+    // final apiClient = ref.read(apiClientProvider);
+    // unawaited(
+    //   UploadBenchmarkService(apiClient: apiClient)
+    //       .runImageBatchBenchmark(
+    //         foldersIdList: [folderId],
+    //         images: images,
+    //         textContent: textContent,
+    //         iterations: 20,
+    //       )
+    //       .then((report) => debugPrint('\n[벤치마크]\n$report\n')),
+    // );
   }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _showImagePickerPermissionDialog({
-    required bool forGallery,
-  }) async {
-    if (!mounted) return;
-    final body = forGallery
-        ? '사진을 선택하려면 설정에서 사진 접근을 허용해 주세요.'
-        : '촬영하려면 설정에서 카메라 접근을 허용해 주세요.';
-    final confirmed = await showDeleteDialog(
-      context,
-      message: '권한 필요',
-      warningMessage: body,
-      cancelLabel: '취소',
-      confirmLabel: '설정으로 이동',
-      confirmColor: AppColors.blue500,
-    );
-    if (confirmed) await openAppSettings();
   }
 
   void _openFolderPicker() {
@@ -247,17 +187,6 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
     );
     if (source == null || !mounted) return;
 
-    final permitted = source == ImageSource.gallery
-        ? await requestGalleryReadForImagePicker()
-        : await requestCameraForImagePicker();
-    if (!permitted) {
-      if (!mounted) return;
-      await _showImagePickerPermissionDialog(
-        forGallery: source == ImageSource.gallery,
-      );
-      return;
-    }
-
     try {
       final picker = ImagePicker();
       if (source == ImageSource.gallery) {
@@ -267,20 +196,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           limit: remaining,
         );
         if (list.isEmpty || !mounted) return;
-        final toAdd = <XFile>[];
-        for (final file in list.take(remaining)) {
-          final fileSizeBytes = await file.length();
-          final validateMessage = validateImageSectionUpload(
-            fileName: file.name,
-            fileSizeBytes: fileSizeBytes,
-          );
-          if (validateMessage != null) {
-            _showSnackBar(validateMessage);
-            continue;
-          }
-          toAdd.add(file);
-        }
-        if (toAdd.isEmpty) return;
+        final toAdd = list.take(remaining).toList();
         setState(() => _pickedImages.addAll(toAdd));
       } else {
         final xFile = await picker.pickImage(
@@ -288,15 +204,6 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           imageQuality: 85,
         );
         if (xFile != null && mounted && _pickedImages.length < _maxImages) {
-          final fileSizeBytes = await xFile.length();
-          final validateMessage = validateImageSectionUpload(
-            fileName: xFile.name,
-            fileSizeBytes: fileSizeBytes,
-          );
-          if (validateMessage != null) {
-            _showSnackBar(validateMessage);
-            return;
-          }
           setState(() => _pickedImages.add(xFile));
         }
       }
@@ -331,7 +238,9 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       });
     });
 
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: _handleExitAttempt,
+      child: Scaffold(
         backgroundColor: Colors.white,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(44),
@@ -369,6 +278,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
             ],
           ),
         ),
+      ),
     );
   }
 
@@ -411,7 +321,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: _canSave ? _onSave : null,
+              onTap: _isSaving ? null : _onSave,
               behavior: HitTestBehavior.opaque,
               child: _isSaving
                   ? const SizedBox(
@@ -419,12 +329,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(
+                  : const Text(
                       '저장',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _canSave ? AppColors.blue500 : AppColors.gray400,
+                        color: AppColors.blue500,
                         letterSpacing: -0.025 * 16,
                         height: 1.4,
                       ),
