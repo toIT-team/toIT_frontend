@@ -253,31 +253,27 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
     switch (selected) {
       case 0:
-        Navigator.of(context).push(
-          CupertinoPageRoute<void>(
-            builder: (_) => SaveLinkScreen(initialFolderId: widget.foldersId),
-          ),
+        await _pushSaveScreen(
+          SaveLinkScreen(initialFolderId: widget.foldersId),
+          FolderTab.links,
         );
         break;
       case 1:
-        Navigator.of(context).push(
-          CupertinoPageRoute<void>(
-            builder: (_) => SaveNoteScreen(initialFolderId: widget.foldersId),
-          ),
+        await _pushSaveScreen(
+          SaveNoteScreen(initialFolderId: widget.foldersId),
+          FolderTab.notes,
         );
         break;
       case 2:
-        Navigator.of(context).push(
-          CupertinoPageRoute<void>(
-            builder: (_) => SaveFileScreen(initialFolderId: widget.foldersId),
-          ),
+        await _pushSaveScreen(
+          SaveFileScreen(initialFolderId: widget.foldersId),
+          FolderTab.files,
         );
         break;
       case 3:
-        Navigator.of(context).push(
-          CupertinoPageRoute<void>(
-            builder: (_) => SaveImageScreen(initialFolderId: widget.foldersId),
-          ),
+        await _pushSaveScreen(
+          SaveImageScreen(initialFolderId: widget.foldersId),
+          FolderTab.images,
         );
         break;
       case 4:
@@ -286,6 +282,37 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         ).push(MaterialPageRoute(builder: (_) => const EventFormScreen()));
         break;
     }
+  }
+
+  /// 저장 화면을 띄우고, 저장된 보관함이 반환되면 해당 탭을 보여준다.
+  Future<void> _pushSaveScreen(Widget screen, FolderTab tab) async {
+    final savedFolder = await Navigator.of(context).push<FolderItem?>(
+      CupertinoPageRoute<FolderItem?>(builder: (_) => screen),
+    );
+    if (!mounted || savedFolder == null) return;
+    _goToSavedTab(savedFolder, tab);
+  }
+
+  /// 저장 완료 후 저장된 보관함의 해당 탭을 보여준다.
+  /// 현재 보관함에 저장했으면 탭만 전환하고, 다른 보관함이면 해당
+  /// 보관함 상세 화면을 그 탭으로 연다.
+  void _goToSavedTab(FolderItem savedFolder, FolderTab tab) {
+    if (savedFolder.foldersId == widget.foldersId) {
+      final tabIndex = FolderTab.indexOf(tab);
+      if (_tabController.index != tabIndex) {
+        _tabController.animateTo(tabIndex);
+      }
+      return;
+    }
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        builder: (_) => FolderDetailScreen(
+          foldersId: savedFolder.foldersId,
+          folderName: savedFolder.title,
+          initialTab: tab,
+        ),
+      ),
+    );
   }
 
   void _showLinkKebabSheet(LinkDto link) {

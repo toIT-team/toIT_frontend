@@ -123,7 +123,8 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('파일이 저장되었습니다.');
-      Navigator.of(context).pop(true);
+      // 저장된 보관함을 호출자에게 알려, 해당 보관함의 파일 탭으로 이동시킨다.
+      Navigator.of(context).pop(_selectedFolder);
     } on DioException catch (e) {
       if (!mounted) return;
       final statusCode = e.response?.statusCode;

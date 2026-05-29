@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../controllers/home_controller.dart';
+import '../../core/constants/folder_tab_index.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
 import '../../core/utils/upload_validation_utils.dart';
 import '../../models/pending_image_upload.dart';
@@ -17,6 +18,7 @@ import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
 import '../widgets/common/share_save_bottom_sheet.dart';
+import 'folder_detail_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'save_link_screen.dart';
@@ -272,6 +274,31 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// 저장 완료 후 저장된 보관함의 해당 탭으로 이동시킨다.
+  void _openFolderTab(FolderItem folder, FolderTab tab) {
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        builder: (_) => FolderDetailScreen(
+          foldersId: folder.foldersId,
+          folderName: folder.title,
+          initialTab: tab,
+        ),
+      ),
+    );
+  }
+
+  /// 저장 화면을 띄우고, 저장된 보관함이 반환되면 해당 탭으로 이동시킨다.
+  void _pushSaveScreen(Widget screen, FolderTab tab) {
+    Navigator.of(context)
+        .push(
+          CupertinoPageRoute<FolderItem?>(builder: (_) => screen),
+        )
+        .then((savedFolder) {
+          if (savedFolder == null || !mounted) return;
+          _openFolderTab(savedFolder, tab);
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(pendingDeepLinkUrlProvider, (previous, next) {
@@ -324,31 +351,27 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
               onAddMenuTap: (menuIndex) {
                 switch (menuIndex) {
                   case 0:
-                    Navigator.of(context).push(
-                      CupertinoPageRoute<void>(
-                        builder: (_) => const SaveLinkScreen(),
-                      ),
+                    _pushSaveScreen(
+                      const SaveLinkScreen(),
+                      FolderTab.links,
                     );
                     break;
                   case 1:
-                    Navigator.of(context).push(
-                      CupertinoPageRoute<void>(
-                        builder: (_) => const SaveNoteScreen(),
-                      ),
+                    _pushSaveScreen(
+                      const SaveNoteScreen(),
+                      FolderTab.notes,
                     );
                     break;
                   case 2:
-                    Navigator.of(context).push(
-                      CupertinoPageRoute<void>(
-                        builder: (_) => const SaveFileScreen(),
-                      ),
+                    _pushSaveScreen(
+                      const SaveFileScreen(),
+                      FolderTab.files,
                     );
                     break;
                   case 3:
-                    Navigator.of(context).push(
-                      CupertinoPageRoute<void>(
-                        builder: (_) => const SaveImageScreen(),
-                      ),
+                    _pushSaveScreen(
+                      const SaveImageScreen(),
+                      FolderTab.images,
                     );
                     break;
                   case 4:

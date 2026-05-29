@@ -104,6 +104,8 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       images.add((bytes: raw, fileName: xFile.name));
     }
 
+    final savedFolder = _selectedFolder!;
+
     if (!mounted) return;
     await ref.read(pendingUploadsProvider.notifier).add(
           folderId: folderId,
@@ -111,7 +113,8 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
           images: images,
         );
     if (!mounted) return;
-    Navigator.of(context).pop(true);
+    // 저장된 보관함을 호출자에게 알려, 해당 보관함의 이미지 탭으로 이동시킨다.
+    Navigator.of(context).pop(savedFolder);
 
     // // 벤치마크: 저장 완료 후 백그라운드 실행
     // final apiClient = ref.read(apiClientProvider);

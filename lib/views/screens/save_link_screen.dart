@@ -166,7 +166,8 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('링크가 저장되었습니다.');
-      Navigator.of(context).pop(true);
+      // 저장된 보관함을 호출자에게 알려, 해당 보관함의 링크 탭으로 이동시킨다.
+      Navigator.of(context).pop(_selectedFolder);
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('저장에 실패했습니다. 다시 시도해 주세요.');
