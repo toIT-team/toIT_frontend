@@ -23,6 +23,7 @@ import '../../models/dto/page_items_response_dto.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/app_alert_dialog.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/file_info_edit_sheet.dart';
 import '../widgets/common/file_kebab_sheet.dart';
 import '../widgets/common/link_edit_sheet.dart';
@@ -30,6 +31,7 @@ import '../widgets/common/link_kebab_sheet.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
 import '../widgets/common/add_popup_menu.dart';
+import '../widgets/common/upload_progress_banner.dart';
 import '../widgets/home/add_folder_bottom_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
 import '../widgets/home/folder_memo_bottom_sheet.dart';
@@ -107,9 +109,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       );
       ref.invalidate(pageItemsProvider(widget.foldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('링크가 삭제되었습니다.')));
+      _showSnack('링크가 삭제되었습니다.');
     } on DioException catch (e) {
       if (!mounted) return;
       final statusCode = e.response?.statusCode;
@@ -118,14 +118,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       if (statusCode == 404 && data is Map && data['message'] != null) {
         message = data['message'] as String;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnack(message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+      _showSnack('삭제에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -177,9 +173,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             );
         if (!mounted) return;
         if (!success) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('보관함 수정에 실패했습니다.')));
+          _showSnack('보관함 수정에 실패했습니다.');
           return;
         }
         setState(() {
@@ -202,9 +196,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             .deleteFolder(foldersId: widget.foldersId);
         if (!mounted) return;
         if (!deleted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('보관함 삭제에 실패했습니다.')));
+          _showSnack('보관함 삭제에 실패했습니다.');
           return;
         }
         Navigator.of(context).pop();
@@ -214,16 +206,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             .read(homeProvider.notifier)
             .toggleFavoriteFolder(foldersId: widget.foldersId);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              nextFavoriteState == null
-                  ? '즐겨찾기 변경에 실패했습니다.'
-                  : nextFavoriteState
-                  ? '즐겨찾기에 추가되었습니다.'
-                  : '즐겨찾기가 해제되었습니다.',
-            ),
-          ),
+        _showSnack(
+          nextFavoriteState == null
+              ? '즐겨찾기 변경에 실패했습니다.'
+              : nextFavoriteState
+              ? '즐겨찾기에 추가되었습니다.'
+              : '즐겨찾기가 해제되었습니다.',
         );
         break;
     }
@@ -234,16 +222,12 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         .read(homeProvider.notifier)
         .toggleFavoriteFolder(foldersId: widget.foldersId);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isNowFavorite == null
-              ? '즐겨찾기 변경에 실패했습니다.'
-              : isNowFavorite
-              ? '즐겨찾기에 추가되었습니다.'
-              : '즐겨찾기가 해제되었습니다.',
-        ),
-      ),
+    _showSnack(
+      isNowFavorite == null
+          ? '즐겨찾기 변경에 실패했습니다.'
+          : isNowFavorite
+          ? '즐겨찾기에 추가되었습니다.'
+          : '즐겨찾기가 해제되었습니다.',
     );
   }
 
@@ -356,18 +340,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     final rawUrl = link.linksUrl.trim();
     if (rawUrl.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('열 수 있는 링크가 없습니다.')));
+      _showSnack('열 수 있는 링크가 없습니다.');
       return;
     }
 
     Uri? uri = Uri.tryParse(rawUrl);
     if (uri == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('유효하지 않은 링크입니다.')));
+      _showSnack('유효하지 않은 링크입니다.');
       return;
     }
 
@@ -375,18 +355,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       uri = Uri.tryParse('https://$rawUrl');
       if (uri == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('유효하지 않은 링크입니다.')));
+        _showSnack('유효하지 않은 링크입니다.');
         return;
       }
     }
 
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (launched || !mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('링크를 열 수 없습니다.')));
+    _showSnack('링크를 열 수 없습니다.');
   }
 
   void _openNoteDetail(TextDto note) {
@@ -450,23 +426,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('노트가 이동되었습니다.')));
+      _showSnack('노트가 이동되었습니다.');
     } on DioException catch (e) {
       if (!mounted) return;
       final data = e.response?.data;
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '이동에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnack(message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+      _showSnack('이동에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -482,23 +452,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('링크가 이동되었습니다.')));
+      _showSnack('링크가 이동되었습니다.');
     } on DioException catch (e) {
       if (!mounted) return;
       final data = e.response?.data;
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '이동에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnack(message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+      _showSnack('이동에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -513,23 +477,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       );
       ref.invalidate(pageItemsProvider(widget.foldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('노트가 삭제되었습니다.')));
+      _showSnack('노트가 삭제되었습니다.');
     } on DioException catch (e) {
       if (!mounted) return;
       final data = e.response?.data;
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '삭제에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnack(message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+      _showSnack('삭제에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -559,21 +517,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                 );
                 ref.invalidate(pageItemsProvider(widget.foldersId));
                 if (!mounted) return;
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('파일 정보가 수정되었습니다.')),
-                );
+                showAppSnackBarWith(messenger, '파일 정보가 수정되었습니다.');
               } on DioException catch (e) {
                 if (!mounted) return;
                 final data = e.response?.data;
                 final message = data is Map && data['message'] != null
                     ? data['message'] as String
                     : '수정에 실패했습니다. 다시 시도해 주세요.';
-                messenger.showSnackBar(SnackBar(content: Text(message)));
+                showAppSnackBarWith(messenger, message);
               } catch (_) {
                 if (!mounted) return;
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')),
-                );
+                showAppSnackBarWith(messenger, '수정에 실패했습니다. 다시 시도해 주세요.');
               }
             });
             break;
@@ -641,9 +595,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                 );
                 ref.invalidate(pageItemsProvider(widget.foldersId));
                 if (!mounted) return;
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('이미지 정보가 수정되었습니다.')),
-                );
+                showAppSnackBarWith(messenger, '이미지 정보가 수정되었습니다.');
                 onImageUpdated?.call(
                   image.copyWith(textContent: edited.description),
                 );
@@ -653,12 +605,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                 final message = data is Map && data['message'] != null
                     ? data['message'] as String
                     : '수정에 실패했습니다. 다시 시도해 주세요.';
-                messenger.showSnackBar(SnackBar(content: Text(message)));
+                showAppSnackBarWith(messenger, message);
               } catch (_) {
                 if (!mounted) return;
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')),
-                );
+                showAppSnackBarWith(messenger, '수정에 실패했습니다. 다시 시도해 주세요.');
               }
             });
             break;
@@ -714,9 +664,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('보관함 이동이 완료되었습니다.')));
+      _showSnack('보관함 이동이 완료되었습니다.');
       if (detailContextToClose != null &&
           Navigator.of(detailContextToClose).canPop()) {
         Navigator.of(detailContextToClose).pop();
@@ -727,14 +675,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '이동에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnack(message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+      _showSnack('이동에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -748,23 +692,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ref.invalidate(homeProvider);
       ref.invalidate(pageItemsProvider(widget.foldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('삭제가 완료되었습니다.')));
+      _showSnack('삭제가 완료되었습니다.');
     } on DioException catch (e) {
       if (!mounted) return;
       final data = e.response?.data;
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '삭제에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      _showSnack(message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+      _showSnack('삭제에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -843,9 +781,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   String _messageForDownloadError(AttachmentDownloadException e) {
@@ -1038,38 +974,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       ),
       body: Column(
         children: [
-          if (isUploading)
-            Material(
-              color: Colors.transparent,
-              child: Container(
-                width: double.infinity,
-                color: const Color(0xFF1A1A1A).withValues(alpha: 0.88),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: const Row(
-                  children: [
-                    SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '이미지 저장 중입니다. 앱을 종료하지 말아주세요.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          if (isUploading) const UploadProgressBanner(),
           Expanded(
             child: pageItemsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),

@@ -12,6 +12,7 @@ import '../../../services/schedule_api_client.dart'
 import '../../screens/event_form_screen.dart';
 import '../common/add_action_button.dart';
 import '../common/add_context_menu.dart';
+import '../common/app_snack_bar.dart';
 import '../common/confirm_dialog.dart';
 import 'day_event_card.dart';
 
@@ -244,7 +245,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
       } else {
         message = e.toString();
       }
-      messenger.showSnackBar(SnackBar(content: Text('삭제 실패: $message')));
+      showAppSnackBarWith(messenger, '삭제 실패: $message');
     }
   }
 

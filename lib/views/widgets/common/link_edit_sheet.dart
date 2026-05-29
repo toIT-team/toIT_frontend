@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/dto/page_items_response_dto.dart';
 import '../../../repositories/home_repository.dart';
+import 'app_snack_bar.dart';
 
 /// 링크 제목·설명 수정 바텀시트 (Figma: 미트볼메뉴-제목수정)
 /// [link] 수정 대상 링크, [foldersId] 보관함 ID
@@ -95,16 +96,12 @@ class _LinkEditSheetState extends ConsumerState<_LinkEditSheet> {
       );
       if (!mounted) return;
       ref.invalidate(pageItemsProvider(widget.foldersId));
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('수정되었습니다.')));
+      showAppSnackBar(context, '수정되었습니다.');
       Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')));
+      showAppSnackBar(context, '수정에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 

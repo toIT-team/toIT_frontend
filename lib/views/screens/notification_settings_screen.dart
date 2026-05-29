@@ -5,6 +5,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/widgets/system_safe_area.dart';
+import '../widgets/common/app_snack_bar.dart';
 
 /// 알림 설정 화면 (앱 전체 알림 ↔ 서버 동기화)
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -39,9 +40,7 @@ class _NotificationSettingsScreenState
       setState(() {
         isAppNotificationEnabled = previous;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('알림 설정 저장에 실패했습니다: $e')),
-      );
+      showAppSnackBar(context, '알림 설정 저장에 실패했습니다: $e');
     } finally {
       if (mounted) {
         setState(() {

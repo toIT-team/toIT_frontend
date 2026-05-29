@@ -15,6 +15,7 @@ import '../../models/home/folder_item.dart';
 import '../../core/network/api_client.dart';
 import '../../providers/pending_uploads_provider.dart';
 // import '../../services/upload_benchmark_service.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -131,9 +132,7 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   void _openFolderPicker() {
@@ -215,15 +214,12 @@ class _SaveImageScreenState extends ConsumerState<SaveImageScreen> {
       final isPluginError =
           e.toString().contains('MissingPluginException') ||
           e.toString().contains('LateInitializationError');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isPluginError
-                ? '이미지 선택을 사용하려면 앱을 완전히 종료한 뒤 다시 실행해 주세요.'
-                : '이미지를 불러오지 못했습니다.',
-          ),
-          duration: const Duration(seconds: 4),
-        ),
+      showAppSnackBar(
+        context,
+        isPluginError
+            ? '이미지 선택을 사용하려면 앱을 완전히 종료한 뒤 다시 실행해 주세요.'
+            : '이미지를 불러오지 못했습니다.',
+        duration: const Duration(seconds: 4),
       );
     }
   }

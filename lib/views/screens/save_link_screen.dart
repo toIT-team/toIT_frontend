@@ -9,6 +9,7 @@ import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -177,9 +178,7 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   void _openFolderPicker() {

@@ -7,6 +7,7 @@ import '../../controllers/event_form_controller.dart';
 import '../../core/constants/alarm_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/app_toast.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/constants/event_assets.dart';
 import '../../core/constants/event_color_tokens.dart';
@@ -603,7 +604,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       } else {
         message = e.toString();
       }
-      messenger.showSnackBar(SnackBar(content: Text('삭제 실패: $message')));
+      showAppSnackBarWith(messenger, '삭제 실패: $message');
     }
   }
 }

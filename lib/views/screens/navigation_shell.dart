@@ -16,8 +16,10 @@ import '../../models/pending_image_upload.dart';
 import '../../providers/pending_uploads_provider.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
 import '../widgets/common/share_save_bottom_sheet.dart';
+import '../widgets/common/upload_progress_banner.dart';
 import 'folder_detail_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
@@ -269,9 +271,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   /// 저장 완료 후 저장된 보관함의 해당 탭으로 이동시킨다.
@@ -328,11 +328,11 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
             ),
           ),
           if (isUploading)
-            Positioned(
+            const Positioned(
               top: 0,
               left: 0,
               right: 0,
-              child: _UploadingBanner(),
+              child: UploadProgressBanner(safeAreaTop: true),
             ),
           // Stack에 non-positioned Align만 두면 기본 topStart에 붙어
           // '하단'이 아닌 화면 위쪽에 뜬다. 반드시 bottom 고정.
@@ -392,46 +392,6 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _UploadingBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          width: double.infinity,
-          color: const Color(0xFF1A1A1A).withValues(alpha: 0.88),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  '이미지 저장 중입니다. 앱을 종료하지 말아주세요.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
