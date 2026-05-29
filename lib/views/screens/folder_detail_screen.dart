@@ -911,9 +911,6 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         .read(homeProvider.notifier)
         .isFavoriteFolder(widget.foldersId);
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
-    final isUploading = ref.watch(pendingUploadsProvider).any(
-      (u) => u.status == PendingUploadStatus.uploading,
-    );
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -972,10 +969,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          if (isUploading) const UploadProgressBanner(),
-          Expanded(
+          Positioned.fill(
             child: pageItemsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Center(
@@ -1029,6 +1025,10 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                 ],
               ),
             ),
+          ),
+          // +버튼(FAB) 위로 떠오르는 업로드 진행 배너
+          const Positioned.fill(
+            child: UploadProgressBanner(bottomInset: 84),
           ),
         ],
       ),

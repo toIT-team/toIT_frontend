@@ -12,7 +12,6 @@ import '../../controllers/home_controller.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
 import '../../core/utils/upload_validation_utils.dart';
-import '../../models/pending_image_upload.dart';
 import '../../providers/pending_uploads_provider.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
@@ -312,10 +311,6 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     });
 
     final currentIndex = ref.watch(currentTabIndexProvider);
-    final pendingUploads = ref.watch(pendingUploadsProvider);
-    final isUploading = pendingUploads.any(
-      (u) => u.status == PendingUploadStatus.uploading,
-    );
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -327,13 +322,10 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
               children: const [HomeScreen(), CalendarScreen()],
             ),
           ),
-          if (isUploading)
-            const Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: UploadProgressBanner(safeAreaTop: true),
-            ),
+          // 업로드 배너는 네비바 위로 떠야 하므로 bottomInset으로 비켜 둔다.
+          const Positioned.fill(
+            child: UploadProgressBanner(bottomInset: 84),
+          ),
           // Stack에 non-positioned Align만 두면 기본 topStart에 붙어
           // '하단'이 아닌 화면 위쪽에 뜬다. 반드시 bottom 고정.
           Positioned(
