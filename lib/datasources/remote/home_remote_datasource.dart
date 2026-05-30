@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../core/constants/api_constants.dart';
 import '../../core/network/api_client.dart';
@@ -242,7 +241,7 @@ class HomeRemoteDatasource {
     final payload = bytes is Uint8List ? bytes : Uint8List.fromList(bytes);
     final rawDio = Dio();
     try {
-      final response = await rawDio.put(
+      await rawDio.put(
         uploadUrl,
         data: Stream<List<int>>.fromIterable([payload]),
         options: Options(
@@ -257,20 +256,6 @@ class HomeRemoteDatasource {
           validateStatus: (status) => status != null && status < 400,
         ),
       );
-      // if (kDebugMode) {
-        // debugPrint(
-          // '[S3 PUT] status=${response.statusCode} bytes=${payload.length} '
-          // 'contentType=$contentType',
-        // );
-      // }
-    } on DioException catch (e) {
-      // if (kDebugMode) {
-        // debugPrint(
-          // '[S3 PUT] FAILED status=${e.response?.statusCode} '
-          // 'message=${e.message} body=${e.response?.data}',
-        // );
-      // }
-      rethrow;
     } finally {
       rawDio.close(force: true);
     }

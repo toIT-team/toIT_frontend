@@ -9,6 +9,7 @@ import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -94,7 +95,8 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('노트가 저장되었습니다.');
-      Navigator.of(context).pop(true);
+      // 저장된 보관함을 호출자에게 알려, 해당 보관함의 노트 탭으로 이동시킨다.
+      Navigator.of(context).pop(_selectedFolder);
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('저장에 실패했습니다. 다시 시도해 주세요.');
@@ -104,9 +106,7 @@ class _SaveNoteScreenState extends ConsumerState<SaveNoteScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   void _openFolderPicker() {

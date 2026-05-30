@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
+import '../widgets/common/app_snack_bar.dart';
 
 /// 애플 로그인은 iOS 등에서만 노출. 웹의 defaultTargetPlatform은 android로
 /// 고정될 수 있어 kIsWeb일 때는 항상 표시한다.
@@ -24,9 +25,7 @@ class LoginScreen extends ConsumerWidget {
 
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.errorMessage != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+        showAppSnackBar(context, next.errorMessage!);
       }
       final previousToken = prev?.pendingRestoreToken;
       final nextToken = next.pendingRestoreToken;

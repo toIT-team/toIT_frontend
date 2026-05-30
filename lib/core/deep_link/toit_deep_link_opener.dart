@@ -6,6 +6,7 @@ import '../../controllers/home_controller.dart';
 import '../../views/screens/customer_support_screen.dart';
 import '../../views/screens/event_detail_screen.dart';
 import '../../views/screens/folder_detail_screen.dart';
+import '../../views/widgets/common/app_snack_bar.dart';
 import '../constants/api_constants.dart';
 import '../constants/folder_tab_index.dart';
 import 'toit_deep_link.dart';
@@ -51,9 +52,7 @@ class ToitDeepLinkOpener {
   static Future<void> _openHttp(BuildContext context, Uri uri) async {
     if (!await canLaunchUrl(uri)) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('링크를 열 수 없습니다.')));
+        showAppSnackBar(context, '링크를 열 수 없습니다.');
       }
       return;
     }

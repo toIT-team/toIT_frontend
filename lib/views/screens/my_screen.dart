@@ -10,6 +10,7 @@ import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../../models/dto/my_page_response_dto.dart';
 import '../../models/dto/storage_usage_response_dto.dart';
 import 'account_management_screen.dart';
@@ -106,9 +107,7 @@ class MyScreen extends ConsumerWidget {
                         .refresh();
                     if (!context.mounted) return;
                     if (result != null && result.isNotEmpty) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(result)));
+                      showAppSnackBar(context, result);
                     }
                   },
                 ),

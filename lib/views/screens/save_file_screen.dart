@@ -14,6 +14,7 @@ import '../../core/utils/upload_validation_utils.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
 
@@ -123,7 +124,8 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
       if (!mounted) return;
       _showSnackBar('파일이 저장되었습니다.');
-      Navigator.of(context).pop(true);
+      // 저장된 보관함을 호출자에게 알려, 해당 보관함의 파일 탭으로 이동시킨다.
+      Navigator.of(context).pop(_selectedFolder);
     } on DioException catch (e) {
       if (!mounted) return;
       final statusCode = e.response?.statusCode;
@@ -158,9 +160,7 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppSnackBar(context, message);
   }
 
   void _openFolderPicker() {
@@ -196,15 +196,12 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
       final isPluginError =
           e.toString().contains('MissingPluginException') ||
           e.toString().contains('LateInitializationError');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isPluginError
-                ? '파일 선택을 사용하려면 앱을 완전히 종료한 뒤 다시 실행해 주세요.'
-                : '파일을 불러오지 못했습니다.',
-          ),
-          duration: const Duration(seconds: 4),
-        ),
+      showAppSnackBar(
+        context,
+        isPluginError
+            ? '파일 선택을 사용하려면 앱을 완전히 종료한 뒤 다시 실행해 주세요.'
+            : '파일을 불러오지 못했습니다.',
+        duration: const Duration(seconds: 4),
       );
     }
   }
