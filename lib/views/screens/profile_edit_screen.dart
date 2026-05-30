@@ -6,6 +6,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
+import '../widgets/common/app_snack_bar.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({
@@ -51,15 +52,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Future<void> _submit() async {
     final newName = _nameController.text.trim();
     if (newName.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이름을 입력해 주세요.')));
+      showAppSnackBar(context, '이름을 입력해 주세요.');
       return;
     }
     if (newName.length > _maxNameLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이름은 최대 10자까지 입력할 수 있습니다.')),
-      );
+      showAppSnackBar(context, '이름은 최대 10자까지 입력할 수 있습니다.');
       return;
     }
 
@@ -77,9 +74,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('이름 수정에 실패했습니다: $e')));
+      showAppSnackBar(context, '이름 수정에 실패했습니다: $e');
     } finally {
       if (mounted) {
         setState(() {

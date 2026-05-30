@@ -5,6 +5,7 @@ import '../../../controllers/home_controller.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
+import 'app_snack_bar.dart';
 
 /// 보관함 선택 바텀시트 표시 (링크/노트/파일/이미지 저장 화면 등에서 공통 사용)
 ///
@@ -19,9 +20,7 @@ Future<void> showFolderPickerSheet(
   final folders = ref.read(homeProvider).folders;
   if (folders.isEmpty) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('보관함이 없습니다. 먼저 보관함을 만들어 주세요.')),
-      );
+      showAppSnackBar(context, '보관함이 없습니다. 먼저 보관함을 만들어 주세요.');
     }
     return;
   }

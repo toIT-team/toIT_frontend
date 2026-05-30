@@ -9,6 +9,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 import 'add_folder_bottom_sheet.dart';
 import '../common/app_alert_dialog.dart';
+import '../common/app_snack_bar.dart';
 import 'folder_memo_bottom_sheet.dart';
 import 'folder_delete_dialog.dart';
 import 'folder_options_bottom_sheet.dart';
@@ -103,9 +104,7 @@ class _FolderTileState extends ConsumerState<FolderTile> {
                 iconIndex: editResult['iconIndex'] as int,
               );
           if (!success && context.mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('보관함 수정에 실패했습니다.')));
+            showAppSnackBar(context, '보관함 수정에 실패했습니다.');
           }
         }
         break;
@@ -124,9 +123,7 @@ class _FolderTileState extends ConsumerState<FolderTile> {
             .read(homeProvider.notifier)
             .deleteFolder(foldersId: widget.foldersId);
         if (!deleted && context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('보관함 삭제에 실패했습니다.')));
+          showAppSnackBar(context, '보관함 삭제에 실패했습니다.');
         }
         break;
       case FolderOption.toggleFavorite:
@@ -134,16 +131,13 @@ class _FolderTileState extends ConsumerState<FolderTile> {
             .read(homeProvider.notifier)
             .toggleFavoriteFolder(foldersId: widget.foldersId);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                nextFavoriteState == null
-                    ? '즐겨찾기 변경에 실패했습니다.'
-                    : nextFavoriteState
-                    ? '즐겨찾기에 추가되었습니다.'
-                    : '즐겨찾기가 해제되었습니다.',
-              ),
-            ),
+          showAppSnackBar(
+            context,
+            nextFavoriteState == null
+                ? '즐겨찾기 변경에 실패했습니다.'
+                : nextFavoriteState
+                ? '즐겨찾기에 추가되었습니다.'
+                : '즐겨찾기가 해제되었습니다.',
           );
         }
         break;

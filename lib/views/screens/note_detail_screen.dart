@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../models/dto/page_items_response_dto.dart';
 import '../../repositories/home_repository.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/note_kebab_sheet.dart';
 import '../widgets/home/folder_delete_dialog.dart';
@@ -89,9 +90,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       ref.invalidate(pageItemsProvider(widget.foldersId));
       ref.invalidate(pageItemsProvider(moveFoldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('노트가 이동되었습니다.')));
+      showAppSnackBar(context, '노트가 이동되었습니다.');
       Navigator.of(context).pop();
     } on DioException catch (e) {
       if (!mounted) return;
@@ -99,14 +98,10 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '이동에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppSnackBar(context, message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('이동에 실패했습니다. 다시 시도해 주세요.')));
+      showAppSnackBar(context, '이동에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -121,9 +116,7 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       );
       ref.invalidate(pageItemsProvider(widget.foldersId));
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('노트가 삭제되었습니다.')));
+      showAppSnackBar(context, '노트가 삭제되었습니다.');
       Navigator.of(context).pop();
     } on DioException catch (e) {
       if (!mounted) return;
@@ -131,14 +124,10 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
       final message = data is Map && data['message'] != null
           ? data['message'] as String
           : '삭제에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppSnackBar(context, message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('삭제에 실패했습니다. 다시 시도해 주세요.')));
+      showAppSnackBar(context, '삭제에 실패했습니다. 다시 시도해 주세요.');
     }
   }
 
@@ -170,15 +159,11 @@ class _NoteDetailScreenState extends ConsumerState<NoteDetailScreen> {
               (e.response?.data as Map)['message'] != null
           ? (e.response?.data as Map)['message'] as String
           : '수정에 실패했습니다. 다시 시도해 주세요.';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppSnackBar(context, message);
       return false;
     } catch (_) {
       if (!mounted) return false;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('수정에 실패했습니다. 다시 시도해 주세요.')));
+      showAppSnackBar(context, '수정에 실패했습니다. 다시 시도해 주세요.');
       return false;
     } finally {
       _isSavingOnExit = false;

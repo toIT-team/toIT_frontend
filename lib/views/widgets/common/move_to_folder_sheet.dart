@@ -8,6 +8,7 @@ import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
 import '../home/folder_tile.dart';
 import '../search/search_field_widget.dart';
+import 'app_snack_bar.dart';
 
 /// 보관함 이동 바텀시트 표시 (링크/노트/파일/이미지 탭 케밥 메뉴에서 공통 사용)
 ///
@@ -22,9 +23,7 @@ Future<void> showMoveToFolderSheet(
   final folders = ref.read(homeProvider).folders;
   if (folders.isEmpty) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('보관함이 없습니다. 먼저 보관함을 만들어 주세요.')),
-      );
+      showAppSnackBar(context, '보관함이 없습니다. 먼저 보관함을 만들어 주세요.');
     }
     return;
   }
