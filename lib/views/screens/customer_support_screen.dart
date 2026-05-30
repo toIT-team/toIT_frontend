@@ -5,6 +5,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
+import '../widgets/common/app_snack_bar.dart';
 import '../widgets/home/folder_delete_dialog.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
@@ -82,15 +83,11 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('제목을 입력해 주세요.')));
+      showAppSnackBar(context, '제목을 입력해 주세요.');
       return;
     }
     if (content.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('내용을 입력해 주세요.')));
+      showAppSnackBar(context, '내용을 입력해 주세요.');
       return;
     }
 
@@ -108,9 +105,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen>
       Navigator.of(context).pop('문의가 정상적으로 등록되었습니다.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('문의 등록에 실패했습니다: $e')));
+      showAppSnackBar(context, '문의 등록에 실패했습니다: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -498,14 +493,10 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
           _expandedId = null;
         }
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('문의가 삭제되었습니다.')));
+      showAppSnackBar(context, '문의가 삭제되었습니다.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('삭제에 실패했습니다: $e')));
+      showAppSnackBar(context, '삭제에 실패했습니다: $e');
     } finally {
       if (!mounted) return;
       setState(() {

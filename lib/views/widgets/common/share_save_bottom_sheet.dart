@@ -5,6 +5,7 @@ import '../../../core/constants/app_assets.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/system_safe_area.dart';
 import '../../../models/home/folder_item.dart';
+import 'app_snack_bar.dart';
 
 /// 외부 공유 진입 시 저장 바텀시트를 표시
 Future<void> showShareSaveBottomSheet(
@@ -85,9 +86,7 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
     if (isSaving) return;
     final targetFolder = selectedFolder;
     if (targetFolder == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('보관함을 선택해 주세요.')));
+      showAppSnackBar(context, '보관함을 선택해 주세요.');
       return;
     }
 

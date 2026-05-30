@@ -7,6 +7,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
+import '../widgets/common/app_snack_bar.dart';
 
 class AccountManagementScreen extends ConsumerWidget {
   const AccountManagementScreen({
@@ -161,9 +162,7 @@ class AccountManagementScreen extends ConsumerWidget {
                                 }
                               } catch (e) {
                                 if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('회원 탈퇴에 실패했습니다: $e')),
-                                );
+                                showAppSnackBar(context, '회원 탈퇴에 실패했습니다: $e');
                               }
                             },
                           ),

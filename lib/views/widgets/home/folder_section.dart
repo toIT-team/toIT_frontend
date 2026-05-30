@@ -7,6 +7,7 @@ import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_assets.dart';
 import '../../../models/home/folder_item.dart';
 import '../../screens/folder_detail_screen.dart';
+import '../common/app_snack_bar.dart';
 import 'add_folder_bottom_sheet.dart';
 import 'folder_tile.dart';
 
@@ -75,10 +76,9 @@ class FolderSection extends ConsumerWidget {
                   onTap: () async {
                     if (isFolderLimitReached) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('보관함은 최대 20개까지 생성할 수 있습니다.'),
-                          ),
+                        showAppSnackBar(
+                          context,
+                          '보관함은 최대 20개까지 생성할 수 있습니다.',
                         );
                       }
                       return;
@@ -98,9 +98,7 @@ class FolderSection extends ConsumerWidget {
                         final errorMessage =
                             ref.read(homeProvider).errorMessage ??
                             '보관함 생성에 실패했습니다.';
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+                        showAppSnackBar(context, errorMessage);
                       }
                     }
                   },

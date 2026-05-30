@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/database/pending_upload_db.dart';
+import '../controllers/home_controller.dart';
 import '../models/pending_image_upload.dart';
 import '../repositories/home_repository.dart';
 
@@ -90,6 +91,8 @@ class PendingUploadsNotifier extends Notifier<List<PendingImageUpload>> {
         await _db.delete(upload.id);
         _remove(upload.id);
         ref.invalidate(pageItemsProvider(upload.folderId));
+        // 메인 화면 보관함 갯수(itemsCount) 갱신
+        unawaited(ref.read(homeProvider.notifier).refresh(silent: true));
         return;
       } catch (_) {
         if (attempt < _maxRetries) continue;

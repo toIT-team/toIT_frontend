@@ -13,6 +13,7 @@ import '../../../models/home/folder_item.dart';
 import '../../../services/search_api_client.dart';
 import '../home/folder_tile.dart';
 import '../search/search_field_widget.dart';
+import 'app_snack_bar.dart';
 
 /// 일정 폼에서 보관함을 고를 때 쓰는 검색 바텀시트.
 ///
@@ -26,11 +27,7 @@ Future<void> showScheduleFolderSearchSheet(
   final folders = ref.read(homeProvider).folders;
   if (folders.isEmpty) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('보관함이 없습니다. 먼저 보관함을 만들어 주세요.'),
-        ),
-      );
+      showAppSnackBar(context, '보관함이 없습니다. 먼저 보관함을 만들어 주세요.');
     }
     return;
   }
@@ -121,9 +118,7 @@ class _ScheduleFolderSearchSheetState
       setState(() {
         _isSearching = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('검색 중 오류가 발생했습니다.')),
-      );
+      showAppSnackBar(context, '검색 중 오류가 발생했습니다.');
     }
   }
 
