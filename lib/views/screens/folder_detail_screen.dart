@@ -13,6 +13,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
+import '../../models/pending_image_upload.dart';
+import '../../providers/pending_uploads_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/folder_tab_index.dart';
@@ -920,8 +922,13 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             onFileKebabTap: _showFileKebabSheet,
           );
         case FolderTab.images:
+          final pending = ref
+              .watch(pendingUploadsProvider)
+              .where((u) => u.folderId == widget.foldersId)
+              .toList();
           return _ImageTabContent(
             images: data.images,
+            pendingUploads: pending,
             onImageLongPress: _showImageKebabSheet,
             onImageTap: _openImageDetail,
           );
@@ -941,6 +948,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         .read(homeProvider.notifier)
         .isFavoriteFolder(widget.foldersId);
     final pageItemsAsync = ref.watch(pageItemsProvider(widget.foldersId));
+    final isUploading = ref.watch(pendingUploadsProvider).any(
+      (u) => u.status == PendingUploadStatus.uploading,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -999,9 +1009,41 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Positioned.fill(
+          if (isUploading)
+            Material(
+              color: Colors.transparent,
+              child: Container(
+                width: double.infinity,
+                color: const Color(0xFF1A1A1A).withValues(alpha: 0.88),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '이미지 저장 중입니다. 앱을 종료하지 말아주세요.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(
             child: pageItemsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Center(
@@ -1044,9 +1086,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                     indicatorColor: AppColors.blue500,
                     indicatorWeight: 2,
                     dividerColor: AppColors.neutral50,
-                    tabs: FolderTab.order
-                        .map((tab) => Tab(text: tab.label))
-                        .toList(),
+                    tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
                   ),
                   Expanded(
                     child: TabBarView(
@@ -1058,35 +1098,34 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               ),
             ),
           ),
-          Positioned(
-            right: 20,
-            bottom: addButtonBottomInset,
-            child: _TapScale(
-              key: _addButtonKey,
-              onTap: _onAddMenuTap,
-              pressedScale: 0.94,
+        ],
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(right: 4, bottom: 16),
+        child: _TapScale(
+          key: _addButtonKey,
+          onTap: _onAddMenuTap,
+          pressedScale: 0.94,
+          borderRadius: BorderRadius.circular(99),
+          child: Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: AppColors.blue500,
               borderRadius: BorderRadius.circular(99),
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.blue500,
-                  borderRadius: BorderRadius.circular(99),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.shadowNavBlue.withOpacity(0.12),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowNavBlue.withOpacity(0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
                 ),
-                child: const Center(
-                  child: Icon(Icons.add, color: Colors.white, size: 28),
-                ),
-              ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(Icons.add, color: Colors.white, size: 28),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1885,13 +1924,15 @@ String _formatAttachmentSize(double sizeInBytes) {
 }
 
 // ─── 이미지 탭 (API images[]) ───
-class _ImageTabContent extends StatelessWidget {
+class _ImageTabContent extends ConsumerWidget {
   final List<AttachmentImageDto> images;
+  final List<PendingImageUpload> pendingUploads;
   final void Function(AttachmentImageDto image) onImageLongPress;
   final void Function(AttachmentImageDto image) onImageTap;
 
   const _ImageTabContent({
     required this.images,
+    required this.pendingUploads,
     required this.onImageLongPress,
     required this.onImageTap,
   });
@@ -1909,8 +1950,13 @@ class _ImageTabContent extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (images.isEmpty) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingItems = pendingUploads
+        .expand((u) => u.items.map((item) => (item: item, upload: u)))
+        .toList();
+    final totalCount = pendingItems.length + images.length;
+
+    if (totalCount == 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1930,7 +1976,7 @@ class _ImageTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(images.length),
+        _buildSectionToolbar(totalCount),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1948,9 +1994,21 @@ class _ImageTabContent extends StatelessWidget {
                     mainAxisSpacing: AppSpacing.md,
                     childAspectRatio: _tileAspect,
                   ),
-                  itemCount: images.length,
+                  itemCount: totalCount,
                   itemBuilder: (context, index) {
-                    final img = images[index];
+                    if (index < pendingItems.length) {
+                      final (:item, :upload) = pendingItems[index];
+                      return _PendingImageCell(
+                        width: tileW,
+                        height: tileH,
+                        item: item,
+                        upload: upload,
+                        onRetry: () => ref
+                            .read(pendingUploadsProvider.notifier)
+                            .retry(upload.id),
+                      );
+                    }
+                    final img = images[index - pendingItems.length];
                     return _TapScale(
                       onTap: () => onImageTap(img),
                       onLongPress: () => onImageLongPress(img),
@@ -2013,6 +2071,78 @@ class _FolderImageCell extends StatelessWidget {
                     Container(color: AppColors.borderLight),
               )
             : Container(color: AppColors.borderLight),
+      ),
+    );
+  }
+}
+
+/// 업로드 중/실패 pending 이미지 셀
+class _PendingImageCell extends StatelessWidget {
+  const _PendingImageCell({
+    required this.width,
+    required this.height,
+    required this.item,
+    required this.upload,
+    required this.onRetry,
+  });
+
+  final double width;
+  final double height;
+  final PendingImageItem item;
+  final PendingImageUpload upload;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFailed = upload.status == PendingUploadStatus.failed;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.memory(item.bytes, fit: BoxFit.cover),
+            Container(
+              color: isFailed
+                  ? Colors.red.withOpacity(0.45)
+                  : Colors.white.withOpacity(0.55),
+            ),
+            if (isFailed)
+              Center(
+                child: GestureDetector(
+                  onTap: onRetry,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.refresh, color: Colors.white, size: 28),
+                      const SizedBox(height: 4),
+                      Text(
+                        '재시도',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

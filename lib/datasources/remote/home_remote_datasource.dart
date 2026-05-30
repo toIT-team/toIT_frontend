@@ -277,24 +277,13 @@ class HomeRemoteDatasource {
   }
 
   /// S3 업로드 완료 후 DB 저장 확정 (POST /attachments/confirm)
-  Future<List<ConfirmResponseItem>> confirmAttachment(
+  Future<void> confirmAttachment(
     ConfirmRequestDto request,
   ) async {
-    final response = await _apiClient.post(
+    await _apiClient.post(
       ApiConstants.attachmentsConfirmEndpoint,
       data: request.toJson(),
     );
-    final data = response.data;
-    if (data is List) {
-      return data
-          .whereType<Map<String, dynamic>>()
-          .map(ConfirmResponseItem.fromJson)
-          .toList();
-    }
-    if (data is Map<String, dynamic>) {
-      return [ConfirmResponseItem.fromJson(data)];
-    }
-    return const <ConfirmResponseItem>[];
   }
 
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)
