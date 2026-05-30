@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,6 +40,10 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
   late final AnimationController _progressController;
   late final Animation<double> _progressAnim;
 
+  /// 화면에 표시할 진행률. 완료 시 1.0으로 스냅 후 퇴장한다.
+  double _displayProgress = 0;
+  bool _isDismissing = false;
+
   @override
   void initState() {
     super.initState();
@@ -64,34 +70,69 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
       parent: _progressController,
       curve: Curves.easeOut,
     );
+    _progressController.addListener(_syncProgressDuringUpload);
+
+    // 앱 재시작 후 업로드 복구 시에도 배너를 표시한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_isUploading(ref.read(pendingUploadsProvider))) {
+        _startUpload();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _progressController.removeListener(_syncProgressDuringUpload);
     _slideController.dispose();
     _progressController.dispose();
     super.dispose();
   }
 
+  bool _isUploading(List<PendingImageUpload> uploads) {
+    return uploads.any((u) => u.status == PendingUploadStatus.uploading);
+  }
+
+  void _syncProgressDuringUpload() {
+    if (!mounted || _isDismissing) return;
+    setState(() {
+      _displayProgress = (_progressAnim.value * 0.9).clamp(0.0, 0.9);
+    });
+  }
+
+  void _startUpload() {
+    _isDismissing = false;
+    _displayProgress = 0;
+    _progressController.forward(from: 0);
+    _slideController.forward();
+  }
+
+  Future<void> _completeAndDismiss() async {
+    if (_isDismissing) return;
+    _isDismissing = true;
+    _progressController.stop();
+    setState(() => _displayProgress = 1.0);
+    await _slideController.reverse();
+    if (!mounted) return;
+    _progressController.reset();
+    _isDismissing = false;
+    setState(() => _displayProgress = 0);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final uploads = ref.watch(pendingUploadsProvider);
-    final isUploading =
-        uploads.any((u) => u.status == PendingUploadStatus.uploading);
-
-    if (isUploading) {
-      _slideController.forward();
-      if (!_progressController.isAnimating &&
-          _progressController.value < 1.0) {
-        _progressController.forward();
+    ref.listen<List<PendingImageUpload>>(pendingUploadsProvider, (
+      previous,
+      next,
+    ) {
+      final wasUploading = _isUploading(previous ?? const []);
+      final isUploading = _isUploading(next);
+      if (isUploading && !wasUploading) {
+        _startUpload();
+      } else if (!isUploading && wasUploading) {
+        unawaited(_completeAndDismiss());
       }
-    } else {
-      _slideController.reverse();
-      _progressController.stop();
-      _progressController.reset();
-    }
-
-    final displayProgress = (_progressAnim.value * 0.9).clamp(0.0, 0.9);
+    });
 
     return AnimatedBuilder(
       animation: Listenable.merge([_slideController, _progressController]),
@@ -108,7 +149,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
                   opacity: _fade,
                   child: SlideTransition(
                     position: _slide,
-                    child: _BannerCard(progress: displayProgress),
+                    child: _BannerCard(progress: _displayProgress),
                   ),
                 ),
               ),
@@ -190,7 +231,7 @@ class _CircularPercent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percent = (progress * 100).round().clamp(0, 99);
+    final percent = (progress * 100).round().clamp(0, 100);
     return SizedBox(
       width: _size,
       height: _size,
