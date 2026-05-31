@@ -5,7 +5,6 @@ class MyPageResponseDto {
   final String name;
   final String email;
   final String authProvider;
-  final String appVersion;
 
   const MyPageResponseDto({
     required this.nickname,
@@ -13,7 +12,6 @@ class MyPageResponseDto {
     required this.name,
     required this.email,
     required this.authProvider,
-    required this.appVersion,
   });
 
   factory MyPageResponseDto.fromJson(Map<String, dynamic> json) {
@@ -23,7 +21,6 @@ class MyPageResponseDto {
       name: (json['name'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
       authProvider: (json['authProvider'] as String?) ?? '',
-      appVersion: (json['appVersion'] as String?) ?? '',
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/notifications_unread_count_controller.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_assets.dart';
+import '../../providers/app_version_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/network/api_client.dart';
@@ -64,6 +65,7 @@ class MyScreen extends ConsumerWidget {
     final cacheKey = (userId, refreshTick);
     final myPageAsync = ref.watch(myPageProvider(cacheKey));
     final storageUsageAsync = ref.watch(storageUsageProvider(cacheKey));
+    final appVersion = ref.watch(appVersionProvider).valueOrNull ?? '';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -75,6 +77,7 @@ class MyScreen extends ConsumerWidget {
               child: myPageAsync.when(
                 data: (myPage) => _MyContent(
                   myPage: myPage,
+                  appVersion: appVersion,
                   storageUsageAsync: storageUsageAsync,
                   onEditProfilePressed: () async {
                     final result = await Navigator.of(context).push<bool>(
@@ -173,12 +176,14 @@ class _MyHeader extends StatelessWidget {
 class _MyContent extends StatelessWidget {
   const _MyContent({
     required this.myPage,
+    required this.appVersion,
     required this.storageUsageAsync,
     required this.onEditProfilePressed,
     required this.onSupportPressed,
   });
 
   final MyPageResponseDto myPage;
+  final String appVersion;
   final AsyncValue<StorageUsageResponseDto> storageUsageAsync;
   final VoidCallback onEditProfilePressed;
   final Future<void> Function() onSupportPressed;
@@ -275,7 +280,7 @@ class _MyContent extends StatelessWidget {
                 _SettingTile(
                   iconPath: AppAssets.versionIcon,
                   title: '버전',
-                  subtitle: '앱 버전 ${myPage.appVersion}',
+                  subtitle: '앱 버전 $appVersion',
                   showChevron: false,
                   scale: scale,
                 ),
