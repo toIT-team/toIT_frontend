@@ -868,20 +868,53 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     return FolderTab.order.map((tab) {
       switch (tab) {
         case FolderTab.links:
+          final pendingLinks = ref
+              .watch(pendingUploadsProvider)
+              .where(
+                (u) =>
+                    u.folderId == widget.foldersId &&
+                    u.type == PendingSaveType.link,
+              )
+              .toList();
           return _LinkTabContent(
             links: data.links,
+            pendingItems: pendingLinks,
+            onPendingRetry: (id) =>
+                ref.read(pendingUploadsProvider.notifier).retry(id),
             onLinkTap: _openLink,
             onLinkKebabTap: _showLinkKebabSheet,
           );
         case FolderTab.notes:
+          final pendingNotes = ref
+              .watch(pendingUploadsProvider)
+              .where(
+                (u) =>
+                    u.folderId == widget.foldersId &&
+                    u.type == PendingSaveType.note,
+              )
+              .toList();
           return _NoteTabContent(
             texts: data.texts,
+            pendingItems: pendingNotes,
+            onPendingRetry: (id) =>
+                ref.read(pendingUploadsProvider.notifier).retry(id),
             onNoteTap: _openNoteDetail,
             onNoteKebabTap: _showNoteKebabSheet,
           );
         case FolderTab.files:
+          final pendingFiles = ref
+              .watch(pendingUploadsProvider)
+              .where(
+                (u) =>
+                    u.folderId == widget.foldersId &&
+                    u.type == PendingSaveType.file,
+              )
+              .toList();
           return _FileTabContent(
             files: data.files,
+            pendingItems: pendingFiles,
+            onPendingRetry: (id) =>
+                ref.read(pendingUploadsProvider.notifier).retry(id),
             onFileKebabTap: _showFileKebabSheet,
           );
         case FolderTab.images:
@@ -1170,21 +1203,127 @@ Widget _buildSectionToolbar(int count, {bool removeBottomPadding = false}) {
   );
 }
 
+String _formatCreatedAt(String? createdAt) {
+  if (createdAt == null || createdAt.isEmpty) return '';
+  final date = DateTime.tryParse(createdAt);
+  if (date == null) return createdAt;
+  return '${date.year}.${date.month}.${date.day}';
+}
+
+/// pending 저장 중·실패 오버레이 (링크·노트·파일·이미지).
+class _PendingSaveOverlay extends StatelessWidget {
+  const _PendingSaveOverlay({
+    required this.isFailed,
+    required this.onRetry,
+    required this.child,
+    this.borderRadius,
+    this.compactRetry = false,
+  });
+
+  final bool isFailed;
+  final VoidCallback onRetry;
+  final Widget child;
+  final BorderRadius? borderRadius;
+
+  /// 파일처럼 행 높이가 낮을 때 재시도 UI를 가로 배치.
+  final bool compactRetry;
+
+  static Color get _overlayColor => Colors.white.withValues(alpha: 0.55);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        child,
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: borderRadius ?? BorderRadius.zero,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: isFailed ? onRetry : null,
+                child: Container(
+                  color: _overlayColor,
+                  alignment: Alignment.center,
+                  child: isFailed
+                      ? _PendingRetryContent(compact: compactRetry)
+                      : const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 실패 시 재시도 아이콘 + 문구.
+class _PendingRetryContent extends StatelessWidget {
+  const _PendingRetryContent({this.compact = false});
+
+  final bool compact;
+
+  static const TextStyle _textStyle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.gray900,
+    letterSpacing: -0.025 * 14,
+    height: 1.2,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (compact) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.refresh, color: AppColors.gray900, size: 20),
+          SizedBox(width: 4),
+          Text('재시도', style: _textStyle),
+        ],
+      );
+    }
+
+    return const Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.refresh, color: AppColors.gray900, size: 28),
+        SizedBox(height: 4),
+        Text('재시도', style: _textStyle),
+      ],
+    );
+  }
+}
+
 // ─── 링크 탭 (API links[]) ───
 class _LinkTabContent extends StatelessWidget {
   final List<LinkDto> links;
+  final List<PendingSaveItem> pendingItems;
+  final void Function(String id) onPendingRetry;
   final void Function(LinkDto link) onLinkTap;
   final void Function(LinkDto link) onLinkKebabTap;
 
   const _LinkTabContent({
     required this.links,
+    required this.pendingItems,
+    required this.onPendingRetry,
     required this.onLinkTap,
     required this.onLinkKebabTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (links.isEmpty) {
+    final totalCount = links.length + pendingItems.length;
+    if (totalCount == 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1203,18 +1342,25 @@ class _LinkTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(links.length, removeBottomPadding: true),
+        _buildSectionToolbar(totalCount, removeBottomPadding: true),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
-            itemCount: links.length,
+            itemCount: totalCount,
             separatorBuilder: (_, __) => const Divider(
               height: 1,
               thickness: 1,
               color: AppColors.neutral50,
             ),
             itemBuilder: (context, index) {
-              final link = links[index];
+              if (index < pendingItems.length) {
+                final item = pendingItems[index];
+                return _PendingLinkRow(
+                  item: item,
+                  onRetry: () => onPendingRetry(item.id),
+                );
+              }
+              final link = links[index - pendingItems.length];
               return _LinkItemRow(
                 link: link,
                 onTap: () => onLinkTap(link),
@@ -1224,6 +1370,96 @@ class _LinkTabContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PendingLinkRow extends StatelessWidget {
+  const _PendingLinkRow({required this.item, required this.onRetry});
+
+  final PendingSaveItem item;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFailed = item.status == PendingSaveStatus.failed;
+    final title = item.linksName?.trim().isNotEmpty == true
+        ? item.linksName!.trim()
+        : (item.linksUrl ?? '링크');
+    final thumbnailUrl = item.linksThumbnail ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: _PendingSaveOverlay(
+        isFailed: isFailed,
+        onRetry: onRetry,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.gray900,
+                          letterSpacing: -0.025 * 18,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (item.textContent.isNotEmpty)
+                        Text(
+                          item.textContent,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.gray600,
+                            letterSpacing: -0.025 * 14,
+                            height: 1.5,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xxl),
+                _LinkThumbnail(thumbnailUrl: thumbnailUrl),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '저장 중',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.gray600,
+                    letterSpacing: -0.025 * 14,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(width: 44, height: 44),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1381,21 +1617,18 @@ class _LinkThumbnail extends StatelessWidget {
   }
 }
 
-String _formatCreatedAt(String? createdAt) {
-  if (createdAt == null || createdAt.isEmpty) return '';
-  final date = DateTime.tryParse(createdAt);
-  if (date == null) return createdAt;
-  return '${date.year}.${date.month}.${date.day}';
-}
-
 // ─── 노트 탭 (API texts[] = 객체 배열, 3열 그리드) ───
 class _NoteTabContent extends StatelessWidget {
   final List<TextDto> texts;
+  final List<PendingSaveItem> pendingItems;
+  final void Function(String id) onPendingRetry;
   final void Function(TextDto note) onNoteTap;
   final void Function(TextDto note) onNoteKebabTap;
 
   const _NoteTabContent({
     required this.texts,
+    required this.pendingItems,
+    required this.onPendingRetry,
     required this.onNoteTap,
     required this.onNoteKebabTap,
   });
@@ -1408,7 +1641,8 @@ class _NoteTabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (texts.isEmpty) {
+    final totalCount = texts.length + pendingItems.length;
+    if (totalCount == 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1427,7 +1661,7 @@ class _NoteTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(texts.length),
+        _buildSectionToolbar(totalCount),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1439,9 +1673,23 @@ class _NoteTabContent extends StatelessWidget {
                 crossAxisSpacing: _gridSpacing,
                 childAspectRatio: _cardWidth / _cardTotalHeight,
               ),
-              itemCount: texts.length,
+              itemCount: totalCount,
               itemBuilder: (context, index) {
-                final note = texts[index];
+                if (index < pendingItems.length) {
+                  final item = pendingItems[index];
+                  return LayoutBuilder(
+                    builder: (context, cellConstraints) {
+                      final cellW = cellConstraints.maxWidth;
+                      final displayW = cellW < _cardWidth ? cellW : _cardWidth;
+                      return _PendingNoteCard(
+                        item: item,
+                        displayWidth: displayW,
+                        onRetry: () => onPendingRetry(item.id),
+                      );
+                    },
+                  );
+                }
+                final note = texts[index - pendingItems.length];
                 return LayoutBuilder(
                   builder: (context, cellConstraints) {
                     final cellW = cellConstraints.maxWidth;
@@ -1456,6 +1704,94 @@ class _NoteTabContent extends StatelessWidget {
                 );
               },
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingNoteCard extends StatelessWidget {
+  const _PendingNoteCard({
+    required this.item,
+    required this.displayWidth,
+    required this.onRetry,
+  });
+
+  final PendingSaveItem item;
+  final double displayWidth;
+  final VoidCallback onRetry;
+
+  static const double _designBoxWidth = 104;
+  static const double _designBoxHeight = 150;
+
+  @override
+  Widget build(BuildContext context) {
+    final boxW = displayWidth;
+    final boxH = _designBoxHeight * (boxW / _designBoxWidth);
+    final content = item.textContent;
+    final title = content.length > 20
+        ? '${content.substring(0, 20)}...'
+        : content.isEmpty
+        ? '노트'
+        : content;
+    final isFailed = item.status == PendingSaveStatus.failed;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _PendingSaveOverlay(
+          isFailed: isFailed,
+          onRetry: onRetry,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          child: Container(
+            width: boxW,
+            height: boxH,
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border.all(color: AppColors.neutral50),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            ),
+            child: Text(
+              content.isEmpty ? '링크에 대한 정보를 간단하게 메모해보세요.' : content,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.gray900,
+                letterSpacing: -0.025 * 14,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.gray900,
+            letterSpacing: -0.025 * 18,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '저장 중',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.gray600,
+            letterSpacing: -0.025 * 14,
+            height: 1.5,
           ),
         ),
       ],
@@ -1587,13 +1923,21 @@ class _NoteCard extends StatelessWidget {
 // ─── 파일 탭 (API files[]) ───
 class _FileTabContent extends StatelessWidget {
   final List<AttachmentFileDto> files;
+  final List<PendingSaveItem> pendingItems;
+  final void Function(String id) onPendingRetry;
   final void Function(AttachmentFileDto file) onFileKebabTap;
 
-  const _FileTabContent({required this.files, required this.onFileKebabTap});
+  const _FileTabContent({
+    required this.files,
+    required this.pendingItems,
+    required this.onPendingRetry,
+    required this.onFileKebabTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (files.isEmpty) {
+    final totalCount = files.length + pendingItems.length;
+    if (totalCount == 0) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1612,18 +1956,25 @@ class _FileTabContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionToolbar(files.length, removeBottomPadding: true),
+        _buildSectionToolbar(totalCount, removeBottomPadding: true),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.zero,
-            itemCount: files.length,
+            itemCount: totalCount,
             separatorBuilder: (_, __) => const Divider(
               height: 1,
               thickness: 1,
               color: AppColors.neutral50,
             ),
             itemBuilder: (context, index) {
-              final file = files[index];
+              if (index < pendingItems.length) {
+                final item = pendingItems[index];
+                return _PendingFileRow(
+                  item: item,
+                  onRetry: () => onPendingRetry(item.id),
+                );
+              }
+              final file = files[index - pendingItems.length];
               return _FileItemRow(
                 file: file,
                 onMoreTap: () => onFileKebabTap(file),
@@ -1634,6 +1985,100 @@ class _FileTabContent extends StatelessWidget {
       ],
     );
   }
+}
+
+class _PendingFileRow extends StatelessWidget {
+  const _PendingFileRow({required this.item, required this.onRetry});
+
+  final PendingSaveItem item;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFailed = item.status == PendingSaveStatus.failed;
+    final fileName = item.blobs.isNotEmpty
+        ? item.blobs.first.fileName
+        : '파일';
+    final sizeBytes = item.blobs.isNotEmpty
+        ? item.blobs.first.bytes.length
+        : 0;
+    final fileIconPath = _resolveFileIconAssetPath(
+      fileName: fileName,
+      attachmentsExtension: _extractExtension(fileName),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: _PendingSaveOverlay(
+        isFailed: isFailed,
+        onRetry: onRetry,
+        compactRetry: true,
+        child: Row(
+          children: [
+            _buildFileIconBox(fileIconPath),
+            const SizedBox(width: AppSpacing.sm + 1),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.gray900,
+                      letterSpacing: -0.025 * 18,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatAttachmentSize(sizeBytes.toDouble()),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.gray600,
+                      letterSpacing: -0.025 * 14,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 44, height: 44),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildFileIconBox(String? fileIconPath) {
+  if (fileIconPath == null) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: AppColors.neutral100,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+    );
+  }
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+    child: Image.asset(
+      fileIconPath,
+      width: 44,
+      height: 44,
+      fit: BoxFit.cover,
+    ),
+  );
 }
 
 class _FileItemRow extends StatelessWidget {
@@ -1712,28 +2157,6 @@ class _FileItemRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildFileIconBox(String? fileIconPath) {
-    if (fileIconPath == null) {
-      return Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppColors.neutral100,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        ),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-      child: Image.asset(
-        fileIconPath,
-        width: 44,
-        height: 44,
-        fit: BoxFit.cover,
       ),
     );
   }
@@ -2041,28 +2464,15 @@ class _PendingImageCell extends StatelessWidget {
           children: [
             Image.memory(item.bytes, fit: BoxFit.cover),
             Container(
-              color: isFailed
-                  ? Colors.red.withOpacity(0.45)
-                  : Colors.white.withOpacity(0.55),
+              color: Colors.white.withValues(alpha: 0.55),
             ),
             if (isFailed)
-              Center(
-                child: GestureDetector(
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
                   onTap: onRetry,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.refresh, color: Colors.white, size: 28),
-                      const SizedBox(height: 4),
-                      Text(
-                        '재시도',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  child: const Center(
+                    child: _PendingRetryContent(),
                   ),
                 ),
               )
