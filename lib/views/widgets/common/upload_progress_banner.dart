@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../models/pending_image_upload.dart';
+import '../../../models/pending_save_item.dart';
 import '../../../providers/pending_uploads_provider.dart';
 
 /// 이미지 업로드 진행 중 하단에 떠오르는 플로팅 카드 배너.
@@ -28,7 +28,7 @@ class UploadProgressBanner extends ConsumerStatefulWidget {
 
 class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
     with TickerProviderStateMixin {
-  static const String _title = '이미지 저장 중';
+  static const String _title = '저장 중';
   static const String _subtitle = '앱을 종료하지 말아주세요.';
 
   /// 슬라이드/페이드 등장·퇴장
@@ -89,8 +89,8 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
     super.dispose();
   }
 
-  bool _isUploading(List<PendingImageUpload> uploads) {
-    return uploads.any((u) => u.status == PendingUploadStatus.uploading);
+  bool _isUploading(List<PendingSaveItem> uploads) {
+    return uploads.any((u) => u.status == PendingSaveStatus.uploading);
   }
 
   void _syncProgressDuringUpload() {
@@ -121,7 +121,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<List<PendingImageUpload>>(pendingUploadsProvider, (
+    ref.listen<List<PendingSaveItem>>(pendingUploadsProvider, (
       previous,
       next,
     ) {

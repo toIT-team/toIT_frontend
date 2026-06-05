@@ -13,7 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
-import '../../models/pending_image_upload.dart';
+import '../../models/pending_save_item.dart';
 import '../../providers/pending_uploads_provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -887,7 +887,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
         case FolderTab.images:
           final pending = ref
               .watch(pendingUploadsProvider)
-              .where((u) => u.folderId == widget.foldersId)
+              .where(
+                (u) =>
+                    u.folderId == widget.foldersId &&
+                    u.type == PendingSaveType.image,
+              )
               .toList();
           return _ImageTabContent(
             images: data.images,
