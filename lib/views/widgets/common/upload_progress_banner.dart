@@ -36,7 +36,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
   late final Animation<Offset> _slide;
   late final Animation<double> _fade;
 
-  /// 업로드 중 표시용 진행률 (0.0~0.9). 완료 전 100%에 닿지 않게 한다.
+  /// 업로드 중 표시용 진행률 (0.0~0.99). 완료 전 100%에 닿지 않게 한다.
   late final AnimationController _progressController;
   late final Animation<double> _progressAnim;
 
@@ -64,7 +64,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
 
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 3),
     );
     _progressAnim = CurvedAnimation(
       parent: _progressController,
@@ -96,7 +96,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
   void _syncProgressDuringUpload() {
     if (!mounted || _isDismissing) return;
     setState(() {
-      _displayProgress = (_progressAnim.value * 0.9).clamp(0.0, 0.9);
+      _displayProgress = (_progressAnim.value * 0.99).clamp(0.0, 0.99);
     });
   }
 
