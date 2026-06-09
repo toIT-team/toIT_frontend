@@ -62,7 +62,6 @@ class _CloudFrontImageState extends ConsumerState<CloudFrontImage> {
           .map((e) => '${e.key}=${e.value}')
           .join('; ');
 
-      final sw = Stopwatch()..start();
       final response = await dio.get<List<int>>(
         widget.url,
         options: Options(
@@ -70,13 +69,8 @@ class _CloudFrontImageState extends ConsumerState<CloudFrontImage> {
           headers: cookieHeader != null ? {'Cookie': cookieHeader} : null,
         ),
       );
-      sw.stop();
 
       final bytes = Uint8List.fromList(response.data!);
-      // x-cache: "Hit from cloudfront" / "Miss from cloudfront"
-      final xCache = response.headers.value('x-cache') ?? 'unknown';
-      final sizeKb = (bytes.length / 1024).toStringAsFixed(1);
-      debugPrint('[이미지 측정] ${sw.elapsedMilliseconds}ms | ${sizeKb}KB | $xCache | ${widget.url}');
 
       if (mounted) {
         setState(() {
