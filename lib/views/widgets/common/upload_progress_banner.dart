@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../models/pending_image_upload.dart';
+import '../../../models/pending_save_item.dart';
 import '../../../providers/pending_uploads_provider.dart';
 
 /// 이미지 업로드 진행 중 하단에 떠오르는 플로팅 카드 배너.
@@ -28,7 +28,7 @@ class UploadProgressBanner extends ConsumerStatefulWidget {
 
 class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
     with TickerProviderStateMixin {
-  static const String _title = '이미지 저장 중';
+  static const String _title = '저장 중';
   static const String _subtitle = '앱을 종료하지 말아주세요.';
 
   /// 슬라이드/페이드 등장·퇴장
@@ -36,7 +36,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
   late final Animation<Offset> _slide;
   late final Animation<double> _fade;
 
-  /// 업로드 중 표시용 진행률 (0.0~0.9). 완료 전 100%에 닿지 않게 한다.
+  /// 업로드 중 표시용 진행률 (0.0~0.99). 완료 전 100%에 닿지 않게 한다.
   late final AnimationController _progressController;
   late final Animation<double> _progressAnim;
 
@@ -64,7 +64,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
 
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 3),
     );
     _progressAnim = CurvedAnimation(
       parent: _progressController,
@@ -89,14 +89,14 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
     super.dispose();
   }
 
-  bool _isUploading(List<PendingImageUpload> uploads) {
-    return uploads.any((u) => u.status == PendingUploadStatus.uploading);
+  bool _isUploading(List<PendingSaveItem> uploads) {
+    return uploads.any((u) => u.status == PendingSaveStatus.uploading);
   }
 
   void _syncProgressDuringUpload() {
     if (!mounted || _isDismissing) return;
     setState(() {
-      _displayProgress = (_progressAnim.value * 0.9).clamp(0.0, 0.9);
+      _displayProgress = (_progressAnim.value * 0.99).clamp(0.0, 0.99);
     });
   }
 
@@ -121,7 +121,7 @@ class _UploadProgressBannerState extends ConsumerState<UploadProgressBanner>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<List<PendingImageUpload>>(pendingUploadsProvider, (
+    ref.listen<List<PendingSaveItem>>(pendingUploadsProvider, (
       previous,
       next,
     ) {

@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +12,7 @@ import '../../core/utils/system_ui_insets.dart';
 import '../../core/utils/upload_validation_utils.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
-import '../../repositories/home_repository.dart';
+import '../../providers/pending_uploads_provider.dart';
 import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
 import '../widgets/common/unsaved_exit_dialog.dart';
@@ -110,43 +109,18 @@ class _SaveFileScreenState extends ConsumerState<SaveFileScreen> {
     }
 
     final fileBytes = bytes;
+    final savedFolder = _selectedFolder!;
 
     setState(() => _isSaving = true);
-    try {
-      final repository = ref.read(homeRepositoryProvider);
-      await repository.createFile(
-        foldersIdList: [_selectedFolder!.foldersId],
-        textContent: _memoController.text.trim(),
-        fileBytes: fileBytes,
-        fileName: selectedFile.name,
-      );
-      await ref.read(homeProvider.notifier).refresh();
-      ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
-      if (!mounted) return;
-      _showSnackBar('파일이 저장되었습니다.');
-      // 저장된 보관함을 호출자에게 알려, 해당 보관함의 파일 탭으로 이동시킨다.
-      Navigator.of(context).pop(_selectedFolder);
-    } on DioException catch (e) {
-      if (!mounted) return;
-      final statusCode = e.response?.statusCode;
-      final data = e.response?.data;
-      final String message;
-      if (statusCode == 413) {
-        message = '파일 크기가 서버 제한을 초과했습니다. 더 작은 파일을 선택해 주세요.';
-      } else if (statusCode == 400 && data is Map && data['message'] != null) {
-        message = data['message'] as String;
-      } else if (statusCode != null && statusCode >= 400) {
-        message = '저장에 실패했습니다. 다시 시도해 주세요.';
-      } else {
-        message = '저장에 실패했습니다. 다시 시도해 주세요.';
-      }
-      _showSnackBar(message);
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackBar('저장에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
+    if (!mounted) return;
+    await ref.read(pendingUploadsProvider.notifier).addFile(
+          folderId: savedFolder.foldersId,
+          textContent: _memoController.text.trim(),
+          fileBytes: fileBytes,
+          fileName: selectedFile.name,
+        );
+    if (!mounted) return;
+    Navigator.of(context).pop(savedFolder);
   }
 
   Future<List<int>?> _readFileBytes(String path) async {

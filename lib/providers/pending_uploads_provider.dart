@@ -5,16 +5,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/database/pending_upload_db.dart';
 import '../controllers/home_controller.dart';
-import '../models/pending_image_upload.dart';
+import '../models/pending_save_item.dart';
 import '../repositories/home_repository.dart';
 
 const _maxRetries = 2;
 
 final pendingUploadDbProvider = Provider<PendingUploadDb>((ref) => PendingUploadDb());
 
-class PendingUploadsNotifier extends Notifier<List<PendingImageUpload>> {
+class PendingUploadsNotifier extends Notifier<List<PendingSaveItem>> {
   @override
-  List<PendingImageUpload> build() => [];
+  List<PendingSaveItem> build() => [];
 
   PendingUploadDb get _db => ref.read(pendingUploadDbProvider);
 
@@ -25,89 +25,190 @@ class PendingUploadsNotifier extends Notifier<List<PendingImageUpload>> {
 
     state = saved;
 
-    for (final upload in saved) {
-      if (upload.status == PendingUploadStatus.uploading) {
-        // 앱 종료 전 진행 중이었던 항목 → 재시도
-        await _upload(upload);
+    for (final item in saved) {
+      if (item.status == PendingSaveStatus.uploading) {
+        await _process(item);
       }
-      // failed 항목은 UI에 재시도 버튼으로 노출
     }
   }
 
+  Future<void> addImage({
+    required int folderId,
+    required String textContent,
+    required List<({List<int> bytes, String fileName})> images,
+  }) {
+    final blobs = images
+        .map(
+          (img) => PendingBlobItem(
+            bytes: img.bytes is Uint8List
+                ? img.bytes as Uint8List
+                : Uint8List.fromList(img.bytes),
+            fileName: img.fileName,
+          ),
+        )
+        .toList();
+    return _enqueue(
+      PendingSaveItem(
+        id: _newId(),
+        type: PendingSaveType.image,
+        folderId: folderId,
+        textContent: textContent,
+        blobs: blobs,
+      ),
+    );
+  }
+
+  Future<void> addNote({
+    required int folderId,
+    required String textContent,
+  }) {
+    return _enqueue(
+      PendingSaveItem(
+        id: _newId(),
+        type: PendingSaveType.note,
+        folderId: folderId,
+        textContent: textContent,
+      ),
+    );
+  }
+
+  Future<void> addLink({
+    required int folderId,
+    required String linksUrl,
+    String? linksName,
+    String? textContent,
+    String? linksThumbnail,
+  }) {
+    return _enqueue(
+      PendingSaveItem(
+        id: _newId(),
+        type: PendingSaveType.link,
+        folderId: folderId,
+        textContent: textContent ?? '',
+        linksUrl: linksUrl,
+        linksName: linksName,
+        linksThumbnail: linksThumbnail,
+      ),
+    );
+  }
+
+  Future<void> addFile({
+    required int folderId,
+    required String textContent,
+    required List<int> fileBytes,
+    required String fileName,
+  }) {
+    final bytes = fileBytes is Uint8List
+        ? fileBytes
+        : Uint8List.fromList(fileBytes);
+    return _enqueue(
+      PendingSaveItem(
+        id: _newId(),
+        type: PendingSaveType.file,
+        folderId: folderId,
+        textContent: textContent,
+        blobs: [PendingBlobItem(bytes: bytes, fileName: fileName)],
+      ),
+    );
+  }
+
+  /// 기존 이미지 저장 호출 호환.
   Future<void> add({
     required int folderId,
     required String textContent,
     required List<({List<int> bytes, String fileName})> images,
-  }) async {
-    final id = '${DateTime.now().microsecondsSinceEpoch}';
-    final items = images
-        .map((img) => PendingImageItem(
-              bytes: img.bytes is Uint8List
-                  ? img.bytes as Uint8List
-                  : Uint8List.fromList(img.bytes),
-              fileName: img.fileName,
-            ))
-        .toList();
-
-    final upload = PendingImageUpload(
-      id: id,
+  }) {
+    return addImage(
       folderId: folderId,
       textContent: textContent,
-      items: items,
+      images: images,
     );
-
-    // DB에 먼저 저장 (앱 종료 대비) - 업로드는 비동기로 시작
-    await _db.insert(upload);
-    state = [...state, upload];
-    unawaited(_upload(upload));
   }
 
   Future<void> retry(String id) async {
-    final upload = state.where((u) => u.id == id).firstOrNull;
-    if (upload == null) return;
+    final item = state.where((u) => u.id == id).firstOrNull;
+    if (item == null) return;
 
-    final updated = upload.copyWith(
-      status: PendingUploadStatus.uploading,
+    final updated = item.copyWith(
+      status: PendingSaveStatus.uploading,
       retryCount: 0,
     );
     _updateState(updated);
-    await _db.updateStatus(id, PendingUploadStatus.uploading, 0);
-    await _upload(state.firstWhere((u) => u.id == id));
+    await _db.updateStatus(id, PendingSaveStatus.uploading, 0);
+    await _process(state.firstWhere((u) => u.id == id));
   }
 
-  Future<void> _upload(PendingImageUpload upload) async {
+  Future<void> _enqueue(PendingSaveItem item) async {
+    await _db.insert(item);
+    state = [...state, item];
+    unawaited(_process(item));
+  }
+
+  Future<void> _process(PendingSaveItem item) async {
     final repository = ref.read(homeRepositoryProvider);
 
     for (int attempt = 0; attempt <= _maxRetries; attempt++) {
       try {
-        await repository.createImages(
-          foldersIdList: [upload.folderId],
-          textContent: upload.textContent,
-          images: upload.items
-              .map((item) => (bytes: item.bytes as List<int>, fileName: item.fileName))
-              .toList(),
-        );
-        // 성공: DB + 메모리에서 제거
-        await _db.delete(upload.id);
-        _remove(upload.id);
-        ref.invalidate(pageItemsProvider(upload.folderId));
-        // 메인 화면 보관함 갯수(itemsCount) 갱신
+        await _send(repository, item);
+        await _db.delete(item.id);
+        _remove(item.id);
+        ref.invalidate(pageItemsProvider(item.folderId));
         unawaited(ref.read(homeProvider.notifier).refresh(silent: true));
         return;
       } catch (_) {
         if (attempt < _maxRetries) continue;
-        // 최대 재시도 초과: failed 상태로 전환
-        final failed = upload.copyWith(
-          status: PendingUploadStatus.failed,
+        final failed = item.copyWith(
+          status: PendingSaveStatus.failed,
           retryCount: attempt,
         );
         _updateState(failed);
-        await _db.updateStatus(upload.id, PendingUploadStatus.failed, attempt);
+        await _db.updateStatus(item.id, PendingSaveStatus.failed, attempt);
       }
     }
   }
 
-  void _updateState(PendingImageUpload updated) {
+  Future<void> _send(HomeRepository repository, PendingSaveItem item) async {
+    switch (item.type) {
+      case PendingSaveType.note:
+        await repository.createText(
+          foldersIdList: [item.folderId],
+          textContent: item.textContent,
+        );
+      case PendingSaveType.link:
+        await repository.createLink(
+          foldersIdList: [item.folderId],
+          linksUrl: item.linksUrl!,
+          linksName: _emptyToNull(item.linksName),
+          textContent: _emptyToNull(item.textContent),
+          linksThumbnail: _emptyToNull(item.linksThumbnail),
+        );
+      case PendingSaveType.file:
+        final blob = item.blobs.first;
+        await repository.createFile(
+          foldersIdList: [item.folderId],
+          textContent: item.textContent,
+          fileBytes: blob.bytes,
+          fileName: blob.fileName,
+        );
+      case PendingSaveType.image:
+        await repository.createImages(
+          foldersIdList: [item.folderId],
+          textContent: item.textContent,
+          images: item.blobs
+              .map((b) => (bytes: b.bytes as List<int>, fileName: b.fileName))
+              .toList(),
+        );
+    }
+  }
+
+  String? _emptyToNull(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return value;
+  }
+
+  String _newId() => '${DateTime.now().microsecondsSinceEpoch}';
+
+  void _updateState(PendingSaveItem updated) {
     state = [
       for (final u in state)
         if (u.id == updated.id) updated else u,
@@ -120,6 +221,6 @@ class PendingUploadsNotifier extends Notifier<List<PendingImageUpload>> {
 }
 
 final pendingUploadsProvider =
-    NotifierProvider<PendingUploadsNotifier, List<PendingImageUpload>>(
+    NotifierProvider<PendingUploadsNotifier, List<PendingSaveItem>>(
   PendingUploadsNotifier.new,
 );
