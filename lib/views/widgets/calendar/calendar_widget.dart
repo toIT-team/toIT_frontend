@@ -6,6 +6,7 @@ import '../../../controllers/calendar_controller.dart';
 import '../../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import 'calendar_grid.dart';
 import 'calendar_header.dart';
+import 'calendar_year_month_picker.dart';
 import 'day_events_bottom_sheet.dart';
 
 /// 메인 캘린더 위젯
@@ -86,115 +87,6 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
     showDayEventsBottomSheet(context, date, dayEvents);
   }
 
-  /// 년/월 선택 피커 (딤 없음, 월 라벨 바로 아래 · 그림자만으로 떠 보이게)
-  void _showYearMonthPicker(BuildContext context, DateTime currentMonth) {
-    var selectedYear = currentMonth.year;
-    var selectedMonth = currentMonth.month;
-
-    final mediaQuery = MediaQuery.of(context);
-    final overlayState = Overlay.of(context);
-    final overlayBox =
-        overlayState.context.findRenderObject() as RenderBox?;
-
-    const horizontalPad = 20.0;
-    final screenW = mediaQuery.size.width;
-    final panelWidth = (screenW - horizontalPad * 2).clamp(260.0, 320.0);
-
-    double panelLeft = (screenW - panelWidth) / 2;
-    double panelTop = mediaQuery.padding.top + 56 + 48;
-
-    final anchorCtx = _monthAnchorKey.currentContext;
-    if (anchorCtx != null &&
-        overlayBox != null &&
-        overlayBox.attached) {
-      final anchorBox = anchorCtx.findRenderObject() as RenderBox?;
-      if (anchorBox != null && anchorBox.attached) {
-        final origin = anchorBox.localToGlobal(
-          Offset.zero,
-          ancestor: overlayBox,
-        );
-        final centerX = origin.dx + anchorBox.size.width / 2;
-        panelLeft = (centerX - panelWidth / 2).clamp(
-          horizontalPad,
-          screenW - horizontalPad - panelWidth,
-        );
-        panelTop = origin.dy + anchorBox.size.height + 8;
-      }
-    }
-
-    showGeneralDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel:
-          MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.transparent,
-      transitionDuration: Duration.zero,
-      pageBuilder: (dialogContext, animation, secondaryAnimation) {
-        return Material(
-          type: MaterialType.transparency,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () => Navigator.of(dialogContext).pop(),
-                ),
-              ),
-              Positioned(
-                left: panelLeft,
-                top: panelTop,
-                width: panelWidth,
-                height: 292,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {},
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          offset: const Offset(0, 10),
-                          blurRadius: 28,
-                          spreadRadius: 0,
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          offset: const Offset(0, 4),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: _YearMonthWheelPicker(
-                        initialMonth: currentMonth,
-                        onSelectionChanged: (y, m) {
-                          selectedYear = y;
-                          selectedMonth = m;
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    ).then((_) {
-      if (!context.mounted) return;
-      final unchanged = selectedYear == currentMonth.year &&
-          selectedMonth == currentMonth.month;
-      if (unchanged) return;
-      ref.read(calendarProvider.notifier).goToMonth(
-            DateTime(selectedYear, selectedMonth, 1),
-          );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     // 헤더용 focusedMonth, 로딩 상태 watch
@@ -239,15 +131,20 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
       children: [
         Column(
           children: [
-            // 헤더
             CalendarHeader(
-              monthSelectorKey: _monthAnchorKey,
-              focusedMonth: focusedMonth,
-              onMonthTap: () {
-                _showYearMonthPicker(context, focusedMonth);
-              },
-            ),
-            // 캘린더 본체 (스와이프 가능)
+                monthSelectorKey: _monthAnchorKey,
+                focusedMonth: focusedMonth,
+                onMonthTap: () {
+                  showCalendarYearMonthPicker(
+                    context,
+                    ref,
+                    anchorKey: _monthAnchorKey,
+                    currentMonth: focusedMonth,
+                    fallbackPanelTop:
+                        MediaQuery.paddingOf(context).top + 56 + 48,
+                  );
+                },
+              ),
             Expanded(
               child: PageView.builder(
             controller: _pageController,
@@ -284,138 +181,6 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
             ),
           ),
       ],
-    );
-  }
-}
-
-/// 년·월 휠 (스크롤 컨트롤러 생명주기 분리)
-class _YearMonthWheelPicker extends StatefulWidget {
-  const _YearMonthWheelPicker({
-    required this.initialMonth,
-    required this.onSelectionChanged,
-  });
-
-  final DateTime initialMonth;
-  final void Function(int year, int month) onSelectionChanged;
-
-  @override
-  State<_YearMonthWheelPicker> createState() =>
-      _YearMonthWheelPickerState();
-}
-
-class _YearMonthWheelPickerState extends State<_YearMonthWheelPicker> {
-  static const int _yearBase = 2020;
-  static const int _yearCount = 20;
-
-  late int _selectedYear;
-  late int _selectedMonth;
-  late FixedExtentScrollController _yearController;
-  late FixedExtentScrollController _monthController;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedYear = widget.initialMonth.year;
-    _selectedMonth = widget.initialMonth.month;
-    _yearController = FixedExtentScrollController(
-      initialItem: (_selectedYear - _yearBase).clamp(0, _yearCount - 1),
-    );
-    _monthController = FixedExtentScrollController(
-      initialItem: _selectedMonth - 1,
-    );
-  }
-
-  @override
-  void dispose() {
-    _yearController.dispose();
-    _monthController.dispose();
-    super.dispose();
-  }
-
-  void _emit() {
-    widget.onSelectionChanged(_selectedYear, _selectedMonth);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ListWheelScrollView.useDelegate(
-              controller: _yearController,
-              itemExtent: 44,
-              perspective: 0.005,
-              diameterRatio: 1.5,
-              physics: const FixedExtentScrollPhysics(),
-              onSelectedItemChanged: (index) {
-                setState(() {
-                  _selectedYear = _yearBase + index;
-                });
-                _emit();
-              },
-              childDelegate: ListWheelChildBuilderDelegate(
-                childCount: _yearCount,
-                builder: (context, index) {
-                  final year = _yearBase + index;
-                  final isSelected = year == _selectedYear;
-                  return Center(
-                    child: Text(
-                      '$year년',
-                      style: TextStyle(
-                        fontSize: isSelected ? 20 : 16,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isSelected
-                            ? AppColors.gray900
-                            : AppColors.gray600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListWheelScrollView.useDelegate(
-              controller: _monthController,
-              itemExtent: 44,
-              perspective: 0.005,
-              diameterRatio: 1.5,
-              physics: const FixedExtentScrollPhysics(),
-              onSelectedItemChanged: (index) {
-                setState(() {
-                  _selectedMonth = index + 1;
-                });
-                _emit();
-              },
-              childDelegate: ListWheelChildBuilderDelegate(
-                childCount: 12,
-                builder: (context, index) {
-                  final month = index + 1;
-                  final isSelected = month == _selectedMonth;
-                  return Center(
-                    child: Text(
-                      '$month월',
-                      style: TextStyle(
-                        fontSize: isSelected ? 20 : 16,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: isSelected
-                            ? AppColors.gray900
-                            : AppColors.gray600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
