@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/calendar_utils.dart';
 import '../../../models/calendar/calendar_event.dart';
+import 'calendar_constants.dart';
 import 'calendar_day_cell.dart';
 import 'event_chip.dart';
 
@@ -36,7 +37,7 @@ class CalendarGrid extends ConsumerWidget {
         _buildWeekdayHeader(),
         // 날짜 그리드
         Expanded(
-          child: _buildDaysGrid(days, eventIndex),
+          child: _buildDaysGrid(context, days, eventIndex),
         ),
       ],
     );
@@ -74,22 +75,26 @@ class CalendarGrid extends ConsumerWidget {
 
   /// 날짜 그리드 위젯
   Widget _buildDaysGrid(
+    BuildContext context,
     List<DateTime> days,
     CalendarEventIndex eventIndex,
   ) {
-    // 주(week) 단위로 분할
+    final bottomPad = calendarScrollBottomPadding(context);
     final weeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
       weeks.add(days.sublist(i, i + 7));
     }
 
     return SingleChildScrollView(
-      physics: const ClampingScrollPhysics(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: weeks
-            .map((week) => _buildWeekRow(week, eventIndex))
-            .toList(),
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomPad),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: weeks
+              .map((week) => _buildWeekRow(week, eventIndex))
+              .toList(),
+        ),
       ),
     );
   }

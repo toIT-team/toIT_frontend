@@ -12,6 +12,26 @@ import '../widgets/home/home_app_bar.dart';
 class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 
+  void _openMy(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const MyScreen()));
+  }
+
+  void _openSearch(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
+    );
+  }
+
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
@@ -20,23 +40,9 @@ class CalendarScreen extends ConsumerWidget {
         preferredSize: const Size.fromHeight(56),
         child: HomeAppBar(
           title: '캘린더',
-          onMenuPressed: () {
-            Navigator.of(
-              context,
-            ).push(MaterialPageRoute<void>(builder: (_) => const MyScreen()));
-          },
-          onSearchPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
-            );
-          },
-          onNotificationPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const NotificationScreen(),
-              ),
-            );
-          },
+          onMenuPressed: () => _openMy(context),
+          onSearchPressed: () => _openSearch(context),
+          onNotificationPressed: () => _openNotifications(context),
         ),
       ),
       body: const CalendarWidget(),
