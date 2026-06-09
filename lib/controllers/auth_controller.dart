@@ -90,6 +90,7 @@ class AuthController extends Notifier<AuthState> {
         userId: userId,
       );
       await _authService.syncExistingTokenToAppGroup();
+      unawaited(_authService.fetchAndSaveCloudFrontCookies());
       unawaited(
         ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
               promptForPermission: true,
@@ -151,6 +152,7 @@ class AuthController extends Notifier<AuthState> {
               userId: userId,
             );
             _bumpSessionRefreshTick();
+            unawaited(_authService.fetchAndSaveCloudFrontCookies());
             unawaited(
               ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
                     promptForPermission: true,
@@ -211,7 +213,10 @@ class AuthController extends Notifier<AuthState> {
 
   /// 로그아웃
   Future<void> logout() async {
-    await _authService.clearTokens();
+    await Future.wait([
+      _authService.clearTokens(),
+      _authService.clearCloudFrontCookies(),
+    ]);
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
     // debugPrint('[AuthController] 로그아웃 완료');
@@ -219,7 +224,10 @@ class AuthController extends Notifier<AuthState> {
 
   /// 토큰 만료 시 강제 로그아웃 (401 인터셉터에서 호출)
   Future<void> forceLogout() async {
-    await _authService.clearTokens();
+    await Future.wait([
+      _authService.clearTokens(),
+      _authService.clearCloudFrontCookies(),
+    ]);
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
     // debugPrint('[AuthController] 토큰 만료 → 강제 로그아웃');

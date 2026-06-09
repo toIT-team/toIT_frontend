@@ -115,6 +115,8 @@ Future<AttachmentDownloadResult> downloadAttachmentFromPresignedUrl({
   required String presignedUrl,
   required String fileName,
   String attachmentsExtension = '',
+  Map<String, String>? cookies,
+  Future<Map<String, String>?> Function()? onRefreshCookies,
 }) async {
   if (presignedUrl.trim().isEmpty) {
     throw const AttachmentDownloadException(
@@ -135,19 +137,39 @@ Future<AttachmentDownloadResult> downloadAttachmentFromPresignedUrl({
     '${uniquePrefix}_$safeFileName',
   );
 
-  final dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 120),
-      followRedirects: true,
-      validateStatus: (status) =>
-          status != null && status >= 200 && status < 400,
-      headers: <String, dynamic>{},
-    ),
-  );
+  Future<void> attempt(Map<String, String>? c) async {
+    final cookieHeader = c?.entries.map((e) => '${e.key}=${e.value}').join('; ');
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 120),
+        followRedirects: true,
+        validateStatus: (status) =>
+            status != null && status >= 200 && status < 400,
+        headers: <String, dynamic>{
+          if (cookieHeader != null) 'Cookie': cookieHeader,
+        },
+      ),
+    );
+    await dio.download(presignedUrl, savePath);
+  }
 
   try {
-    await dio.download(presignedUrl, savePath);
+    try {
+      await attempt(cookies);
+    } on DioException catch (e) {
+      // 쿠키 만료(403) 시 재발급 후 1회 재시도
+      if (e.response?.statusCode == 403 && onRefreshCookies != null) {
+        final refreshed = await onRefreshCookies();
+        if (refreshed != null) {
+          await attempt(refreshed);
+        } else {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+    }
   } on DioException catch (e) {
     throw AttachmentDownloadException(
       AttachmentDownloadErrorKind.network,

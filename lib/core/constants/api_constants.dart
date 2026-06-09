@@ -15,6 +15,17 @@ class ApiConstants {
     return 'http://localhost:8080';
   }
 
+  /// CloudFront CDN 기본 URL (`.env`의 `CDN_BASE_URL`)
+  /// 이미지 조회 시 objectKey와 조합해 CloudFront URL을 생성한다.
+  static String get cdnBaseUrl {
+    final raw = dotenv.maybeGet('CDN_BASE_URL');
+    final trimmed = raw?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      return trimmed;
+    }
+    return 'https://dd62lhoovirrw.cloudfront.net';
+  }
+
   /// 요청 타임아웃 (밀리초)
   static const int connectTimeout = 60000;
   static const int receiveTimeout = 60000;
@@ -96,6 +107,9 @@ class ApiConstants {
   /// 액세스 토큰 재발급 (POST, body: { refreshToken })
   /// 응답: { accessToken: string }
   static const String reissueEndpoint = '/api/auth/reissue';
+
+  /// CloudFront Signed Cookie 발급 및 재발급 (GET, JWT 인증 필요)
+  static const String cloudFrontCookieEndpoint = '/api/auth/cloudfront/cookie';
 
   /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
   static const String fcmEndpoint = '/fcm';
