@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/utils/cloudfront_url_builder.dart';
+import '../../core/widgets/cloudfront_image.dart';
 import '../../models/dto/page_items_response_dto.dart';
 
 /// 이미지 상세 화면
@@ -93,27 +95,26 @@ class _ImageDetailScreenState extends State<ImageDetailScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 child: SizedBox(
                   height: imageHeight,
-                  child: _currentImage.presignedUrl.isNotEmpty
-                      ? Image.network(
-                          _currentImage.presignedUrl,
+                  child: _currentImage.objectKey.isNotEmpty
+                      ? CloudFrontImage(
+                          url: buildResizeImageUrl(
+                            objectKey: _currentImage.objectKey,
+                            displayWidth: 800,
+                          ),
                           fit: BoxFit.cover,
-                          loadingBuilder: (_, child, progress) {
-                            if (progress == null) return child;
-                            return Container(
-                              color: AppColors.neutral100,
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
+                          loadingWidget: Container(
+                            color: AppColors.neutral100,
+                            child: const Center(
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
                               ),
-                            );
-                          },
-                          errorBuilder: (_, __, ___) =>
-                              Container(color: AppColors.borderLight),
+                            ),
+                          ),
+                          errorWidget: Container(color: AppColors.borderLight),
                         )
                       : Container(color: AppColors.borderLight),
                 ),
