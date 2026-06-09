@@ -145,7 +145,6 @@ class AuthController extends Notifier<AuthState> {
               refreshToken: callbackData.refreshToken!,
             );
             await _authService.printStoredUserInfo();
-            debugPrint('[AuthController] accessToken: ${callbackData.accessToken}');
             final userId =
                 await _authService.getUserIdFromToken();
             state = AuthState(
