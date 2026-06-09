@@ -13,6 +13,7 @@ class HomeAppBar extends ConsumerWidget {
   const HomeAppBar({
     super.key,
     this.title = '마이',
+    this.titleWidget,
     this.onMenuPressed,
     this.onSearchPressed,
     this.onNotificationPressed,
@@ -20,6 +21,9 @@ class HomeAppBar extends ConsumerWidget {
   });
 
   final String title;
+
+  /// 지정 시 [title] 대신 표시 (캘린더 preview 등)
+  final Widget? titleWidget;
 
   /// `true`면 희미한 아이콘(흰색) — 그라데이션/어두운 상단 배경용(홈).
   /// `false`면 어두운 아이콘 — 밝은 배경용(캘린더).
@@ -60,14 +64,17 @@ class HomeAppBar extends ConsumerWidget {
             icon: const Icon(Icons.menu, color: AppColors.gray900),
           ),
           const SizedBox(width: 0),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.gray900,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+          if (titleWidget != null)
+            titleWidget!
+          else
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.gray900,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
           const Spacer(),
           IconButton(
             icon: Image.asset(AppAssets.searchIcon, width: 24, height: 24),

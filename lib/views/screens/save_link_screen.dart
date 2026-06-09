@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/system_ui_insets.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../models/home/folder_item.dart';
+import '../../providers/pending_uploads_provider.dart';
 import '../../repositories/home_repository.dart';
 import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/move_to_folder_sheet.dart';
@@ -152,29 +153,20 @@ class _SaveLinkScreenState extends ConsumerState<SaveLinkScreen> {
     }
 
     setState(() => _isSaving = true);
-    try {
-      final repository = ref.read(homeRepositoryProvider);
-      final title = _linkTitleController.text.trim();
-      final desc = _linkDescController.text.trim();
-      await repository.createLink(
-        foldersIdList: [_selectedFolder!.foldersId],
-        linksUrl: link,
-        linksName: title.isEmpty ? null : title,
-        textContent: desc.isEmpty ? null : desc,
-        linksThumbnail: _linksThumbnail,
-      );
-      await ref.read(homeProvider.notifier).refresh();
-      ref.invalidate(pageItemsProvider(_selectedFolder!.foldersId));
-      if (!mounted) return;
-      _showSnackBar('링크가 저장되었습니다.');
-      // 저장된 보관함을 호출자에게 알려, 해당 보관함의 링크 탭으로 이동시킨다.
-      Navigator.of(context).pop(_selectedFolder);
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackBar('저장에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
+    final savedFolder = _selectedFolder!;
+    final title = _linkTitleController.text.trim();
+    final desc = _linkDescController.text.trim();
+
+    if (!mounted) return;
+    await ref.read(pendingUploadsProvider.notifier).addLink(
+          folderId: savedFolder.foldersId,
+          linksUrl: link,
+          linksName: title.isEmpty ? null : title,
+          textContent: desc.isEmpty ? null : desc,
+          linksThumbnail: _linksThumbnail,
+        );
+    if (!mounted) return;
+    Navigator.of(context).pop(savedFolder);
   }
 
   void _showSnackBar(String message) {
