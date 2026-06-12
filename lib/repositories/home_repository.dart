@@ -302,9 +302,13 @@ class HomeRepository {
     final confirmMs = confirmSw.elapsedMilliseconds;
 
     final totalMs = totalSw.elapsedMilliseconds;
+    final sizes = [
+      for (int i = 0; i < compressed.length; i++)
+        'img${i + 1}=${(compressed[i].length / 1024).toStringAsFixed(1)}KB',
+    ].join('  ');
     debugPrint(
-      '[이미지 업로드] ${images.length}장  '
-      'presign=${presignMs}ms  s3=${s3Ms}ms  confirm=${confirmMs}ms  '
+      '[이미지 업로드] ${images.length}장  $sizes\n'
+      '  presign=${presignMs}ms  s3=${s3Ms}ms  confirm=${confirmMs}ms  '
       'total=${totalMs}ms',
     );
     return (presignMs: presignMs, s3Ms: s3Ms, confirmMs: confirmMs, totalMs: totalMs);
