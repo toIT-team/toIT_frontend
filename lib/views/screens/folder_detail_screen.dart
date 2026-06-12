@@ -44,6 +44,8 @@ import 'save_link_screen.dart';
 import 'save_note_screen.dart';
 import 'event_form_screen.dart';
 import 'search_screen.dart';
+import '../../core/widgets/s3_benchmark_image.dart';
+import '../../services/s3_bench_service.dart';
 
 /// 보관함 상세 화면 (링크 / 노트 / 파일 / 이미지 탭)
 /// GET /page/items API 연동
@@ -89,6 +91,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
       vsync: this,
       initialIndex: initialIndex.clamp(0, tabCount - 1),
     );
+    // bench URL은 s3BenchItemsProvider가 자동으로 fetch — 별도 run() 불필요
   }
 
   @override
@@ -890,6 +893,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
               .where((u) => u.folderId == widget.foldersId)
               .toList();
           return _ImageTabContent(
+            foldersId: widget.foldersId,
             images: data.images,
             pendingUploads: pending,
             onImageLongPress: _showImageKebabSheet,
@@ -1857,12 +1861,14 @@ String _formatAttachmentSize(double sizeInBytes) {
 
 // ─── 이미지 탭 (API images[]) ───
 class _ImageTabContent extends ConsumerWidget {
+  final int foldersId;
   final List<AttachmentImageDto> images;
   final List<PendingImageUpload> pendingUploads;
   final void Function(AttachmentImageDto image) onImageLongPress;
   final void Function(AttachmentImageDto image) onImageTap;
 
   const _ImageTabContent({
+    required this.foldersId,
     required this.images,
     required this.pendingUploads,
     required this.onImageLongPress,
@@ -1883,6 +1889,10 @@ class _ImageTabContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final benchItems = ref
+        .watch(s3BenchItemsProvider(foldersId))
+        .valueOrNull ?? [];
+
     final pendingItems = pendingUploads
         .expand((u) => u.items.map((item) => (item: item, upload: u)))
         .toList();
@@ -1909,6 +1919,14 @@ class _ImageTabContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildSectionToolbar(totalCount),
+        // [측정 전용] S3 presigned URL 벤치마크 트리거 (측정 후 삭제 예정)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          child: ElevatedButton(
+            onPressed: () => ref.read(s3BenchServiceProvider).run(foldersId),
+            child: const Text('S3 벤치마크 실행 (웜업5 + 100회)'),
+          ),
+        ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -1940,7 +1958,11 @@ class _ImageTabContent extends ConsumerWidget {
                             .retry(upload.id),
                       );
                     }
-                    final img = images[index - pendingItems.length];
+                    final imgIndex = index - pendingItems.length;
+                    final img = images[imgIndex];
+                    final benchUrl = imgIndex < benchItems.length
+                        ? benchItems[imgIndex].url
+                        : null;
                     return _TapScale(
                       onTap: () => onImageTap(img),
                       onLongPress: () => onImageLongPress(img),
@@ -1950,6 +1972,7 @@ class _ImageTabContent extends ConsumerWidget {
                         width: tileW,
                         height: tileH,
                         image: img,
+                        benchUrl: benchUrl,
                       ),
                     );
                   },
@@ -1969,38 +1992,37 @@ class _FolderImageCell extends StatelessWidget {
     required this.width,
     required this.height,
     required this.image,
+    this.benchUrl,
   });
 
   final double width;
   final double height;
   final AttachmentImageDto image;
+  final String? benchUrl;
 
   @override
   Widget build(BuildContext context) {
+    final url = benchUrl ?? image.presignedUrl;
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: SizedBox(
         width: width,
         height: height,
-        child: image.presignedUrl.isNotEmpty
-            ? Image.network(
-                image.presignedUrl,
+        child: url.isNotEmpty
+            ? S3BenchmarkImage(
+                url: url,
                 fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    color: AppColors.neutral100,
-                    child: const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                loadingWidget: Container(
+                  color: AppColors.neutral100,
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                  );
-                },
-                errorBuilder: (_, __, ___) =>
-                    Container(color: AppColors.borderLight),
+                  ),
+                ),
+                errorWidget: Container(color: AppColors.borderLight),
               )
             : Container(color: AppColors.borderLight),
       ),

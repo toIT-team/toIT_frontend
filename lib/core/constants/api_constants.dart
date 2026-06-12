@@ -66,6 +66,9 @@ class ApiConstants {
   /// 자료 이미지 추가 (POST, multipart) - legacy
   static const String attachmentsImagesEndpoint = '/attachments/images';
 
+  /// S3 벤치마크용 presigned URL 목록 (GET, folderId 치환 필요)
+  static const String imagesBenchS3Endpoint = '/attachments/images/{folderId}/bench-s3';
+
   /// S3 업로드용 presigned URL 발급 (POST)
   static const String attachmentsPresignEndpoint = '/attachments/presign';
 
