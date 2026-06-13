@@ -31,10 +31,16 @@ import 'views/widgets/common/app_alert_dialog.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  // TODO(FCM-비활성화): 테스트 중 임시 주석
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
+
+  // Android는 google-services 플러그인이 네이티브에서 [DEFAULT] 앱을 자동 초기화하므로
+  // Flutter에서 또 초기화하면 duplicate-app 예외가 발생한다. 이미 초기화된 경우 무시한다.
+  //try {
+  //  await Firebase.initializeApp(
+  //    options: DefaultFirebaseOptions.currentPlatform,
+  //  );
+  //} on FirebaseException catch (e) {
+  //  if (e.code != 'duplicate-app') rethrow;
+  //}
 
   runApp(const ProviderScope(child: MyApp()));
 }
