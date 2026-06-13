@@ -39,11 +39,10 @@ mixin _$EventFormState {
   bool get timeSetting => throw _privateConstructorUsedError;
 
   /// 메모
-  String? get memo => throw _privateConstructorUsedError;
-
-  /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
-  int? get alarmMinutes => throw _privateConstructorUsedError;
-
+  String? get memo =>
+      throw _privateConstructorUsedError; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
+  // int? alarmMinutes,
   /// 폴더/보관함 이름
   String? get folderName => throw _privateConstructorUsedError;
 
@@ -82,7 +81,6 @@ abstract class $EventFormStateCopyWith<$Res> {
     String? endTime,
     bool timeSetting,
     String? memo,
-    int? alarmMinutes,
     String? folderName,
     int? foldersId,
     EventColorToken? appColorToken,
@@ -114,7 +112,6 @@ class _$EventFormStateCopyWithImpl<$Res, $Val extends EventFormState>
     Object? endTime = freezed,
     Object? timeSetting = null,
     Object? memo = freezed,
-    Object? alarmMinutes = freezed,
     Object? folderName = freezed,
     Object? foldersId = freezed,
     Object? appColorToken = freezed,
@@ -155,10 +152,6 @@ class _$EventFormStateCopyWithImpl<$Res, $Val extends EventFormState>
                 ? _value.memo
                 : memo // ignore: cast_nullable_to_non_nullable
                       as String?,
-            alarmMinutes: freezed == alarmMinutes
-                ? _value.alarmMinutes
-                : alarmMinutes // ignore: cast_nullable_to_non_nullable
-                      as int?,
             folderName: freezed == folderName
                 ? _value.folderName
                 : folderName // ignore: cast_nullable_to_non_nullable
@@ -203,7 +196,6 @@ abstract class _$$EventFormStateImplCopyWith<$Res>
     String? endTime,
     bool timeSetting,
     String? memo,
-    int? alarmMinutes,
     String? folderName,
     int? foldersId,
     EventColorToken? appColorToken,
@@ -234,7 +226,6 @@ class __$$EventFormStateImplCopyWithImpl<$Res>
     Object? endTime = freezed,
     Object? timeSetting = null,
     Object? memo = freezed,
-    Object? alarmMinutes = freezed,
     Object? folderName = freezed,
     Object? foldersId = freezed,
     Object? appColorToken = freezed,
@@ -275,10 +266,6 @@ class __$$EventFormStateImplCopyWithImpl<$Res>
             ? _value.memo
             : memo // ignore: cast_nullable_to_non_nullable
                   as String?,
-        alarmMinutes: freezed == alarmMinutes
-            ? _value.alarmMinutes
-            : alarmMinutes // ignore: cast_nullable_to_non_nullable
-                  as int?,
         folderName: freezed == folderName
             ? _value.folderName
             : folderName // ignore: cast_nullable_to_non_nullable
@@ -316,7 +303,6 @@ class _$EventFormStateImpl extends _EventFormState {
     this.endTime,
     this.timeSetting = false,
     this.memo,
-    this.alarmMinutes,
     this.folderName,
     this.foldersId,
     this.appColorToken,
@@ -357,11 +343,9 @@ class _$EventFormStateImpl extends _EventFormState {
   /// 메모
   @override
   final String? memo;
-
-  /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
-  @override
-  final int? alarmMinutes;
-
+  // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
+  // int? alarmMinutes,
   /// 폴더/보관함 이름
   @override
   final String? folderName;
@@ -385,7 +369,7 @@ class _$EventFormStateImpl extends _EventFormState {
 
   @override
   String toString() {
-    return 'EventFormState(id: $id, title: $title, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, memo: $memo, alarmMinutes: $alarmMinutes, folderName: $folderName, foldersId: $foldersId, appColorToken: $appColorToken, isSaving: $isSaving, errorMessage: $errorMessage)';
+    return 'EventFormState(id: $id, title: $title, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, timeSetting: $timeSetting, memo: $memo, folderName: $folderName, foldersId: $foldersId, appColorToken: $appColorToken, isSaving: $isSaving, errorMessage: $errorMessage)';
   }
 
   @override
@@ -404,8 +388,6 @@ class _$EventFormStateImpl extends _EventFormState {
             (identical(other.timeSetting, timeSetting) ||
                 other.timeSetting == timeSetting) &&
             (identical(other.memo, memo) || other.memo == memo) &&
-            (identical(other.alarmMinutes, alarmMinutes) ||
-                other.alarmMinutes == alarmMinutes) &&
             (identical(other.folderName, folderName) ||
                 other.folderName == folderName) &&
             (identical(other.foldersId, foldersId) ||
@@ -429,7 +411,6 @@ class _$EventFormStateImpl extends _EventFormState {
     endTime,
     timeSetting,
     memo,
-    alarmMinutes,
     folderName,
     foldersId,
     appColorToken,
@@ -459,7 +440,6 @@ abstract class _EventFormState extends EventFormState {
     final String? endTime,
     final bool timeSetting,
     final String? memo,
-    final int? alarmMinutes,
     final String? folderName,
     final int? foldersId,
     final EventColorToken? appColorToken,
@@ -498,12 +478,9 @@ abstract class _EventFormState extends EventFormState {
 
   /// 메모
   @override
-  String? get memo;
-
-  /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
-  @override
-  int? get alarmMinutes;
-
+  String? get memo; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
+  // int? alarmMinutes,
   /// 폴더/보관함 이름
   @override
   String? get folderName;

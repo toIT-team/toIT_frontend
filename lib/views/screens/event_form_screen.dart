@@ -222,9 +222,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           startTime: formState.startTime,
           endTime: formState.endTime,
           memo: formState.memo,
-          // TODO(알림-비활성화): 테스트 중 임시 주석 — 알림 미전송
-          alarmState: false,
-          alarmOffsetMinutes: 0,
+          // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+          // alarmState: formState.alarmMinutes != null,
+          // alarmOffsetMinutes: formState.alarmMinutes ?? 0,
           foldersId: formState.foldersId,
         );
 
@@ -259,9 +259,9 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
           startTime: formState.startTime,
           endTime: formState.endTime,
           memo: formState.memo,
-          // TODO(알림-비활성화): 테스트 중 임시 주석 — 알림 미전송
-          alarmState: false,
-          alarmOffsetMinutes: 0,
+          // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+          // alarmState: formState.alarmMinutes != null,
+          // alarmOffsetMinutes: formState.alarmMinutes ?? 0,
           foldersId: formState.foldersId,
         );
 
