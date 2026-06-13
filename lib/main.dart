@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// TODO(FCM-비활성화): 테스트 중 임시 주석
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,18 +11,19 @@ import 'package:flutter/services.dart';
 
 import 'controllers/auth_controller.dart';
 import 'controllers/bootstrap_controller.dart';
-import 'controllers/notifications_page_controller.dart';
-import 'controllers/notifications_unread_count_controller.dart';
-import 'core/constants/api_constants.dart';
-import 'core/deep_link/toit_deep_link.dart';
+// TODO(FCM-비활성화): 테스트 중 임시 주석
+// import 'controllers/notifications_page_controller.dart';
+// import 'controllers/notifications_unread_count_controller.dart';
+// import 'core/constants/api_constants.dart';
+// import 'core/deep_link/toit_deep_link.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
-import 'firebase_options.dart';
+// TODO(FCM-비활성화): 테스트 중 임시 주석
+// import 'firebase_options.dart';
 import 'services/auth_service.dart';
-import 'services/fcm_registration_service.dart';
+// import 'services/fcm_registration_service.dart';
 import 'views/screens/login_screen.dart';
-import 'views/screens/navigation_shell.dart'
-    show NavigationShell, pendingDeepLinkUrlProvider;
+import 'views/screens/navigation_shell.dart' show NavigationShell;
 import 'views/screens/splash_retry_screen.dart';
 import 'views/screens/splash_screen.dart';
 import 'views/widgets/common/app_alert_dialog.dart';
@@ -29,7 +31,10 @@ import 'views/widgets/common/app_alert_dialog.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // TODO(FCM-비활성화): 테스트 중 임시 주석
+  // await Firebase.initializeApp(
+  //   options: DefaultFirebaseOptions.currentPlatform,
+  // );
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -51,154 +56,160 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   /// 부트스트랩이 너무 빨라 화면이 깜빡이는 인상을 주지 않기 위함.
   static const _minSplashDuration = Duration(milliseconds: 1500);
 
-  StreamSubscription<String>? _fcmTokenRefreshSub;
-  StreamSubscription<RemoteMessage>? _fcmOnMessageSub;
+  // TODO(FCM-비활성화): 테스트 중 임시 주석
+  // StreamSubscription<String>? _fcmTokenRefreshSub;
+  // StreamSubscription<RemoteMessage>? _fcmOnMessageSub;
 
   /// 스플래시 최소 노출 시간이 지난 뒤에만 true.
   /// `authState`가 먼저 확정되더라도 이 값이 false인 동안에는 스플래시를 유지한다.
   bool _isSplashFinished = false;
   bool _showSessionExpiredNotice = false;
   bool _isSessionExpiredDialogShowing = false;
-  int? _pendingReadNotificationId;
+  // TODO(FCM-비활성화): 테스트 중 임시 주석
+  // int? _pendingReadNotificationId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    // TODO(FCM-비활성화): 테스트 중 임시 주석
+    // WidgetsBinding.instance.addObserver(this);
     // ProviderScope 첫 빌드가 안정화된 뒤 부트스트랩을 시작한다.
     // initState 즉시 provider state를 변경하면 프레임워크 assert와 충돌할 수 있다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(_initAuth());
     });
-    _bindFcmDeepLinks();
-    _bindFcmTokenRefresh();
-    _bindFcmForegroundIncoming();
+    // TODO(FCM-비활성화): 테스트 중 임시 주석
+    // _bindFcmDeepLinks();
+    // _bindFcmTokenRefresh();
+    // _bindFcmForegroundIncoming();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _fcmTokenRefreshSub?.cancel();
-    _fcmOnMessageSub?.cancel();
+    // TODO(FCM-비활성화): 테스트 중 임시 주석
+    // WidgetsBinding.instance.removeObserver(this);
+    // _fcmTokenRefreshSub?.cancel();
+    // _fcmOnMessageSub?.cancel();
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state != AppLifecycleState.resumed) return;
-    final auth = ref.read(authProvider);
-    if (auth.status != AuthStatus.authenticated) return;
-    unawaited(
-      ref
-          .read(fcmRegistrationServiceProvider)
-          .syncServerRegistration(promptForPermission: false),
-    );
-    // 백그라운드/종료 상태에서 도착한 알림은 포그라운드 핸들러를 거치지 못하므로
-    // resume 시점에 카운트는 즉시 갱신하고, 리스트는 dirty만 찍어 다음 진입 시
-    // 자동 동기화되도록 한다.
-    _refreshUnreadCountIfAuthenticated();
-    _markNotificationsPageDirtyIfAuthenticated();
-  }
-
-  /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
-  void _bindFcmTokenRefresh() {
-    _fcmTokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((
-      String newToken,
-    ) {
-      final auth = ref.read(authProvider);
-      if (auth.status != AuthStatus.authenticated) return;
-      unawaited(
-        ref
-            .read(fcmRegistrationServiceProvider)
-            .syncServerRegistration(
-              promptForPermission: false,
-              fcmToken: newToken,
-            ),
-      );
-    });
-  }
-
-  void _bindFcmDeepLinks() {
-    FirebaseMessaging.onMessageOpenedApp.listen(_onFcmMessageOpened);
-    FirebaseMessaging.instance.getInitialMessage().then((
-      RemoteMessage? message,
-    ) {
-      if (message != null) _onFcmMessageOpened(message);
-    });
-  }
-
-  void _onFcmMessageOpened(RemoteMessage message) {
-    final didScheduleRead = _markNotificationAsReadFromFcm(message);
-    if (!didScheduleRead) {
-      _refreshUnreadCountIfAuthenticated();
-    }
-    final url = ToitDeepLink.extractUrlFromFcmData(message.data);
-    if (url == null) return;
-    ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
-  }
-
-  bool _markNotificationAsReadFromFcm(RemoteMessage message) {
-    final notificationId = ToitDeepLink.extractNotificationIdFromFcmData(
-      message.data,
-    );
-    if (notificationId == null) return false;
-    final authState = ref.read(authProvider);
-    if (authState.status != AuthStatus.authenticated) {
-      // cold start에서 인증 복구보다 push open 콜백이 먼저 들어오면
-      // 읽음 PATCH를 놓치지 않도록 인증 완료 시점까지 보관한다.
-      _pendingReadNotificationId = notificationId;
-      return false;
-    }
-    unawaited(_patchNotificationRead(notificationId));
-    return true;
-  }
-
-  Future<void> _patchNotificationRead(int notificationId) async {
-    try {
-      await ref
-          .read(apiClientProvider)
-          .patch<void>(ApiConstants.notificationReadPath(notificationId));
-    } catch (_) {
-      return;
-    }
-    _refreshUnreadCountIfAuthenticated();
-  }
-
-  /// 포그라운드 알림 수신 시 배지(count)는 즉시 갱신하고,
-  /// 리스트 캐시는 dirty 표시만 남겨 진입 시점에 동기화되도록 한다.
-  void _bindFcmForegroundIncoming() {
-    _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((_) {
-      _refreshUnreadCountIfAuthenticated();
-      _markNotificationsPageDirtyIfAuthenticated();
-    });
-  }
-
-  void _refreshUnreadCountIfAuthenticated() {
-    final cacheKey = _resolveAuthenticatedCacheKey();
-    if (cacheKey == null) return;
-    unawaited(
-      ref.read(notificationsUnreadCountProvider(cacheKey).notifier).refresh(),
-    );
-  }
-
-  void _markNotificationsPageDirtyIfAuthenticated() {
-    final cacheKey = _resolveAuthenticatedCacheKey();
-    if (cacheKey == null) return;
-    ref.read(notificationsPageDirtyProvider(cacheKey).notifier).state = true;
-  }
-
-  /// 인증된 사용자에 대한 (userId, refreshTick) 캐시 키를 반환.
-  /// 미인증이면 null을 돌려 호출자가 조용히 빠져나오게 한다.
-  (int, int)? _resolveAuthenticatedCacheKey() {
-    final authState = ref.read(authProvider);
-    final userId = authState.userId;
-    if (authState.status != AuthStatus.authenticated || userId == null) {
-      return null;
-    }
-    return (userId, ref.read(authSessionRefreshTickProvider));
-  }
+  // TODO(FCM-비활성화): 테스트 중 임시 주석
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   super.didChangeAppLifecycleState(state);
+  //   if (state != AppLifecycleState.resumed) return;
+  //   final auth = ref.read(authProvider);
+  //   if (auth.status != AuthStatus.authenticated) return;
+  //   unawaited(
+  //     ref
+  //         .read(fcmRegistrationServiceProvider)
+  //         .syncServerRegistration(promptForPermission: false),
+  //   );
+  //   // 백그라운드/종료 상태에서 도착한 알림은 포그라운드 핸들러를 거치지 못하므로
+  //   // resume 시점에 카운트는 즉시 갱신하고, 리스트는 dirty만 찍어 다음 진입 시
+  //   // 자동 동기화되도록 한다.
+  //   _refreshUnreadCountIfAuthenticated();
+  //   _markNotificationsPageDirtyIfAuthenticated();
+  // }
+  //
+  // /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
+  // void _bindFcmTokenRefresh() {
+  //   _fcmTokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((
+  //     String newToken,
+  //   ) {
+  //     final auth = ref.read(authProvider);
+  //     if (auth.status != AuthStatus.authenticated) return;
+  //     unawaited(
+  //       ref
+  //           .read(fcmRegistrationServiceProvider)
+  //           .syncServerRegistration(
+  //             promptForPermission: false,
+  //             fcmToken: newToken,
+  //           ),
+  //     );
+  //   });
+  // }
+  //
+  // void _bindFcmDeepLinks() {
+  //   FirebaseMessaging.onMessageOpenedApp.listen(_onFcmMessageOpened);
+  //   FirebaseMessaging.instance.getInitialMessage().then((
+  //     RemoteMessage? message,
+  //   ) {
+  //     if (message != null) _onFcmMessageOpened(message);
+  //   });
+  // }
+  //
+  // void _onFcmMessageOpened(RemoteMessage message) {
+  //   final didScheduleRead = _markNotificationAsReadFromFcm(message);
+  //   if (!didScheduleRead) {
+  //     _refreshUnreadCountIfAuthenticated();
+  //   }
+  //   final url = ToitDeepLink.extractUrlFromFcmData(message.data);
+  //   if (url == null) return;
+  //   ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
+  // }
+  //
+  // bool _markNotificationAsReadFromFcm(RemoteMessage message) {
+  //   final notificationId = ToitDeepLink.extractNotificationIdFromFcmData(
+  //     message.data,
+  //   );
+  //   if (notificationId == null) return false;
+  //   final authState = ref.read(authProvider);
+  //   if (authState.status != AuthStatus.authenticated) {
+  //     // cold start에서 인증 복구보다 push open 콜백이 먼저 들어오면
+  //     // 읽음 PATCH를 놓치지 않도록 인증 완료 시점까지 보관한다.
+  //     _pendingReadNotificationId = notificationId;
+  //     return false;
+  //   }
+  //   unawaited(_patchNotificationRead(notificationId));
+  //   return true;
+  // }
+  //
+  // Future<void> _patchNotificationRead(int notificationId) async {
+  //   try {
+  //     await ref
+  //         .read(apiClientProvider)
+  //         .patch<void>(ApiConstants.notificationReadPath(notificationId));
+  //   } catch (_) {
+  //     return;
+  //   }
+  //   _refreshUnreadCountIfAuthenticated();
+  // }
+  //
+  // /// 포그라운드 알림 수신 시 배지(count)는 즉시 갱신하고,
+  // /// 리스트 캐시는 dirty 표시만 남겨 진입 시점에 동기화되도록 한다.
+  // void _bindFcmForegroundIncoming() {
+  //   _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((_) {
+  //     _refreshUnreadCountIfAuthenticated();
+  //     _markNotificationsPageDirtyIfAuthenticated();
+  //   });
+  // }
+  //
+  // void _refreshUnreadCountIfAuthenticated() {
+  //   final cacheKey = _resolveAuthenticatedCacheKey();
+  //   if (cacheKey == null) return;
+  //   unawaited(
+  //     ref.read(notificationsUnreadCountProvider(cacheKey).notifier).refresh(),
+  //   );
+  // }
+  //
+  // void _markNotificationsPageDirtyIfAuthenticated() {
+  //   final cacheKey = _resolveAuthenticatedCacheKey();
+  //   if (cacheKey == null) return;
+  //   ref.read(notificationsPageDirtyProvider(cacheKey).notifier).state = true;
+  // }
+  //
+  // /// 인증된 사용자에 대한 (userId, refreshTick) 캐시 키를 반환.
+  // /// 미인증이면 null을 돌려 호출자가 조용히 빠져나오게 한다.
+  // (int, int)? _resolveAuthenticatedCacheKey() {
+  //   final authState = ref.read(authProvider);
+  //   final userId = authState.userId;
+  //   if (authState.status != AuthStatus.authenticated || userId == null) {
+  //     return null;
+  //   }
+  //   return (userId, ref.read(authSessionRefreshTickProvider));
+  // }
 
   Future<void> _initAuth() async {
     if (!mounted) return;
@@ -345,7 +356,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void _handleAuthStatusChanged(AuthStatus? previous, AuthStatus next) {
     if (next == AuthStatus.authenticated) {
       _showSessionExpiredNotice = false;
-      _consumePendingNotificationRead();
+      // TODO(FCM-비활성화): 테스트 중 임시 주석
+      // _consumePendingNotificationRead();
       return;
     }
     if (next != AuthStatus.unauthenticated || !_showSessionExpiredNotice) {
@@ -381,10 +393,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     });
   }
 
-  void _consumePendingNotificationRead() {
-    final notificationId = _pendingReadNotificationId;
-    if (notificationId == null) return;
-    _pendingReadNotificationId = null;
-    unawaited(_patchNotificationRead(notificationId));
-  }
+  // TODO(FCM-비활성화): 테스트 중 임시 주석
+  // void _consumePendingNotificationRead() {
+  //   final notificationId = _pendingReadNotificationId;
+  //   if (notificationId == null) return;
+  //   _pendingReadNotificationId = null;
+  //   unawaited(_patchNotificationRead(notificationId));
+  // }
 }

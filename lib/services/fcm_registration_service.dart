@@ -56,6 +56,9 @@ class FcmRegistrationService {
     bool promptForPermission = true,
     String? fcmToken,
   }) async {
+    // TODO(FCM-비활성화): 테스트 중 임시 주석
+    return;
+    /*
     try {
       final NotificationSettings settings;
       if (promptForPermission) {
@@ -65,17 +68,13 @@ class FcmRegistrationService {
             await FirebaseMessaging.instance.getNotificationSettings();
       }
       if (!_isPushAllowed(settings.authorizationStatus)) {
-        // TODO(FCM-콘솔정리): 릴리스 전 삭제
-        // debugPrint(
-          // '[FcmRegistration] 알림 미허용, 서버 등록 생략',
-        // );
         return;
       }
       await _postFcmToken(fcmToken);
     } catch (e, st) {
-      // TODO(FCM-콘솔정리): 릴리스 전 삭제
       // debugPrint('[FcmRegistration] 서버 FCM 등록 실패: $e\n$st');
     }
+    */
   }
 
   static bool _isPushAllowed(AuthorizationStatus status) {
