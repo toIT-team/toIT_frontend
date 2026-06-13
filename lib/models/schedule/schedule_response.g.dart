@@ -105,8 +105,6 @@ _$ScheduleDetailResponseImpl _$$ScheduleDetailResponseImplFromJson(
   endDate: _stringFromJson(json['endDate']),
   startTime: json['startTime'] as String?,
   endTime: json['endTime'] as String?,
-  alarmState: json['alarmState'] as bool? ?? false,
-  alarmOffsetMinutes: (json['alarmOffsetMinutes'] as num?)?.toInt() ?? 0,
   memo: json['memo'] == null ? '' : _stringFromJson(json['memo']),
 );
 
@@ -123,7 +121,5 @@ Map<String, dynamic> _$$ScheduleDetailResponseImplToJson(
   'endDate': instance.endDate,
   'startTime': instance.startTime,
   'endTime': instance.endTime,
-  'alarmState': instance.alarmState,
-  'alarmOffsetMinutes': instance.alarmOffsetMinutes,
   'memo': instance.memo,
 };

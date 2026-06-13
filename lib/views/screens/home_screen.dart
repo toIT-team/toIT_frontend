@@ -6,7 +6,8 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/constants/app_gradients.dart';
 import 'my_screen.dart';
-import 'notification_screen.dart';
+// TODO(FCM-비활성화): 테스트 중 임시 주석
+// import 'notification_screen.dart';
 import 'search_screen.dart';
 import '../widgets/home/home_app_bar.dart';
 import '../widgets/home/greeting_section.dart';
@@ -38,13 +39,14 @@ class HomeScreen extends ConsumerWidget {
                 MaterialPageRoute<void>(builder: (_) => const SearchScreen()),
               );
             },
-            onNotificationPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const NotificationScreen(),
-                ),
-              );
-            },
+            // TODO(FCM-비활성화): 테스트 중 임시 주석
+            // onNotificationPressed: () {
+            //   Navigator.of(context).push(
+            //     MaterialPageRoute<void>(
+            //       builder: (_) => const NotificationScreen(),
+            //     ),
+            //   );
+            // },
           ),
         ),
         body: homeState.isLoading

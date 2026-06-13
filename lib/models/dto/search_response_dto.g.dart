@@ -95,8 +95,6 @@ _$SearchScheduleItemDtoImpl _$$SearchScheduleItemDtoImplFromJson(
   endDate: json['endDate'] as String? ?? '',
   startTime: json['startTime'] as String?,
   endTime: json['endTime'] as String?,
-  alarmState: json['alarmState'] as bool? ?? false,
-  alarmOffsetMinutes: (json['alarmOffsetMinutes'] as num?)?.toInt() ?? 0,
   memo: json['memo'] as String? ?? '',
 );
 
@@ -113,8 +111,6 @@ Map<String, dynamic> _$$SearchScheduleItemDtoImplToJson(
   'endDate': instance.endDate,
   'startTime': instance.startTime,
   'endTime': instance.endTime,
-  'alarmState': instance.alarmState,
-  'alarmOffsetMinutes': instance.alarmOffsetMinutes,
   'memo': instance.memo,
 };
 
