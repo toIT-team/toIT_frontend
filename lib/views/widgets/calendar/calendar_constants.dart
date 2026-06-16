@@ -8,19 +8,32 @@ const double kCalendarDateHeaderHeight = 32.0;
 const double kCalendarEventChipHeight = 16.0;
 const double kCalendarEventChipTopPadding = 2.0;
 const double kCalendarEventSlotHeight = 18.0;
-const int kCalendarMaxVisibleEvents = 3;
-const double kCalendarEventAreaHeight =
-    kCalendarMaxVisibleEvents * kCalendarEventSlotHeight;
 const double kCalendarWeekEventLayerTop =
     kCalendarCellVerticalMargin + kCalendarDateHeaderHeight;
-/// +N 텍스트(fontSize 10) + 상단 여백
-const double kCalendarOverflowAreaHeight = 14.0;
 const double kCalendarCellBottomPadding = 4.0;
-const double kCalendarWeekRowHeight =
+
+// ── 칩 표시 개수 제한 + '+N' 오버플로우 기능 (현재 무제한 표시로 비활성화) ──
+// 다시 제한을 두려면 아래 상수를 살리고, 컨트롤러/그리드/셀의 오버플로우 주석을
+// 함께 해제한다.
+// const int kCalendarMaxVisibleEvents = 3;
+// /// +N 텍스트(fontSize 10) + 상단 여백
+// const double kCalendarOverflowAreaHeight = 14.0;
+
+/// 이벤트 수와 무관하게 기본으로 확보하는 칩 줄 수.
+/// 이벤트가 적어도 셀 높이를 일정하게 유지하고, 이 줄 수를 넘는 주에서만
+/// 셀이 점점 늘어나도록 하는 기준값.
+const int kCalendarMinEventRows = 4;
+
+/// 칩 줄 수에 따른 이벤트 영역 높이를 계산한다.
+double calendarEventAreaHeight(int eventRows) =>
+    eventRows * kCalendarEventSlotHeight;
+
+/// 칩 줄 수에 따른 주(週) 행 높이를 계산한다.
+/// 이벤트 수가 늘어나면 셀 높이도 함께 늘어나도록 동적으로 산출한다.
+double calendarWeekRowHeight(int eventRows) =>
     kCalendarCellVerticalMargin * 2 +
     kCalendarDateHeaderHeight +
-    kCalendarEventAreaHeight +
-    kCalendarOverflowAreaHeight +
+    calendarEventAreaHeight(eventRows) +
     kCalendarCellBottomPadding;
 
 /// 업로드 배너 등 고정 inset용 최소값

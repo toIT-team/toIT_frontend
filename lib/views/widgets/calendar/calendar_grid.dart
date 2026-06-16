@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -115,8 +117,15 @@ class _CalendarWeekRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 이 주에 실제로 쌓인 칩 줄 수만큼 행 높이를 동적으로 확보한다.
+    final eventRows = math.max(
+      kCalendarMinEventRows,
+      eventIndex.getEventRowCountForWeek(week.first),
+    );
+    final eventAreaHeight = calendarEventAreaHeight(eventRows);
+
     return SizedBox(
-      height: kCalendarWeekRowHeight,
+      height: calendarWeekRowHeight(eventRows),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -128,7 +137,7 @@ class _CalendarWeekRow extends ConsumerWidget {
                     child: _WeekDayCell(
                       date: date,
                       focusedMonth: focusedMonth,
-                      eventIndex: eventIndex,
+                      eventAreaHeight: eventAreaHeight,
                       onTap: () => onDayTap?.call(date),
                     ),
                   ),
@@ -139,7 +148,7 @@ class _CalendarWeekRow extends ConsumerWidget {
             left: 0,
             right: 0,
             top: kCalendarWeekEventLayerTop,
-            height: kCalendarEventAreaHeight,
+            height: eventAreaHeight,
             // 이벤트 레이어는 표시 전용이므로 터치를 아래 날짜 셀로 통과시킨다.
             child: IgnorePointer(
               child: _WeekEventLayer(
@@ -159,13 +168,13 @@ class _WeekDayCell extends ConsumerWidget {
   const _WeekDayCell({
     required this.date,
     required this.focusedMonth,
-    required this.eventIndex,
+    required this.eventAreaHeight,
     this.onTap,
   });
 
   final DateTime date;
   final DateTime focusedMonth;
-  final CalendarEventIndex eventIndex;
+  final double eventAreaHeight;
   final VoidCallback? onTap;
 
   @override
@@ -173,14 +182,17 @@ class _WeekDayCell extends ConsumerWidget {
     final selectedDate = ref.watch(selectedDateProvider);
     final isSelected =
         selectedDate != null && CalendarUtils.isSameDay(date, selectedDate);
-    final overflowCount = eventIndex.getOverflowCount(date);
+    // '+N' 표시용 오버플로우 카운트 (현재 비활성화).
+    // 복구하려면 이 위젯에 eventIndex 를 다시 주입하고 CalendarDayCell 로 전달
+    // final overflowCount = eventIndex.getOverflowCount(date);
 
     return CalendarDayCell(
       date: date,
       focusedMonth: focusedMonth,
+      eventAreaHeight: eventAreaHeight,
       isSelected: isSelected,
       onTap: onTap,
-      overflowCount: overflowCount,
+      // overflowCount: overflowCount,
     );
   }
 }
@@ -218,7 +230,8 @@ class _WeekEventLayer extends StatelessWidget {
     // 이벤트별로 이 주에서 처음 보이는(가장 왼쪽) 구간에만 제목을 표시한다.
     final titleStartColByEvent = <String, int>{};
     for (final segment in segments) {
-      if (segment.slot >= kCalendarMaxVisibleEvents) continue;
+      // 표시 개수 제한 (현재 무제한 표시로 비활성화).
+      // if (segment.slot >= kCalendarMaxVisibleEvents) continue;
       final current = titleStartColByEvent[segment.event.id];
       if (current == null || segment.startCol < current) {
         titleStartColByEvent[segment.event.id] = segment.startCol;
@@ -228,8 +241,8 @@ class _WeekEventLayer extends StatelessWidget {
     final bars = <Widget>[];
 
     for (final segment in segments) {
-      if (segment.slot >= kCalendarMaxVisibleEvents) continue;
-
+      // 표시 개수 제한 (현재 무제한 표시로 비활성화).
+      // if (segment.slot >= kCalendarMaxVisibleEvents) continue;
       final barInfo = _weekEventBarInfo(
         event: segment.event,
         week: week,
