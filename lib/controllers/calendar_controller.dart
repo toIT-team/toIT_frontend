@@ -27,7 +27,8 @@ class CalendarEventIndex {
   CalendarEventIndex({
     required this.eventsByDay,
     required this.segmentsByWeek,
-    required this.overflowByDay,
+    // '+N' 오버플로우 기능용 (현재 비활성화).
+    // required this.overflowByDay,
   });
 
   /// 날짜별 이벤트 목록 (key: "yyyy-MM-dd")
@@ -36,16 +37,19 @@ class CalendarEventIndex {
   /// 주별 이벤트 구간 목록 (key: 주 시작일 "yyyy-MM-dd")
   final Map<String, List<CalendarWeekEventSegment>> segmentsByWeek;
 
-  /// 날짜별 오버플로우 카운트 (key: "yyyy-MM-dd")
-  final Map<String, int> overflowByDay;
+  /// 날짜별 오버플로우 카운트 (key: "yyyy-MM-dd") — '+N' 표시용, 현재 비활성화.
+  // final Map<String, int> overflowByDay;
 
-  static const int maxVisibleEvents = 3;
+  /// 칩 줄 압축(빈 줄 재사용) 동작의 기준 줄 수.
+  /// 이 줄 이상에 배치된 구간은 아래 줄이 비면 끌어올려 빈 줄을 없앤다.
+  /// (과거 '+N' 표시 제한 기준이던 maxVisibleEvents 와 같은 값)
+  static const int slotCompactionThreshold = 3;
 
   /// 빈 인덱스
   factory CalendarEventIndex.empty() => CalendarEventIndex(
         eventsByDay: {},
         segmentsByWeek: {},
-        overflowByDay: {},
+        // overflowByDay: {},
       );
 
   /// 열 인덱스를 연속 구간으로 분리 (일요일=0 … 토요일=6)
@@ -104,7 +108,8 @@ class CalendarEventIndex {
     final days = CalendarUtils.getDaysInMonth(month);
     final eventsByDay = <String, List<CalendarEvent>>{};
     final segmentsByWeek = <String, List<CalendarWeekEventSegment>>{};
-    final overflowByDay = <String, int>{};
+    // '+N' 표시용 오버플로우 카운트 (현재 비활성화).
+    // final overflowByDay = <String, int>{};
 
     // 주(week) 단위로 분할
     final weeks = <List<DateTime>>[];
@@ -172,13 +177,13 @@ class CalendarEventIndex {
         );
       }
 
-      // 숨겨진(슬롯 3+) 구간만, 빈 줄이 생기면 그 줄로 "등장"시킨다.
-      // 이미 보이는 줄은 절대 건드리지 않고, 한 번 보인 줄은 끝까지 고정.
+      // 압축 기준 줄 이상의 구간은, 아래 빈 줄이 생기면 그 줄로 끌어올린다.
+      // 이미 자리잡은 줄은 건드리지 않고, 한 번 올라온 줄은 끝까지 고정.
       weekSegments = _splitHiddenSegments(weekSegments);
       segmentsByWeek[weekKey] = weekSegments;
     }
 
-    // 날짜별 이벤트 & 오버플로우 계산
+    // 날짜별 이벤트 목록 계산
     for (var dayIndex = 0; dayIndex < days.length; dayIndex++) {
       final day = days[dayIndex];
       final weekStart = days[dayIndex - dayIndex % 7];
@@ -203,27 +208,28 @@ class CalendarEventIndex {
         });
 
       eventsByDay[key] = dayEvents;
-      final hiddenCount = dayEvents
-          .where(
-            (event) =>
-                _slotForDay(
-                  segmentsByWeek,
-                  event.id,
-                  weekStart,
-                  dayCol,
-                ) >=
-                maxVisibleEvents,
-          )
-          .length;
-      if (hiddenCount > 0) {
-        overflowByDay[key] = hiddenCount;
-      }
+      // ── '+N' 오버플로우 카운트 계산 (현재 무제한 표시로 비활성화) ──
+      // final hiddenCount = dayEvents
+      //     .where(
+      //       (event) =>
+      //           _slotForDay(
+      //             segmentsByWeek,
+      //             event.id,
+      //             weekStart,
+      //             dayCol,
+      //           ) >=
+      //           slotCompactionThreshold,
+      //     )
+      //     .length;
+      // if (hiddenCount > 0) {
+      //   overflowByDay[key] = hiddenCount;
+      // }
     }
 
     return CalendarEventIndex(
       eventsByDay: eventsByDay,
       segmentsByWeek: segmentsByWeek,
-      overflowByDay: overflowByDay,
+      // overflowByDay: overflowByDay,
     );
   }
 
@@ -240,7 +246,7 @@ class CalendarEventIndex {
     return true;
   }
 
-  /// 슬롯 3 이상(숨김)인 구간만 나눠 빈 줄을 재사용한다
+  /// 압축 기준 줄(slot) 이상인 구간만 나눠 빈 줄을 재사용한다
   static List<CalendarWeekEventSegment> _splitHiddenSegments(
     List<CalendarWeekEventSegment> segments,
   ) {
@@ -253,7 +259,7 @@ class CalendarEventIndex {
 
     final result = <CalendarWeekEventSegment>[];
     for (final segment in segments) {
-      if (segment.slot < maxVisibleEvents) {
+      if (segment.slot < slotCompactionThreshold) {
         result.add(segment);
         continue;
       }
@@ -283,12 +289,12 @@ class CalendarEventIndex {
         if (occupancy[nextCol].contains(slot)) {
           break;
         }
-        // 아직 숨김 상태인데 다음 날 보이는 줄이 열리면, 거기서 "등장"하도록 끊는다.
-        if (slot >= maxVisibleEvents &&
-            _lowestSlotAt(nextCol, occupancy) < maxVisibleEvents) {
+        // 아직 압축 대상인데 다음 날 더 낮은 줄이 열리면, 거기서 끌어올리도록 끊는다.
+        if (slot >= slotCompactionThreshold &&
+            _lowestSlotAt(nextCol, occupancy) < slotCompactionThreshold) {
           break;
         }
-        // 보이는 줄은 더 낮은 줄이 열려도 그대로 유지 (점프 방지).
+        // 이미 자리잡은 줄은 더 낮은 줄이 열려도 그대로 유지 (점프 방지).
         endCol++;
       }
 
@@ -342,9 +348,19 @@ class CalendarEventIndex {
     return eventsByDay[_dateKey(day)] ?? [];
   }
 
-  /// 특정 날짜의 오버플로우 카운트 조회 O(1)
-  int getOverflowCount(DateTime day) {
-    return overflowByDay[_dateKey(day)] ?? 0;
+  /// 특정 날짜의 오버플로우 카운트 조회 O(1) — '+N' 표시용, 현재 비활성화.
+  // int getOverflowCount(DateTime day) {
+  //   return overflowByDay[_dateKey(day)] ?? 0;
+  // }
+
+  /// 해당 주에서 칩이 차지하는 줄 수 (최대 slot + 1, 없으면 0)
+  int getEventRowCountForWeek(DateTime weekStart) {
+    final segments = segmentsByWeek[_dateKey(weekStart)] ?? [];
+    var maxSlot = -1;
+    for (final segment in segments) {
+      if (segment.slot > maxSlot) maxSlot = segment.slot;
+    }
+    return maxSlot + 1;
   }
 
   /// 주의 이벤트 구간 목록
