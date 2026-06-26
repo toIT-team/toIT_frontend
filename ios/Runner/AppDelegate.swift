@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
-import FirebaseMessaging
+// TODO(FCM-비활성화): 테스트 중 임시 주석
+// import FirebaseMessaging
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -8,8 +9,9 @@ import FirebaseMessaging
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    UNUserNotificationCenter.current().delegate = self
-    application.registerForRemoteNotifications()
+    // TODO(FCM-비활성화): 테스트 중 임시 주석
+    // UNUserNotificationCenter.current().delegate = self
+    // application.registerForRemoteNotifications()
 
     return super.application(
       application,

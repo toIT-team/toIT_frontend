@@ -35,8 +35,9 @@ class EventFormState with _$EventFormState {
     /// 메모
     String? memo,
 
-    /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
-    int? alarmMinutes,
+    // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+    // /// 알림 설정 (분 단위, 예: 10 = 10분 전, 0 = 일정 시작 시)
+    // int? alarmMinutes,
 
     /// 폴더/보관함 이름
     String? folderName,
@@ -88,17 +89,18 @@ class EventFormState with _$EventFormState {
     return startMinutes < endMinutes;
   }
 
-  /// 알림 텍스트 변환
-  String? get alarmText {
-    if (alarmMinutes == null) return null;
-    if (alarmMinutes == 0) {
-      return timeSetting ? '일정 시작' : '이벤트 당일(09:00)';
-    }
-    if (alarmMinutes == 10080) return '1주 전';
-    if (alarmMinutes! < 60) return '$alarmMinutes분 전';
-    if (alarmMinutes! < 1440) return '${alarmMinutes! ~/ 60}시간 전';
-    return '${alarmMinutes! ~/ 1440}일 전';
-  }
+  /// TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // /// 알림 텍스트 변환
+  // String? get alarmText {
+  //   if (alarmMinutes == null) return null;
+  //   if (alarmMinutes == 0) {
+  //     return timeSetting ? '일정 시작' : '이벤트 당일(09:00)';
+  //   }
+  //   if (alarmMinutes == 10080) return '1주 전';
+  //   if (alarmMinutes! < 60) return '$alarmMinutes분 전';
+  //   if (alarmMinutes! < 1440) return '${alarmMinutes! ~/ 60}시간 전';
+  //   return '${alarmMinutes! ~/ 1440}일 전';
+  // }
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
@@ -152,7 +154,8 @@ class EventFormController extends Notifier<EventFormState> {
       endTime: endTime,
       timeSetting: detail.timeSetting,
       memo: detail.memo.isEmpty ? null : detail.memo,
-      alarmMinutes: detail.alarmState ? detail.alarmOffsetMinutes : null,
+      // TODO(알림-비활성화): 테스트 중 임시 주석
+      // alarmMinutes: detail.alarmState ? detail.alarmOffsetMinutes : null,
       folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
       foldersId: detail.foldersId > 0 ? detail.foldersId : null,
       appColorToken: EventColorToken.blue300,
@@ -228,10 +231,11 @@ class EventFormController extends Notifier<EventFormState> {
     state = state.copyWith(memo: value);
   }
 
-  /// 알림 설정 업데이트
-  void updateAlarm(int? minutes) {
-    state = state.copyWith(alarmMinutes: minutes);
-  }
+  /// TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // /// 알림 설정 업데이트
+  // void updateAlarm(int? minutes) {
+  //   state = state.copyWith(alarmMinutes: minutes);
+  // }
 
   /// 폴더 업데이트
   void updateFolder(String? value) {

@@ -12,6 +12,9 @@ import '../core/constants/api_constants.dart';
 /// 보안 저장소 키
 const _kAccessToken = 'access_token';
 const _kRefreshToken = 'refresh_token';
+const _kCfPolicy = 'cf_policy';
+const _kCfSignature = 'cf_signature';
+const _kCfKeyPairId = 'cf_key_pair_id';
 
 /// 소셜 로그인(OAuth 콜백) 결과
 enum AuthCallbackResult { success, cancelled, failed, needsSignup, deletedUser }
@@ -388,6 +391,60 @@ class AuthService {
   String _maskToken(String token) {
     if (token.length <= 8) return '${token.substring(0, token.length)}...';
     return '${token.substring(0, 8)}...(len=${token.length})';
+  }
+
+  // ─── CloudFront Signed Cookie ───
+
+  Future<void> saveCloudFrontCookies(Map<String, dynamic> cookies) async {
+    await Future.wait([
+      _storage.write(key: _kCfPolicy, value: cookies['CloudFront-Policy'] as String?),
+      _storage.write(key: _kCfSignature, value: cookies['CloudFront-Signature'] as String?),
+      _storage.write(key: _kCfKeyPairId, value: cookies['CloudFront-Key-Pair-Id'] as String?),
+    ]);
+  }
+
+  Future<Map<String, String>?> getCloudFrontCookies() async {
+    final results = await Future.wait([
+      _storage.read(key: _kCfPolicy),
+      _storage.read(key: _kCfSignature),
+      _storage.read(key: _kCfKeyPairId),
+    ]);
+    final policy = results[0];
+    final signature = results[1];
+    final keyPairId = results[2];
+    if (policy == null || signature == null || keyPairId == null) return null;
+    return {
+      'CloudFront-Policy': policy,
+      'CloudFront-Signature': signature,
+      'CloudFront-Key-Pair-Id': keyPairId,
+    };
+  }
+
+  Future<void> clearCloudFrontCookies() async {
+    await Future.wait([
+      _storage.delete(key: _kCfPolicy),
+      _storage.delete(key: _kCfSignature),
+      _storage.delete(key: _kCfKeyPairId),
+    ]);
+  }
+
+  /// 서버에서 CloudFront Signed Cookie 발급 후 Secure Storage에 저장
+  /// accessToken이 있어야 호출 가능 (JWT 인증 필요)
+  Future<bool> fetchAndSaveCloudFrontCookies() async {
+    final accessToken = await getAccessToken();
+    if (accessToken == null || accessToken.isEmpty) return false;
+    try {
+      final response = await _dio.get(
+        ApiConstants.cloudFrontCookieEndpoint,
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+      );
+      final data = response.data;
+      if (data is! Map) return false;
+      await saveCloudFrontCookies(Map<String, dynamic>.from(data));
+      return true;
+    } on DioException {
+      return false;
+    }
   }
 
   /// 탈퇴 사용자 계정 복구

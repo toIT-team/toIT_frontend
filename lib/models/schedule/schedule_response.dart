@@ -87,8 +87,9 @@ class ScheduleDetailResponse with _$ScheduleDetailResponse {
     @JsonKey(fromJson: _stringFromJson) required String endDate,
     String? startTime,
     String? endTime,
-    @Default(false) bool alarmState,
-    @Default(0) int alarmOffsetMinutes,
+    // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+    // @Default(false) bool alarmState,
+    // @Default(0) int alarmOffsetMinutes,
     @JsonKey(fromJson: _stringFromJson) @Default('') String memo,
   }) = _ScheduleDetailResponse;
 

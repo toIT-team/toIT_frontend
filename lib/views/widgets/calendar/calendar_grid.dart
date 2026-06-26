@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,21 +23,15 @@ class CalendarGrid extends ConsumerWidget {
   final DateTime focusedMonth;
   final void Function(DateTime)? onDayTap;
 
-  /// 표시할 최대 일정 수
-  static const int maxVisibleEvents = 3;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 해당 월의 이벤트 인덱스만 watch (월별 캐시됨)
     final monthKey = getMonthKey(focusedMonth);
     final eventIndex = ref.watch(eventIndexFamilyProvider(monthKey));
     final days = CalendarUtils.getDaysInMonth(focusedMonth);
 
     return Column(
       children: [
-        // 요일 헤더
         _buildWeekdayHeader(),
-        // 날짜 그리드
         Expanded(
           child: _buildDaysGrid(context, days, eventIndex),
         ),
@@ -43,7 +39,6 @@ class CalendarGrid extends ConsumerWidget {
     );
   }
 
-  /// 요일 헤더 위젯
   Widget _buildWeekdayHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -73,7 +68,6 @@ class CalendarGrid extends ConsumerWidget {
     );
   }
 
-  /// 날짜 그리드 위젯
   Widget _buildDaysGrid(
     BuildContext context,
     List<DateTime> days,
@@ -92,158 +86,239 @@ class CalendarGrid extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: weeks
-              .map((week) => _buildWeekRow(week, eventIndex))
+              .map(
+                (week) => _CalendarWeekRow(
+                  week: week,
+                  focusedMonth: focusedMonth,
+                  eventIndex: eventIndex,
+                  onDayTap: onDayTap,
+                ),
+              )
               .toList(),
         ),
       ),
     );
   }
+}
 
-  /// 주 단위 행 높이 (날짜 + 이벤트 3개 + overflow 표시에 필요한 최소 높이 보장)
-  static const double weekRowHeight = 104.0;
+/// 주 단위 행 (날짜 셀 + 연속 이벤트 바 오버레이)
+class _CalendarWeekRow extends ConsumerWidget {
+  const _CalendarWeekRow({
+    required this.week,
+    required this.focusedMonth,
+    required this.eventIndex,
+    this.onDayTap,
+  });
 
-  /// 주 단위 행 위젯
-  Widget _buildWeekRow(
-    List<DateTime> week,
-    CalendarEventIndex eventIndex,
-  ) {
+  final List<DateTime> week;
+  final DateTime focusedMonth;
+  final CalendarEventIndex eventIndex;
+  final void Function(DateTime)? onDayTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 이 주에 실제로 쌓인 칩 줄 수만큼 행 높이를 동적으로 확보한다.
+    final eventRows = math.max(
+      kCalendarMinEventRows,
+      eventIndex.getEventRowCountForWeek(week.first),
+    );
+    final eventAreaHeight = calendarEventAreaHeight(eventRows);
+
     return SizedBox(
-      height: weekRowHeight,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: week.asMap().entries.map((entry) {
-          final dayIndex = entry.key;
-          final date = entry.value;
-
-          return Expanded(
-            child: _OptimizedDayCell(
-              date: date,
-              dayIndex: dayIndex,
-              week: week,
-              focusedMonth: focusedMonth,
-              eventIndex: eventIndex,
-              onTap: () => onDayTap?.call(date),
+      height: calendarWeekRowHeight(eventRows),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: week
+                .map(
+                  (date) => Expanded(
+                    child: _WeekDayCell(
+                      date: date,
+                      focusedMonth: focusedMonth,
+                      eventAreaHeight: eventAreaHeight,
+                      onTap: () => onDayTap?.call(date),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: kCalendarWeekEventLayerTop,
+            height: eventAreaHeight,
+            // 이벤트 레이어는 표시 전용이므로 터치를 아래 날짜 셀로 통과시킨다.
+            child: IgnorePointer(
+              child: _WeekEventLayer(
+                week: week,
+                eventIndex: eventIndex,
+              ),
             ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// 최적화된 날짜 셀 (selectedDate만 watch)
-class _OptimizedDayCell extends ConsumerWidget {
-  const _OptimizedDayCell({
+/// 날짜 셀 (selectedDate만 watch)
+class _WeekDayCell extends ConsumerWidget {
+  const _WeekDayCell({
     required this.date,
-    required this.dayIndex,
-    required this.week,
     required this.focusedMonth,
-    required this.eventIndex,
+    required this.eventAreaHeight,
     this.onTap,
   });
 
   final DateTime date;
-  final int dayIndex;
-  final List<DateTime> week;
   final DateTime focusedMonth;
-  final CalendarEventIndex eventIndex;
+  final double eventAreaHeight;
   final VoidCallback? onTap;
-
-  static const int maxVisibleEvents = 3;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // selectedDate만 watch → 선택 변경 시 이 셀만 리빌드
     final selectedDate = ref.watch(selectedDateProvider);
     final isSelected =
         selectedDate != null && CalendarUtils.isSameDay(date, selectedDate);
-
-    // O(1) 조회
-    final dayEvents = eventIndex.getEventsForDay(date);
-    final overflowCount = eventIndex.getOverflowCount(date);
-
-    // 일정 위젯 생성
-    final eventWidgets = _buildDayEventWidgets(dayEvents);
+    // '+N' 표시용 오버플로우 카운트 (현재 비활성화).
+    // 복구하려면 이 위젯에 eventIndex 를 다시 주입하고 CalendarDayCell 로 전달
+    // final overflowCount = eventIndex.getOverflowCount(date);
 
     return CalendarDayCell(
       date: date,
       focusedMonth: focusedMonth,
+      eventAreaHeight: eventAreaHeight,
       isSelected: isSelected,
       onTap: onTap,
-      eventWidgets: eventWidgets,
-      overflowCount: overflowCount,
+      // overflowCount: overflowCount,
+    );
+  }
+}
+
+/// 주 단위 연속 이벤트 바 레이어
+class _WeekEventLayer extends StatelessWidget {
+  const _WeekEventLayer({
+    required this.week,
+    required this.eventIndex,
+  });
+
+  final List<DateTime> week;
+  final CalendarEventIndex eventIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cellWidth = constraints.maxWidth / 7;
+        final bars = _buildWeekEventBars(cellWidth);
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: bars,
+        );
+      },
     );
   }
 
-  /// 특정 날짜의 일정 위젯들 생성
-  List<Widget> _buildDayEventWidgets(List<CalendarEvent> dayEvents) {
-    if (dayEvents.isEmpty) return [];
+  List<Widget> _buildWeekEventBars(double cellWidth) {
+    final weekStart = week.first;
+    final segments = eventIndex.getSegmentsForWeek(weekStart)
+      ..sort((a, b) => a.slot.compareTo(b.slot));
 
-    final widgets = <Widget>[];
-    var lastSlot = -1;
-
-    for (var i = 0; i < dayEvents.length && i < maxVisibleEvents; i++) {
-      final event = dayEvents[i];
-      final slot = eventIndex.getSlot(event.id);
-
-      // 빈 슬롯 채우기
-      for (var s = lastSlot + 1;
-          s < slot && widgets.length < maxVisibleEvents;
-          s++) {
-        widgets.add(const SizedBox(height: 18));
+    // 이벤트별로 이 주에서 처음 보이는(가장 왼쪽) 구간에만 제목을 표시한다.
+    final titleStartColByEvent = <String, int>{};
+    for (final segment in segments) {
+      // 표시 개수 제한 (현재 무제한 표시로 비활성화).
+      // if (segment.slot >= kCalendarMaxVisibleEvents) continue;
+      final current = titleStartColByEvent[segment.event.id];
+      if (current == null || segment.startCol < current) {
+        titleStartColByEvent[segment.event.id] = segment.startCol;
       }
+    }
 
-      if (widgets.length >= maxVisibleEvents) break;
+    final bars = <Widget>[];
 
-      lastSlot = slot;
-
-      // 일정의 시작/끝 여부 확인
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
+    for (final segment in segments) {
+      // 표시 개수 제한 (현재 무제한 표시로 비활성화).
+      // if (segment.slot >= kCalendarMaxVisibleEvents) continue;
+      final barInfo = _weekEventBarInfo(
+        event: segment.event,
+        week: week,
+        startCol: segment.startCol,
+        endCol: segment.endCol,
       );
-      final eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-      );
-      final currentDay = DateTime(date.year, date.month, date.day);
-      final weekStartDay = DateTime(
-        week.first.year,
-        week.first.month,
-        week.first.day,
-      );
-      final weekEndDay = DateTime(
-        week.last.year,
-        week.last.month,
-        week.last.day,
-      );
+      final showTitle =
+          titleStartColByEvent[segment.event.id] == segment.startCol;
 
-      final isStart = CalendarUtils.isSameDay(eventStart, currentDay) ||
-          (CalendarUtils.isSameDay(weekStartDay, currentDay) &&
-              eventStart.isBefore(weekStartDay));
-      final isEnd = CalendarUtils.isSameDay(eventEnd, currentDay) ||
-          (CalendarUtils.isSameDay(weekEndDay, currentDay) &&
-              eventEnd.isAfter(weekEndDay));
+      final left = segment.startCol * cellWidth;
+      final width = (segment.endCol - segment.startCol + 1) * cellWidth;
+      final top = kCalendarEventChipTopPadding +
+          segment.slot * kCalendarEventSlotHeight;
 
-      // 시작일에만 제목 표시
-      final showTitle = CalendarUtils.isSameDay(eventStart, currentDay) ||
-          (dayIndex == 0 && eventStart.isBefore(weekStartDay));
-
-      widgets.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
+      bars.add(
+        Positioned(
+          left: left,
+          top: top,
+          width: width,
+          height: kCalendarEventChipHeight,
           child: EventChip(
-            event: event,
-            isStart: isStart,
-            isEnd: isEnd,
+            event: segment.event,
+            isStart: barInfo.isStart,
+            isEnd: barInfo.isEnd,
             showTitle: showTitle,
           ),
         ),
       );
     }
 
-    return widgets;
+    return bars;
   }
+}
+
+class _WeekEventBarInfo {
+  const _WeekEventBarInfo({
+    required this.isStart,
+    required this.isEnd,
+  });
+
+  final bool isStart;
+  final bool isEnd;
+}
+
+_WeekEventBarInfo _weekEventBarInfo({
+  required CalendarEvent event,
+  required List<DateTime> week,
+  required int startCol,
+  required int endCol,
+}) {
+  final eventStart = DateTime(
+    event.startDate.year,
+    event.startDate.month,
+    event.startDate.day,
+  );
+  final eventEnd = DateTime(
+    event.endDate.year,
+    event.endDate.month,
+    event.endDate.day,
+  );
+  final segmentStartDay = DateTime(
+    week[startCol].year,
+    week[startCol].month,
+    week[startCol].day,
+  );
+  final segmentEndDay = DateTime(
+    week[endCol].year,
+    week[endCol].month,
+    week[endCol].day,
+  );
+
+  final isStart = !eventStart.isAfter(segmentStartDay);
+  final isEnd = !eventEnd.isBefore(segmentEndDay);
+
+  return _WeekEventBarInfo(
+    isStart: isStart,
+    isEnd: isEnd,
+  );
 }

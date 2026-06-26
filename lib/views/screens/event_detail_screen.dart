@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../controllers/calendar_controller.dart';
 import '../../controllers/event_form_controller.dart';
-import '../../core/constants/alarm_constants.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/widgets/app_toast.dart';
+// TODO(알림-비활성화): 테스트 중 임시 주석
+// import '../../core/constants/alarm_constants.dart';
+// TODO(알림-비활성화): 테스트 중 임시 주석
+// import '../../core/widgets/app_toast.dart';
 import '../widgets/common/app_snack_bar.dart';
 import '../../core/widgets/system_safe_area.dart';
 import '../../core/constants/event_assets.dart';
@@ -17,10 +19,12 @@ import '../../services/schedule_api_client.dart' show scheduleApiClientProvider;
 import '../widgets/common/app_divider.dart';
 import '../widgets/common/schedule_folder_search_sheet.dart';
 import '../widgets/common/bottom_bar_button.dart';
-import '../widgets/event/alarm_picker_sheet.dart';
+// TODO(알림-비활성화): 테스트 중 임시 주석
+// import '../widgets/event/alarm_picker_sheet.dart';
 import '../widgets/common/app_alert_dialog.dart';
 import '../widgets/common/confirm_dialog.dart';
-import '../widgets/event/event_alarm_section.dart';
+// TODO(알림-비활성화): 테스트 중 임시 주석
+// import '../widgets/event/event_alarm_section.dart';
 import '../widgets/event/event_folder_section.dart';
 import '../widgets/event/event_memo_section.dart';
 import '../widgets/event/event_section.dart';
@@ -28,14 +32,14 @@ import '../widgets/event/event_time_section.dart';
 import '../widgets/event/color_context_menu.dart';
 import 'folder_detail_screen.dart';
 
-/// 알림 분 단위를 표시 텍스트로 변환
-String _alarmOffsetToText({required int minutes, required bool timeSetting}) {
-  if (minutes == 0) return timeSetting ? '일정 시작' : '이벤트 당일(09:00)';
-  if (minutes == 10080) return '1주 전';
-  if (minutes < 60) return '$minutes분 전';
-  if (minutes < 1440) return '${minutes ~/ 60}시간 전';
-  return '${minutes ~/ 1440}일 전';
-}
+/// TODO(알림-비활성화): 테스트 중 임시 주석
+// String _alarmOffsetToText({required int minutes, required bool timeSetting}) {
+//   if (minutes == 0) return timeSetting ? '일정 시작' : '이벤트 당일(09:00)';
+//   if (minutes == 10080) return '1주 전';
+//   if (minutes < 60) return '$minutes분 전';
+//   if (minutes < 1440) return '${minutes ~/ 60}시간 전';
+//   return '${minutes ~/ 1440}일 전';
+// }
 
 /// 일정 상세 화면
 class EventDetailScreen extends ConsumerStatefulWidget {
@@ -48,7 +52,9 @@ class EventDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
-  static const _pastAlarmToastMessage = '이미 지난 시점에는 알림을 설정할 수 없어요.';
+  // TODO(알림-비활성화): 테스트 중 임시 주석
+  // static const _pastAlarmToastMessage =
+  //     '이미 지난 시점에는 알림을 설정할 수 없어요.';
 
   bool _isEditMode = false;
   late TextEditingController _titleController;
@@ -168,8 +174,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         startTime: formState.startTime,
         endTime: formState.endTime,
         memo: formState.memo,
-        alarmState: formState.alarmMinutes != null,
-        alarmOffsetMinutes: formState.alarmMinutes ?? 0,
+        // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+        // alarmState: formState.alarmMinutes != null,
+        // alarmOffsetMinutes: formState.alarmMinutes ?? 0,
         foldersId: formState.foldersId,
       );
 
@@ -266,8 +273,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         onTimeSettingChanged: _handleTimeSettingChanged,
         onFolderTap: _handleFolderTap,
         onClearFolderLink: _handleClearFolderLink,
-        onAlarmTap: _handleAlarmTap,
-        onAlarmToggleOff: _handleAlarmToggleOff,
+        // TODO(알림-비활성화): 테스트 중 임시 주석
+        // onAlarmTap: _handleAlarmTap,
+        // onAlarmToggleOff: _handleAlarmToggleOff,
         onMemoChanged: _handleMemoChanged,
       );
     }
@@ -340,12 +348,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   }
 
   List<EventSectionItem> _buildSections(ScheduleDetailResponse detail) {
-    final alarmText = detail.alarmState
-        ? _alarmOffsetToText(
-            minutes: detail.alarmOffsetMinutes,
-            timeSetting: detail.timeSetting,
-          )
-        : null;
+    // TODO(알림-비활성화): 테스트 중 임시 주석
+    // final alarmText = detail.alarmState
+    //     ? _alarmOffsetToText(
+    //         minutes: detail.alarmOffsetMinutes,
+    //         timeSetting: detail.timeSetting,
+    //       )
+    //     : null;
 
     return [
       EventSectionItem(
@@ -368,16 +377,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           isEditable: false,
         ),
       ),
-      EventSectionItem(
-        iconSvgAsset: EventAssets.sectionNotification,
-        iconColor: SettingLayout1Tokens.sectionIconColor,
-        rowCrossAxisAlignment: CrossAxisAlignment.center,
-        child: EventAlarmSection(
-          alarmText: alarmText,
-          alarmEnabled: detail.alarmState,
-          isEditable: false,
-        ),
-      ),
+      // TODO(알림-비활성화): 테스트 중 임시 주석
+      // EventSectionItem(
+      //   iconSvgAsset: EventAssets.sectionNotification,
+      //   iconColor: SettingLayout1Tokens.sectionIconColor,
+      //   rowCrossAxisAlignment: CrossAxisAlignment.center,
+      //   child: EventAlarmSection(
+      //     alarmText: alarmText,
+      //     alarmEnabled: detail.alarmState,
+      //     isEditable: false,
+      //   ),
+      // ),
       EventSectionItem(
         iconSvgAsset: EventAssets.sectionNote,
         iconColor: SettingLayout1Tokens.sectionIconColor,
@@ -497,17 +507,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
-  void _handleAlarmTap() {
-    // 알림 추가 시 기본값으로 '일정 시작'(0분) 설정
-    if (ref.read(eventFormProvider).alarmMinutes == null) {
-      ref.read(eventFormProvider.notifier).updateAlarm(0);
-    }
-    _showAlarmPicker();
-  }
-
-  void _handleAlarmToggleOff() {
-    ref.read(eventFormProvider.notifier).updateAlarm(null);
-  }
+  // TODO(알림-비활성화): 테스트 중 임시 주석
+  // void _handleAlarmTap() {
+  //   // 알림 추가 시 기본값으로 '일정 시작'(0분) 설정
+  //   if (ref.read(eventFormProvider).alarmMinutes == null) {
+  //     ref.read(eventFormProvider.notifier).updateAlarm(0);
+  //   }
+  //   _showAlarmPicker();
+  // }
+  //
+  // void _handleAlarmToggleOff() {
+  //   ref.read(eventFormProvider.notifier).updateAlarm(null);
+  // }
 
   void _handleMemoChanged(String value) {
     ref
@@ -519,56 +530,57 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     await showAppAlertDialog(context, message: '시작 날짜는 종료 날짜 이전이어야 합니다.');
   }
 
-  void _showAlarmPicker() {
-    final formState = ref.read(eventFormProvider);
-    final isAllDayAlarmMode = !formState.timeSetting;
-    final options = isAllDayAlarmMode
-        ? AlarmUtils.allDayPresetOptions(
-            startDate: formState.startDate ?? DateTime.now(),
-          )
-        : AlarmUtils.predefinedOptions;
-
-    BottomSheetStyle.show<void>(
-      context,
-      showDragHandle: true,
-      child: Builder(
-        builder: (context) {
-          final currentMinutes = ref.watch(eventFormProvider).alarmMinutes;
-          return AlarmPickerSheet(
-            currentMinutes: currentMinutes,
-            options: options,
-            showCustomSetting: !isAllDayAlarmMode,
-            onOptionSelected: (minutes) {
-              ref.read(eventFormProvider.notifier).updateAlarm(minutes);
-            },
-            onDisabledOptionTap: (_) {
-              showAppToast(context, message: _pastAlarmToastMessage);
-            },
-            onCustomSettingTap: _showAlarmCustomPicker,
-          );
-        },
-      ),
-    );
-  }
-
-  void _showAlarmCustomPicker() {
-    final currentMinutes = ref.read(eventFormProvider).alarmMinutes;
-    final (initialValue, initialUnit) = AlarmUtils.fromMinutes(
-      currentMinutes ?? 60,
-    ); // 기본 1시간
-
-    BottomSheetStyle.show<void>(
-      context,
-      showDragHandle: true,
-      child: AlarmCustomPickerSheet(
-        initialValue: initialValue,
-        initialUnit: initialUnit,
-        onConfirm: (minutes) {
-          ref.read(eventFormProvider.notifier).updateAlarm(minutes);
-        },
-      ),
-    );
-  }
+  // TODO(알림-비활성화): 테스트 중 임시 주석
+  // void _showAlarmPicker() {
+  //   final formState = ref.read(eventFormProvider);
+  //   final isAllDayAlarmMode = !formState.timeSetting;
+  //   final options = isAllDayAlarmMode
+  //       ? AlarmUtils.allDayPresetOptions(
+  //           startDate: formState.startDate ?? DateTime.now(),
+  //         )
+  //       : AlarmUtils.predefinedOptions;
+  //
+  //   BottomSheetStyle.show<void>(
+  //     context,
+  //     showDragHandle: true,
+  //     child: Builder(
+  //       builder: (context) {
+  //         final currentMinutes = ref.watch(eventFormProvider).alarmMinutes;
+  //         return AlarmPickerSheet(
+  //           currentMinutes: currentMinutes,
+  //           options: options,
+  //           showCustomSetting: !isAllDayAlarmMode,
+  //           onOptionSelected: (minutes) {
+  //             ref.read(eventFormProvider.notifier).updateAlarm(minutes);
+  //           },
+  //           onDisabledOptionTap: (_) {
+  //             showAppToast(context, message: _pastAlarmToastMessage);
+  //           },
+  //           onCustomSettingTap: _showAlarmCustomPicker,
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
+  //
+  // void _showAlarmCustomPicker() {
+  //   final currentMinutes = ref.read(eventFormProvider).alarmMinutes;
+  //   final (initialValue, initialUnit) = AlarmUtils.fromMinutes(
+  //     currentMinutes ?? 60,
+  //   ); // 기본 1시간
+  //
+  //   BottomSheetStyle.show<void>(
+  //     context,
+  //     showDragHandle: true,
+  //     child: AlarmCustomPickerSheet(
+  //       initialValue: initialValue,
+  //       initialUnit: initialUnit,
+  //       onConfirm: (minutes) {
+  //         ref.read(eventFormProvider.notifier).updateAlarm(minutes);
+  //       },
+  //     ),
+  //   );
+  // }
 
   Future<void> _showDeleteConfirmDialog() async {
     final confirmed = await showConfirmDialog(
@@ -675,8 +687,9 @@ class _EventEditLayout extends StatelessWidget {
     required this.onTimeSettingChanged,
     required this.onFolderTap,
     required this.onClearFolderLink,
-    required this.onAlarmTap,
-    required this.onAlarmToggleOff,
+    // TODO(알림-비활성화): 테스트 중 임시 주석
+    // required this.onAlarmTap,
+    // required this.onAlarmToggleOff,
     required this.onMemoChanged,
   });
 
@@ -694,8 +707,9 @@ class _EventEditLayout extends StatelessWidget {
   final ValueChanged<bool> onTimeSettingChanged;
   final VoidCallback onFolderTap;
   final VoidCallback onClearFolderLink;
-  final VoidCallback onAlarmTap;
-  final VoidCallback onAlarmToggleOff;
+  // TODO(알림-비활성화): 테스트 중 임시 주석
+  // final VoidCallback onAlarmTap;
+  // final VoidCallback onAlarmToggleOff;
   final ValueChanged<String> onMemoChanged;
 
   @override
@@ -794,26 +808,26 @@ class _EventEditLayout extends StatelessWidget {
               ),
             ),
             const AppDivider(),
-            // 알림 섹션
-            EventSection(
-              iconSvgAsset: EventAssets.sectionNotification,
-              iconColor: SettingLayout1Tokens.sectionIconColor,
-              rowCrossAxisAlignment: CrossAxisAlignment.center,
-              child: EventAlarmSection(
-                alarmText: formState.alarmText,
-                alarmEnabled: formState.alarmMinutes != null,
-                isEditable: true,
-                onAddTap: onAlarmTap,
-                onToggleChanged: (v) {
-                  if (v) {
-                    onAlarmTap();
-                  } else {
-                    onAlarmToggleOff();
-                  }
-                },
-              ),
-            ),
-            const AppDivider(),
+            // TODO(알림-비활성화): 테스트 중 임시 주석 — 알림 섹션
+            // EventSection(
+            //   iconSvgAsset: EventAssets.sectionNotification,
+            //   iconColor: SettingLayout1Tokens.sectionIconColor,
+            //   rowCrossAxisAlignment: CrossAxisAlignment.center,
+            //   child: EventAlarmSection(
+            //     alarmText: formState.alarmText,
+            //     alarmEnabled: formState.alarmMinutes != null,
+            //     isEditable: true,
+            //     onAddTap: onAlarmTap,
+            //     onToggleChanged: (v) {
+            //       if (v) {
+            //         onAlarmTap();
+            //       } else {
+            //         onAlarmToggleOff();
+            //       }
+            //     },
+            //   ),
+            // ),
+            // const AppDivider(),
             // 메모 섹션 (터치 시 포커스되어 바로 입력 가능)
             EventSection(
               iconSvgAsset: EventAssets.sectionNote,

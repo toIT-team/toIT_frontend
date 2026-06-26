@@ -13,6 +13,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../core/constants/app_assets.dart';
+import '../../core/widgets/cloudfront_image.dart';
+import '../../core/utils/cloudfront_url_builder.dart';
+import '../../services/auth_service.dart';
 import '../../models/pending_save_item.dart';
 import '../../providers/pending_uploads_provider.dart';
 import '../../core/constants/app_colors.dart';
@@ -628,14 +631,14 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             break;
           case FileKebabAction.share:
             _shareImageAttachment(
-              presignedUrl: image.presignedUrl,
+              presignedUrl: buildOriginalUrl(image.objectKey),
               fileName: image.fileName,
               attachmentsExtension: image.attachmentsExtension,
             );
             break;
           case FileKebabAction.download:
             _downloadImageAttachment(
-              presignedUrl: image.presignedUrl,
+              presignedUrl: buildOriginalUrl(image.objectKey),
               fileName: image.fileName,
               attachmentsExtension: image.attachmentsExtension,
             );
@@ -747,10 +750,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   }) async {
     String? tempPath;
     try {
+      final authService = ref.read(authServiceProvider);
+      final cookies = await authService.getCloudFrontCookies();
       final result = await downloadAttachmentFromPresignedUrl(
         presignedUrl: presignedUrl,
         fileName: fileName,
         attachmentsExtension: attachmentsExtension,
+        cookies: cookies,
+        onRefreshCookies: () async {
+          final ok = await authService.fetchAndSaveCloudFrontCookies();
+          return ok ? await authService.getCloudFrontCookies() : null;
+        },
       );
       tempPath = result.savedPath;
       final saveResult = await saveDownloadedMediaToGallery(
@@ -825,10 +835,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
   }) async {
     String? tempPath;
     try {
+      final authService = ref.read(authServiceProvider);
+      final cookies = await authService.getCloudFrontCookies();
       final result = await downloadAttachmentFromPresignedUrl(
         presignedUrl: presignedUrl,
         fileName: fileName,
         attachmentsExtension: attachmentsExtension,
+        cookies: cookies,
+        onRefreshCookies: () async {
+          final ok = await authService.fetchAndSaveCloudFrontCookies();
+          return ok ? await authService.getCloudFrontCookies() : null;
+        },
       );
       tempPath = result.savedPath;
       // debugPrint('[share][image] temp saved: $tempPath');
@@ -2409,25 +2426,24 @@ class _FolderImageCell extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: height,
-        child: image.presignedUrl.isNotEmpty
-            ? Image.network(
-                image.presignedUrl,
+        child: image.objectKey.isNotEmpty
+            ? CloudFrontImage(
+                url: buildResizeImageUrl(
+                  objectKey: image.objectKey,
+                  displayWidth: width,
+                ),
                 fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    color: AppColors.neutral100,
-                    child: const Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
+                loadingWidget: Container(
+                  color: AppColors.neutral100,
+                  child: const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                  );
-                },
-                errorBuilder: (_, __, ___) =>
-                    Container(color: AppColors.borderLight),
+                  ),
+                ),
+                errorWidget: Container(color: AppColors.borderLight),
               )
             : Container(color: AppColors.borderLight),
       ),

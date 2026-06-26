@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
-import '../services/fcm_registration_service.dart';
+// TODO(FCM-비활성화): 테스트 중 임시 주석
+// import '../services/fcm_registration_service.dart';
 
 /// 소셜 로그인 진행 중인 공급자. [AuthState.activeSocialLogin]에 사용한다.
 enum SocialLoginKind { kakao, apple }
@@ -90,11 +91,13 @@ class AuthController extends Notifier<AuthState> {
         userId: userId,
       );
       await _authService.syncExistingTokenToAppGroup();
-      unawaited(
-        ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-              promptForPermission: true,
-            ),
-      );
+      unawaited(_authService.fetchAndSaveCloudFrontCookies());
+      // TODO(FCM-비활성화): 테스트 중 임시 주석
+      // unawaited(
+      //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+      //         promptForPermission: true,
+      //       ),
+      // );
     } else {
       state = const AuthState(
         status: AuthStatus.unauthenticated,
@@ -151,11 +154,13 @@ class AuthController extends Notifier<AuthState> {
               userId: userId,
             );
             _bumpSessionRefreshTick();
-            unawaited(
-              ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-                    promptForPermission: true,
-                  ),
-            );
+            unawaited(_authService.fetchAndSaveCloudFrontCookies());
+            // TODO(FCM-비활성화): 테스트 중 임시 주석
+            // unawaited(
+            //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+            //         promptForPermission: true,
+            //       ),
+            // );
             // debugPrint(
               // '[AuthController] 로그인 성공, userId: $userId',
             // );
@@ -211,7 +216,10 @@ class AuthController extends Notifier<AuthState> {
 
   /// 로그아웃
   Future<void> logout() async {
-    await _authService.clearTokens();
+    await Future.wait([
+      _authService.clearTokens(),
+      _authService.clearCloudFrontCookies(),
+    ]);
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
     // debugPrint('[AuthController] 로그아웃 완료');
@@ -219,7 +227,10 @@ class AuthController extends Notifier<AuthState> {
 
   /// 토큰 만료 시 강제 로그아웃 (401 인터셉터에서 호출)
   Future<void> forceLogout() async {
-    await _authService.clearTokens();
+    await Future.wait([
+      _authService.clearTokens(),
+      _authService.clearCloudFrontCookies(),
+    ]);
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
     // debugPrint('[AuthController] 토큰 만료 → 강제 로그아웃');
@@ -270,11 +281,12 @@ class AuthController extends Notifier<AuthState> {
       userId: userId,
     );
     _bumpSessionRefreshTick();
-    unawaited(
-      ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-            promptForPermission: true,
-          ),
-    );
+    // TODO(FCM-비활성화): 테스트 중 임시 주석
+    // unawaited(
+    //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
+    //         promptForPermission: true,
+    //       ),
+    // );
     // debugPrint('[AuthController] 계정 복구 및 로그인 성공, userId: $userId');
   }
 }

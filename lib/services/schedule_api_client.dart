@@ -93,8 +93,9 @@ class ScheduleApiClient {
     String? startTime,
     String? endTime,
     String? memo,
-    required bool alarmState,
-    int alarmOffsetMinutes = 0,
+    // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+    // required bool alarmState,
+    // int alarmOffsetMinutes = 0,
     int? foldersId,
   }) async {
     final body = <String, dynamic>{
@@ -107,8 +108,9 @@ class ScheduleApiClient {
       'endDate': _formatDate(endDate),
       'endTime': timeSetting ? _formatTime(endTime) : null,
       'memo': memo ?? '',
-      'alarmState': alarmState,
-      'alarmOffsetMinutes': alarmOffsetMinutes,
+      // TODO(알림-비활성화): 테스트 중 임시 주석
+      // 'alarmState': alarmState,
+      // 'alarmOffsetMinutes': alarmOffsetMinutes,
     };
 
     // debugPrint('[일정 추가 API] Request: POST ${ApiConstants.baseUrl}/schedules');
@@ -153,8 +155,9 @@ class ScheduleApiClient {
     String? startTime,
     String? endTime,
     String? memo,
-    required bool alarmState,
-    int alarmOffsetMinutes = 0,
+    // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+    // required bool alarmState,
+    // int alarmOffsetMinutes = 0,
     int? foldersId,
   }) async {
     final body = <String, dynamic>{
@@ -168,8 +171,9 @@ class ScheduleApiClient {
       'startTime': timeSetting ? _formatTime(startTime) : null,
       'endTime': timeSetting ? _formatTime(endTime) : null,
       'memo': memo ?? '',
-      'alarmState': alarmState,
-      'alarmOffsetMinutes': alarmOffsetMinutes,
+      // TODO(알림-비활성화): 테스트 중 임시 주석
+      // 'alarmState': alarmState,
+      // 'alarmOffsetMinutes': alarmOffsetMinutes,
     };
 
     // print('[일정 수정 API] Request: PATCH ${ApiConstants.baseUrl}/schedules');

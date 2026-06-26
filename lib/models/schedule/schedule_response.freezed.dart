@@ -1053,9 +1053,10 @@ mixin _$ScheduleDetailResponse {
   @JsonKey(fromJson: _stringFromJson)
   String get endDate => throw _privateConstructorUsedError;
   String? get startTime => throw _privateConstructorUsedError;
-  String? get endTime => throw _privateConstructorUsedError;
-  bool get alarmState => throw _privateConstructorUsedError;
-  int get alarmOffsetMinutes => throw _privateConstructorUsedError;
+  String? get endTime =>
+      throw _privateConstructorUsedError; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // @Default(false) bool alarmState,
+  // @Default(0) int alarmOffsetMinutes,
   @JsonKey(fromJson: _stringFromJson)
   String get memo => throw _privateConstructorUsedError;
 
@@ -1087,8 +1088,6 @@ abstract class $ScheduleDetailResponseCopyWith<$Res> {
     @JsonKey(fromJson: _stringFromJson) String endDate,
     String? startTime,
     String? endTime,
-    bool alarmState,
-    int alarmOffsetMinutes,
     @JsonKey(fromJson: _stringFromJson) String memo,
   });
 }
@@ -1121,8 +1120,6 @@ class _$ScheduleDetailResponseCopyWithImpl<
     Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
-    Object? alarmState = null,
-    Object? alarmOffsetMinutes = null,
     Object? memo = null,
   }) {
     return _then(
@@ -1167,14 +1164,6 @@ class _$ScheduleDetailResponseCopyWithImpl<
                 ? _value.endTime
                 : endTime // ignore: cast_nullable_to_non_nullable
                       as String?,
-            alarmState: null == alarmState
-                ? _value.alarmState
-                : alarmState // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            alarmOffsetMinutes: null == alarmOffsetMinutes
-                ? _value.alarmOffsetMinutes
-                : alarmOffsetMinutes // ignore: cast_nullable_to_non_nullable
-                      as int,
             memo: null == memo
                 ? _value.memo
                 : memo // ignore: cast_nullable_to_non_nullable
@@ -1205,8 +1194,6 @@ abstract class _$$ScheduleDetailResponseImplCopyWith<$Res>
     @JsonKey(fromJson: _stringFromJson) String endDate,
     String? startTime,
     String? endTime,
-    bool alarmState,
-    int alarmOffsetMinutes,
     @JsonKey(fromJson: _stringFromJson) String memo,
   });
 }
@@ -1236,8 +1223,6 @@ class __$$ScheduleDetailResponseImplCopyWithImpl<$Res>
     Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
-    Object? alarmState = null,
-    Object? alarmOffsetMinutes = null,
     Object? memo = null,
   }) {
     return _then(
@@ -1282,14 +1267,6 @@ class __$$ScheduleDetailResponseImplCopyWithImpl<$Res>
             ? _value.endTime
             : endTime // ignore: cast_nullable_to_non_nullable
                   as String?,
-        alarmState: null == alarmState
-            ? _value.alarmState
-            : alarmState // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        alarmOffsetMinutes: null == alarmOffsetMinutes
-            ? _value.alarmOffsetMinutes
-            : alarmOffsetMinutes // ignore: cast_nullable_to_non_nullable
-                  as int,
         memo: null == memo
             ? _value.memo
             : memo // ignore: cast_nullable_to_non_nullable
@@ -1313,8 +1290,6 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
     @JsonKey(fromJson: _stringFromJson) required this.endDate,
     this.startTime,
     this.endTime,
-    this.alarmState = false,
-    this.alarmOffsetMinutes = 0,
     @JsonKey(fromJson: _stringFromJson) this.memo = '',
   });
 
@@ -1349,19 +1324,16 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
   final String? startTime;
   @override
   final String? endTime;
-  @override
-  @JsonKey()
-  final bool alarmState;
-  @override
-  @JsonKey()
-  final int alarmOffsetMinutes;
+  // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // @Default(false) bool alarmState,
+  // @Default(0) int alarmOffsetMinutes,
   @override
   @JsonKey(fromJson: _stringFromJson)
   final String memo;
 
   @override
   String toString() {
-    return 'ScheduleDetailResponse(userId: $userId, schedulesId: $schedulesId, title: $title, foldersId: $foldersId, foldersTitle: $foldersTitle, timeSetting: $timeSetting, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, alarmState: $alarmState, alarmOffsetMinutes: $alarmOffsetMinutes, memo: $memo)';
+    return 'ScheduleDetailResponse(userId: $userId, schedulesId: $schedulesId, title: $title, foldersId: $foldersId, foldersTitle: $foldersTitle, timeSetting: $timeSetting, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, memo: $memo)';
   }
 
   @override
@@ -1385,10 +1357,6 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
             (identical(other.startTime, startTime) ||
                 other.startTime == startTime) &&
             (identical(other.endTime, endTime) || other.endTime == endTime) &&
-            (identical(other.alarmState, alarmState) ||
-                other.alarmState == alarmState) &&
-            (identical(other.alarmOffsetMinutes, alarmOffsetMinutes) ||
-                other.alarmOffsetMinutes == alarmOffsetMinutes) &&
             (identical(other.memo, memo) || other.memo == memo));
   }
 
@@ -1406,8 +1374,6 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
     endDate,
     startTime,
     endTime,
-    alarmState,
-    alarmOffsetMinutes,
     memo,
   );
 
@@ -1441,8 +1407,6 @@ abstract class _ScheduleDetailResponse implements ScheduleDetailResponse {
     @JsonKey(fromJson: _stringFromJson) required final String endDate,
     final String? startTime,
     final String? endTime,
-    final bool alarmState,
-    final int alarmOffsetMinutes,
     @JsonKey(fromJson: _stringFromJson) final String memo,
   }) = _$ScheduleDetailResponseImpl;
 
@@ -1474,11 +1438,9 @@ abstract class _ScheduleDetailResponse implements ScheduleDetailResponse {
   @override
   String? get startTime;
   @override
-  String? get endTime;
-  @override
-  bool get alarmState;
-  @override
-  int get alarmOffsetMinutes;
+  String? get endTime; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  // @Default(false) bool alarmState,
+  // @Default(0) int alarmOffsetMinutes,
   @override
   @JsonKey(fromJson: _stringFromJson)
   String get memo;
