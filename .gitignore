@@ -54,6 +54,8 @@ app.*.map.json
 .env
 .env.*
 
+*.pem
+
 # Firebase 설정 파일(로컬/CI 주입)
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
