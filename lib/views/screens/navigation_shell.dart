@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
+import '../../controllers/calendar_controller.dart';
 import '../../controllers/home_controller.dart';
 import '../../core/constants/folder_tab_index.dart';
 import '../../core/deep_link/toit_deep_link_opener.dart';
@@ -375,6 +376,11 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
                         )
                         .then((result) {
                           if (result != null) {
+                            if (result.isCreate == true) {
+                              ref
+                                  .read(calendarProvider.notifier)
+                                  .revealCreatedEvent(result.event);
+                            }
                             ref.read(currentTabIndexProvider.notifier).state = 1;
                           }
                         });

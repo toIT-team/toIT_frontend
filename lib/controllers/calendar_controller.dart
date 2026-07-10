@@ -402,7 +402,12 @@ class CalendarState with _$CalendarState {
 
 /// 캘린더 컨트롤러 (Notifier)
 class CalendarController extends Notifier<CalendarState> {
+  static const _cacheTtl = Duration(minutes: 5);
+  static const _maxCachedMonths = 12;
+
   late final ScheduleApiClient _apiClient;
+  final Map<String, _CalendarCacheEntry> _monthCache = {};
+  final Map<String, Future<List<CalendarEvent>>> _inFlightRequests = {};
 
   /// 스플래시 단계에서 주입된 프리패치를 이미 state 에 반영했음을 가리킨다.
   /// 최초 `loadEvents` 한 번은 같은 달에 대해 스킵하기 위한 1회성 플래그.
@@ -427,6 +432,7 @@ class CalendarController extends Notifier<CalendarState> {
         // 'events=${prefetched.events.length}',
       // );
       _primed = true;
+      _putCache(getMonthKey(focusedMonth), prefetched.events);
       // Riverpod 은 build() 도중 다른 Provider 의 state 수정을 금지하므로
       // 캐시 초기화는 한 틱 뒤로 미룬다(홈 프리패치와 동일한 패턴).
       Future<void>.microtask(() {
@@ -456,21 +462,35 @@ class CalendarController extends Notifier<CalendarState> {
         targetMonth.month == state.focusedMonth.month) {
       // debugPrint('[BOOT] calendar_loadEvents_skipped reason=primed_same_month');
       _primed = false;
+      _prefetchAdjacentMonths(targetMonth);
       return;
     }
-    state = state.copyWith(isLoading: true);
+
+    final cacheKey = getMonthKey(targetMonth);
+    final cached = _monthCache[cacheKey];
+    final hasFreshCache = cached != null && !cached.isExpired;
+
+    state = state.copyWith(
+      focusedMonth: targetMonth,
+      events: cached?.events ?? state.events,
+      isLoading: cached == null,
+    );
+    if (hasFreshCache) {
+      _touchCache(cacheKey, cached);
+      return;
+    }
+
     try {
-      final startDate = targetMonth;
-      final endDate = DateTime(targetMonth.year, targetMonth.month + 1, 0);
-      final events = await _apiClient.searchSchedules(
-        startDate: startDate,
-        endDate: endDate,
-      );
+      final events = await _fetchMonth(targetMonth);
+      if (state.focusedMonth.year != targetMonth.year ||
+          state.focusedMonth.month != targetMonth.month) {
+        return;
+      }
       state = state.copyWith(
-        focusedMonth: targetMonth,
         events: events,
         isLoading: false,
       );
+      _prefetchAdjacentMonths(targetMonth);
     } catch (e) {
       // debugPrint('일정 로드 실패: $e');
       state = state.copyWith(isLoading: false);
@@ -502,6 +522,24 @@ class CalendarController extends Notifier<CalendarState> {
     loadEvents(DateTime(month.year, month.month, 1));
   }
 
+  /// 생성된 일정의 시작 월과 날짜를 즉시 보여준다.
+  /// 캐시가 없더라도 생성 응답을 먼저 그린 뒤 서버 데이터는 백그라운드로 맞춘다.
+  void revealCreatedEvent(CalendarEvent event) {
+    final targetMonth = DateTime(event.startDate.year, event.startDate.month, 1);
+    final cacheKey = getMonthKey(targetMonth);
+    final cachedEvents = _monthCache[cacheKey]?.events ?? const <CalendarEvent>[];
+    final visibleEvents = _upsertEvent(cachedEvents, event);
+    _putCache(cacheKey, visibleEvents);
+
+    state = state.copyWith(
+      focusedMonth: targetMonth,
+      selectedDate: event.startDate,
+      events: visibleEvents,
+      isLoading: false,
+    );
+    _refreshMonthInBackground(targetMonth, keepEvent: event);
+  }
+
   /// 날짜 선택
   void selectDate(DateTime date) {
     state = state.copyWith(selectedDate: date);
@@ -510,6 +548,12 @@ class CalendarController extends Notifier<CalendarState> {
   /// 일정 추가
   void addEvent(CalendarEvent event) {
     state = state.copyWith(events: [...state.events, event]);
+    for (final entry in _monthCache.entries.toList()) {
+      final month = _monthFromKey(entry.key);
+      if (_eventIntersectsVisibleMonth(event, month)) {
+        _putCache(entry.key, _upsertEvent(entry.value.events, event));
+      }
+    }
   }
 
   /// 일정 삭제
@@ -525,6 +569,98 @@ class CalendarController extends Notifier<CalendarState> {
       events: state.events.map((e) => e.id == event.id ? event : e).toList(),
     );
   }
+
+  Future<List<CalendarEvent>> _fetchMonth(DateTime month) {
+    final cacheKey = getMonthKey(month);
+    return _inFlightRequests.putIfAbsent(cacheKey, () async {
+      try {
+        final days = CalendarUtils.getDaysInMonth(month);
+        final events = await _apiClient.searchSchedules(
+          startDate: days.first,
+          endDate: days.last,
+        );
+        _putCache(cacheKey, events);
+        return events;
+      } finally {
+        _inFlightRequests.remove(cacheKey);
+      }
+    });
+  }
+
+  void _refreshMonthInBackground(
+    DateTime month, {
+    CalendarEvent? keepEvent,
+  }) {
+    _fetchMonth(month).then((events) {
+      final refreshedEvents = keepEvent == null
+          ? events
+          : _upsertEvent(events, keepEvent);
+      if (keepEvent != null) {
+        _putCache(getMonthKey(month), refreshedEvents);
+      }
+      if (state.focusedMonth.year == month.year &&
+          state.focusedMonth.month == month.month) {
+        state = state.copyWith(events: refreshedEvents, isLoading: false);
+      }
+    }).catchError((Object _) {});
+  }
+
+  void _prefetchAdjacentMonths(DateTime month) {
+    for (final adjacent in [
+      DateTime(month.year, month.month - 1, 1),
+      DateTime(month.year, month.month + 1, 1),
+    ]) {
+      final cached = _monthCache[getMonthKey(adjacent)];
+      if (cached == null || cached.isExpired) {
+        _fetchMonth(adjacent).catchError((Object _) => <CalendarEvent>[]);
+      }
+    }
+  }
+
+  void _putCache(String key, List<CalendarEvent> events) {
+    _monthCache.remove(key);
+    _monthCache[key] = _CalendarCacheEntry(
+      events: events,
+      cachedAt: DateTime.now(),
+    );
+    while (_monthCache.length > _maxCachedMonths) {
+      _monthCache.remove(_monthCache.keys.first);
+    }
+  }
+
+  void _touchCache(String key, _CalendarCacheEntry entry) {
+    _monthCache.remove(key);
+    _monthCache[key] = entry;
+  }
+
+  static List<CalendarEvent> _upsertEvent(
+    List<CalendarEvent> events,
+    CalendarEvent event,
+  ) => [
+    ...events.where((existing) => existing.id != event.id),
+    event,
+  ];
+
+  static DateTime _monthFromKey(String key) {
+    final parts = key.split('-');
+    return DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
+  }
+
+  static bool _eventIntersectsVisibleMonth(CalendarEvent event, DateTime month) {
+    final days = CalendarUtils.getDaysInMonth(month);
+    return !event.endDate.isBefore(days.first) &&
+        !event.startDate.isAfter(days.last);
+  }
+}
+
+class _CalendarCacheEntry {
+  const _CalendarCacheEntry({required this.events, required this.cachedAt});
+
+  final List<CalendarEvent> events;
+  final DateTime cachedAt;
+
+  bool get isExpired =>
+      DateTime.now().difference(cachedAt) > CalendarController._cacheTtl;
 }
 
 /// 스플래시 부트스트랩에서 선요청해둔 현재월 일정 응답을 1회 주입하는 캐시.
