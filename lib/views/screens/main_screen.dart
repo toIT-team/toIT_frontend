@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/system_ui_insets.dart';
+import '../../controllers/calendar_controller.dart';
 import '../widgets/common/add_action_button.dart';
 import '../widgets/common/add_context_menu.dart';
 import '../widgets/common/glass_nav_bar.dart';
@@ -94,6 +95,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         .push(MaterialPageRoute(builder: (_) => const EventFormScreen()))
         .then((result) {
           if (result == null) return;
+          if (result.isCreate == true) {
+            ref
+                .read(calendarProvider.notifier)
+                .revealCreatedEvent(result.event);
+          }
           ref.read(currentTabProvider.notifier).state = 1;
         });
   }

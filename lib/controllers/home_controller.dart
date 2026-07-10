@@ -194,7 +194,9 @@ FolderItem _mapFolder(FolderDto dto, int index, {String countText = '0개'}) {
 
 /// 홈 화면 컨트롤러 (Notifier)
 class HomeController extends Notifier<HomeState> {
-  static const int maxFolderCount = 20;
+  static const int maxFolderCount = 100;
+  static const String folderLimitMessage =
+      '보관함은 최대 $maxFolderCount개까지 생성할 수 있습니다.';
   static const String allFilterToken = '__all__';
   static const String favoriteFilterToken = '__favorite__';
   static const String folderFilterPrefix = '__folder__';
@@ -371,7 +373,7 @@ class HomeController extends Notifier<HomeState> {
     required int iconIndex,
   }) async {
     if (state.folders.length >= maxFolderCount) {
-      state = state.copyWith(errorMessage: '보관함은 최대 20개까지 생성할 수 있습니다.');
+      state = state.copyWith(errorMessage: folderLimitMessage);
       return false;
     }
 

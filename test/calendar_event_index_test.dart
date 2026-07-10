@@ -30,11 +30,25 @@ void main() {
   });
 
   group('CalendarEventIndex.build', () {
+    test('월 경계의 이전 달과 다음 달 일정도 셀에 표시한다', () {
+      final focusedMonth = DateTime.parse('2026-07-01');
+      final days = CalendarUtils.getDaysInMonth(focusedMonth);
+      final events = [
+        _event(id: 'previous', startAt: '2026-06-30', endAt: '2026-06-30'),
+        _event(id: 'next', startAt: '2026-08-01', endAt: '2026-08-01'),
+      ];
+
+      final index = CalendarEventIndex.build(focusedMonth, events);
+
+      expect(days.first, DateTime(2026, 6, 28));
+      expect(index.getEventsForDay(DateTime(2026, 6, 30)), [events.first]);
+      expect(index.getEventsForDay(DateTime(2026, 8, 1)), [events.last]);
+    });
+
     test('월요일에 끝난 슬롯 2를 화요일 일정이 재사용한다', () {
       // 2025-06-08(일) ~ 2025-06-15(일) 주
       const month = '2025-06-01';
       final focusedMonth = DateTime.parse(month);
-      final days = CalendarUtils.getDaysInMonth(focusedMonth);
       final weekStart = DateTime.parse('2025-06-08');
       const tuesdayCol = 2;
 
@@ -147,6 +161,3 @@ void main() {
     });
   });
 }
-
-String _dateKey(DateTime date) =>
-    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';

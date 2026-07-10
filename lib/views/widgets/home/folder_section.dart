@@ -78,7 +78,7 @@ class FolderSection extends ConsumerWidget {
                       if (context.mounted) {
                         showAppSnackBar(
                           context,
-                          '보관함은 최대 20개까지 생성할 수 있습니다.',
+                          HomeController.folderLimitMessage,
                         );
                       }
                       return;
