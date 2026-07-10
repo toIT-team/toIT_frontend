@@ -21,6 +21,7 @@ void showDayEventsBottomSheet(
   BuildContext context,
   DateTime date,
   List<CalendarEvent> events,
+  ValueChanged<CalendarEvent>? onEventCreated,
 ) {
   showModalBottomSheet(
     context: context,
@@ -29,7 +30,11 @@ void showDayEventsBottomSheet(
     enableDrag: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => DayEventsBottomSheet(date: date, events: events),
+    builder: (context) => DayEventsBottomSheet(
+      date: date,
+      events: events,
+      onEventCreated: onEventCreated,
+    ),
   );
 }
 
@@ -39,10 +44,12 @@ class DayEventsBottomSheet extends ConsumerStatefulWidget {
     super.key,
     required this.date,
     required this.events,
+    this.onEventCreated,
   });
 
   final DateTime date;
   final List<CalendarEvent> events;
+  final ValueChanged<CalendarEvent>? onEventCreated;
 
   @override
   ConsumerState<DayEventsBottomSheet> createState() =>
@@ -123,15 +130,22 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
     );
   }
 
-  void _navigateToEventForm() {
+  Future<void> _navigateToEventForm() async {
     // 바텀시트 닫고 일정 추가 화면으로 이동 (선택한 날짜 전달)
     final selectedDate = widget.date;
-    Navigator.of(context).pop();
-    Navigator.of(context).push(
+    final navigator = Navigator.of(context);
+    final onEventCreated = widget.onEventCreated;
+
+    navigator.pop();
+    final result = await navigator.push(
       MaterialPageRoute(
         builder: (_) => EventFormScreen(initialDate: selectedDate),
       ),
     );
+
+    if (result != null && result.isCreate == true) {
+      onEventCreated?.call(result.event);
+    }
   }
 
   /// 드래그 핸들 + 날짜 헤더 (통합)
@@ -169,10 +183,7 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
               const SizedBox(width: 8),
               Text(
                 lunarDate,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.gray600,
-                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.gray600),
               ),
             ],
           ),
@@ -255,18 +266,11 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.event_note_outlined,
-            size: 64,
-            color: AppColors.gray400,
-          ),
+          Icon(Icons.event_note_outlined, size: 64, color: AppColors.gray400),
           const SizedBox(height: 16),
           Text(
             '일정이 없습니다',
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.gray600,
-            ),
+            style: const TextStyle(fontSize: 16, color: AppColors.gray600),
           ),
         ],
       ),
@@ -278,5 +282,4 @@ class _DayEventsBottomSheetState extends ConsumerState<DayEventsBottomSheet> {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
     return weekdays[weekday - 1];
   }
-
 }

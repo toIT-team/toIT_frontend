@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../controllers/calendar_controller.dart';
-import '../../../services/schedule_api_client.dart' show scheduleApiClientProvider;
+import '../../../services/schedule_api_client.dart'
+    show scheduleApiClientProvider;
 import 'calendar_grid.dart';
 import 'calendar_header.dart';
 import 'calendar_year_month_picker.dart';
@@ -84,7 +85,9 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
       return 0;
     });
 
-    showDayEventsBottomSheet(context, date, dayEvents);
+    showDayEventsBottomSheet(context, date, dayEvents, (event) {
+      ref.read(calendarProvider.notifier).revealCreatedEvent(event);
+    });
   }
 
   @override
@@ -93,82 +96,79 @@ class _CalendarWidgetState extends ConsumerState<CalendarWidget> {
     final focusedMonth = ref.watch(
       calendarProvider.select((s) => s.focusedMonth),
     );
-    final isLoading = ref.watch(
-      calendarProvider.select((s) => s.isLoading),
-    );
+    final isLoading = ref.watch(calendarProvider.select((s) => s.isLoading));
     // 일정 추가/수정 시 즉시 반영을 위해 events watch
     ref.watch(eventsProvider);
     final calendarController = ref.read(calendarProvider.notifier);
 
     // 외부에서 월이 변경되면 페이지도 이동 (Picker에서 선택 시)
-    ref.listen(
-      calendarProvider.select((s) => s.focusedMonth),
-      (previous, next) {
-        if (previous != next) {
-          final targetPage = _getPageFromMonth(next);
-          if (_pageController.hasClients &&
-              _pageController.page?.round() != targetPage) {
-            _programmaticPageAnimationDepth++;
-            _pageController
-                .animateToPage(
-                  targetPage,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                )
-                .whenComplete(() {
-              if (!mounted) return;
-              _programmaticPageAnimationDepth--;
-              if (_programmaticPageAnimationDepth < 0) {
-                _programmaticPageAnimationDepth = 0;
-              }
-            });
-          }
+    ref.listen(calendarProvider.select((s) => s.focusedMonth), (
+      previous,
+      next,
+    ) {
+      if (previous != next) {
+        final targetPage = _getPageFromMonth(next);
+        if (_pageController.hasClients &&
+            _pageController.page?.round() != targetPage) {
+          _programmaticPageAnimationDepth++;
+          _pageController
+              .animateToPage(
+                targetPage,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              )
+              .whenComplete(() {
+                if (!mounted) return;
+                _programmaticPageAnimationDepth--;
+                if (_programmaticPageAnimationDepth < 0) {
+                  _programmaticPageAnimationDepth = 0;
+                }
+              });
         }
-      },
-    );
+      }
+    });
 
     return Stack(
       children: [
         Column(
           children: [
             CalendarHeader(
-                monthSelectorKey: _monthAnchorKey,
-                focusedMonth: focusedMonth,
-                onMonthTap: () {
-                  showCalendarYearMonthPicker(
-                    context,
-                    ref,
-                    anchorKey: _monthAnchorKey,
-                    currentMonth: focusedMonth,
-                    fallbackPanelTop:
-                        MediaQuery.paddingOf(context).top + 56 + 48,
+              monthSelectorKey: _monthAnchorKey,
+              focusedMonth: focusedMonth,
+              onMonthTap: () {
+                showCalendarYearMonthPicker(
+                  context,
+                  ref,
+                  anchorKey: _monthAnchorKey,
+                  currentMonth: focusedMonth,
+                  fallbackPanelTop: MediaQuery.paddingOf(context).top + 56 + 48,
+                );
+              },
+            ),
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                // 슬라이드 완료 후 헤더만 업데이트
+                onPageChanged: (page) {
+                  if (_programmaticPageAnimationDepth > 0) return;
+                  final newMonth = _getMonthFromPage(page);
+                  if (newMonth.year != focusedMonth.year ||
+                      newMonth.month != focusedMonth.month) {
+                    // 비동기로 상태 업데이트 (UI 블로킹 방지)
+                    Future.microtask(() {
+                      calendarController.goToMonth(newMonth);
+                    });
+                  }
+                },
+                itemBuilder: (context, index) {
+                  final month = _getMonthFromPage(index);
+                  return CalendarGrid(
+                    focusedMonth: month,
+                    onDayTap: (date) => _showDayEventsSheet(context, date),
                   );
                 },
               ),
-            Expanded(
-              child: PageView.builder(
-            controller: _pageController,
-            // 슬라이드 완료 후 헤더만 업데이트
-            onPageChanged: (page) {
-              if (_programmaticPageAnimationDepth > 0) return;
-              final newMonth = _getMonthFromPage(page);
-              if (newMonth.year != focusedMonth.year ||
-                  newMonth.month != focusedMonth.month) {
-                // 비동기로 상태 업데이트 (UI 블로킹 방지)
-                Future.microtask(() {
-                  calendarController.goToMonth(newMonth);
-                });
-              }
-            },
-            itemBuilder: (context, index) {
-              final month = _getMonthFromPage(index);
-              return CalendarGrid(
-                focusedMonth: month,
-                onDayTap: (date) => _showDayEventsSheet(context, date),
-              );
-            },
-          ),
-        ),
+            ),
           ],
         ),
         if (isLoading)

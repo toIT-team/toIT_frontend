@@ -51,7 +51,11 @@ class _EventTimeSectionState extends State<EventTimeSection> {
   @override
   void initState() {
     super.initState();
-    _displayedMonth = DateTime(widget.startDate.year, widget.startDate.month, 1);
+    _displayedMonth = DateTime(
+      widget.startDate.year,
+      widget.startDate.month,
+      1,
+    );
   }
 
   @override
@@ -63,7 +67,11 @@ class _EventTimeSectionState extends State<EventTimeSection> {
     }
 
     if (_activeTarget == null) {
-      _displayedMonth = DateTime(widget.startDate.year, widget.startDate.month, 1);
+      _displayedMonth = DateTime(
+        widget.startDate.year,
+        widget.startDate.month,
+        1,
+      );
     }
   }
 
@@ -78,66 +86,70 @@ class _EventTimeSectionState extends State<EventTimeSection> {
         (_activeTarget == _InlinePickerTarget.endDate ||
             _activeTarget == _InlinePickerTarget.endTime);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              '시간 설정',
-              style: TextStyle(
-                color: AppColors.gray900,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+    return TapRegion(
+      enabled: _activeTarget != null,
+      onTapOutside: (_) => _closeInlinePicker(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '시간 설정',
+                style: TextStyle(
+                  color: AppColors.gray900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            if (widget.isEditable)
-              CustomToggle(
-                value: widget.timeSetting,
-                onChanged: widget.onTimeSettingChanged,
-              ),
+              if (widget.isEditable)
+                CustomToggle(
+                  value: widget.timeSetting,
+                  onChanged: widget.onTimeSettingChanged,
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          EventTimeRow(
+            label: '시작',
+            date: widget.startDate,
+            time: widget.showTime ? widget.startTime : null,
+            showTimeChip: widget.showTime,
+            isEditable: widget.isEditable,
+            onDateTap: () => _onDateChipTap(_InlinePickerTarget.startDate),
+            onTimeTap: widget.showTime
+                ? () => _onTimeChipTap(_InlinePickerTarget.startTime)
+                : null,
+            isDateActive: _activeTarget == _InlinePickerTarget.startDate,
+            isTimeActive: _activeTarget == _InlinePickerTarget.startTime,
+          ),
+          if (showStartPicker) ...[
+            const SizedBox(height: 16),
+            _buildWiderInlinePicker(),
+            const SizedBox(height: 12),
+          ] else
+            const SizedBox(height: 12),
+          EventTimeRow(
+            label: '종료',
+            date: widget.endDate,
+            time: widget.showTime ? widget.endTime : null,
+            showTimeChip: widget.showTime,
+            isEditable: widget.isEditable,
+            onDateTap: () => _onDateChipTap(_InlinePickerTarget.endDate),
+            onTimeTap: widget.showTime
+                ? () => _onTimeChipTap(_InlinePickerTarget.endTime)
+                : null,
+            isDateActive: _activeTarget == _InlinePickerTarget.endDate,
+            isTimeActive: _activeTarget == _InlinePickerTarget.endTime,
+          ),
+          if (showEndPicker) ...[
+            const SizedBox(height: 16),
+            _buildWiderInlinePicker(),
           ],
-        ),
-        const SizedBox(height: 16),
-        EventTimeRow(
-          label: '시작',
-          date: widget.startDate,
-          time: widget.showTime ? widget.startTime : null,
-          showTimeChip: widget.showTime,
-          isEditable: widget.isEditable,
-          onDateTap: () => _onDateChipTap(_InlinePickerTarget.startDate),
-          onTimeTap: widget.showTime
-              ? () => _onTimeChipTap(_InlinePickerTarget.startTime)
-              : null,
-          isDateActive: _activeTarget == _InlinePickerTarget.startDate,
-          isTimeActive: _activeTarget == _InlinePickerTarget.startTime,
-        ),
-        if (showStartPicker) ...[
-          const SizedBox(height: 16),
-          _buildWiderInlinePicker(),
-          const SizedBox(height: 12),
-        ] else
-          const SizedBox(height: 12),
-        EventTimeRow(
-          label: '종료',
-          date: widget.endDate,
-          time: widget.showTime ? widget.endTime : null,
-          showTimeChip: widget.showTime,
-          isEditable: widget.isEditable,
-          onDateTap: () => _onDateChipTap(_InlinePickerTarget.endDate),
-          onTimeTap: widget.showTime
-              ? () => _onTimeChipTap(_InlinePickerTarget.endTime)
-              : null,
-          isDateActive: _activeTarget == _InlinePickerTarget.endDate,
-          isTimeActive: _activeTarget == _InlinePickerTarget.endTime,
-        ),
-        if (showEndPicker) ...[
-          const SizedBox(height: 16),
-          _buildWiderInlinePicker(),
         ],
-      ],
+      ),
     );
   }
 
@@ -284,11 +296,11 @@ class _EventTimeSectionState extends State<EventTimeSection> {
                     itemCount: days.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 4,
-                      childAspectRatio: 1,
-                    ),
+                          crossAxisCount: 7,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 4,
+                          childAspectRatio: 1,
+                        ),
                     itemBuilder: (context, index) {
                       final day = days[index];
                       final isSelected = _isSameDay(day.date, selectedDate);
@@ -309,11 +321,13 @@ class _EventTimeSectionState extends State<EventTimeSection> {
                               color: isSelected
                                   ? AppColors.surface
                                   : (day.isCurrentMonth
-                                      ? AppColors.gray900
-                                      : AppColors.gray400),
+                                        ? AppColors.gray900
+                                        : AppColors.gray400),
                               fontWeight: isSelected
                                   ? FontWeight.w700
-                                  : (isToday ? FontWeight.w700 : FontWeight.w500),
+                                  : (isToday
+                                        ? FontWeight.w700
+                                        : FontWeight.w500),
                               decoration: isToday && !isSelected
                                   ? TextDecoration.underline
                                   : TextDecoration.none,
@@ -447,6 +461,17 @@ class _EventTimeSectionState extends State<EventTimeSection> {
 
     setState(() {
       _displayedMonth = DateTime(normalized.year, normalized.month, 1);
+      _activeTarget = null;
+      _showMonthYearPicker = false;
+    });
+  }
+
+  void _closeInlinePicker() {
+    if (_activeTarget == null) return;
+
+    setState(() {
+      _activeTarget = null;
+      _showMonthYearPicker = false;
     });
   }
 
@@ -480,20 +505,7 @@ class _InlineTimeWheelPicker extends StatefulWidget {
 
 class _InlineTimeWheelPickerState extends State<_InlineTimeWheelPicker> {
   static const _itemExtent = 46.0;
-  static const _minutes = [
-    0,
-    5,
-    10,
-    15,
-    20,
-    25,
-    30,
-    35,
-    40,
-    45,
-    50,
-    55,
-  ];
+  static const _minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
   static const _periods = ['오전', '오후'];
 
   late int _periodIndex;
@@ -600,7 +612,8 @@ class _InlineTimeWheelPickerState extends State<_InlineTimeWheelPicker> {
             child: _buildWheel(
               controller: _minuteController,
               itemCount: _minutes.length,
-              labelBuilder: (index) => _minutes[index].toString().padLeft(2, '0'),
+              labelBuilder: (index) =>
+                  _minutes[index].toString().padLeft(2, '0'),
               onSelectedItemChanged: (index) {
                 setState(() {
                   _minuteIndex = index;
@@ -816,10 +829,7 @@ class _MonthYearWheelPickerState extends State<_MonthYearWheelPicker> {
 enum _InlinePickerTarget { startDate, startTime, endDate, endTime }
 
 class _CalendarCell {
-  _CalendarCell({
-    required this.date,
-    required this.isCurrentMonth,
-  });
+  _CalendarCell({required this.date, required this.isCurrentMonth});
 
   final DateTime date;
   final bool isCurrentMonth;
