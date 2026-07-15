@@ -81,7 +81,10 @@ final class TokenBridge {
       // )
       return
     }
-    defaults.set(accessToken, forKey: keyAccessToken)
+    guard SharedKeychainTokenStore.saveAccessToken(accessToken)
+    else { return }
+
+    defaults.removeObject(forKey: keyAccessToken)
     defaults.set(userId, forKey: keyUserId)
     defaults.set(baseUrl, forKey: keyBaseUrl)
     defaults.synchronize()
@@ -95,6 +98,7 @@ final class TokenBridge {
   private static func clear() {
     guard let defaults = AppGroupConfig.sharedUserDefaults
     else { return }
+    SharedKeychainTokenStore.deleteAccessToken()
     defaults.removeObject(forKey: keyAccessToken)
     defaults.removeObject(forKey: keyUserId)
     defaults.removeObject(forKey: keyBaseUrl)

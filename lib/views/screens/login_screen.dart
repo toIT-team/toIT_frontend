@@ -100,7 +100,7 @@ class LoginScreen extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 24),
-                _buildSupportRow(),
+                // _buildSupportRow(),
                 const SizedBox(height: 40),
               ],
             ),
@@ -231,34 +231,34 @@ class LoginScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSupportRow() {
-    return const Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '문제가 있으신가요?',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            height: 1.4,
-            letterSpacing: -0.4,
-            color: AppColors.gray600,
-          ),
-        ),
-        SizedBox(width: 8),
-        Text(
-          '고객 지원',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            height: 1.4,
-            letterSpacing: -0.4,
-            color: AppColors.gray900,
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildSupportRow() {
+  //   return const Row(
+  //     mainAxisAlignment: MainAxisAlignment.center,
+  //     children: [
+  //       Text(
+  //         '문제가 있으신가요?',
+  //         style: TextStyle(
+  //           fontSize: 16,
+  //           fontWeight: FontWeight.w500,
+  //           height: 1.4,
+  //           letterSpacing: -0.4,
+  //           color: AppColors.gray600,
+  //         ),
+  //       ),
+  //       SizedBox(width: 8),
+  //       Text(
+  //         '고객 지원',
+  //         style: TextStyle(
+  //           fontSize: 16,
+  //           fontWeight: FontWeight.w500,
+  //           height: 1.4,
+  //           letterSpacing: -0.4,
+  //           color: AppColors.gray900,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Future<void> _showRestoreDialog({
     required BuildContext context,
