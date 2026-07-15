@@ -41,6 +41,7 @@ import '../widgets/home/folder_memo_bottom_sheet.dart';
 import '../widgets/home/folder_options_bottom_sheet.dart';
 import 'image_detail_screen.dart';
 import 'note_detail_screen.dart';
+import 'pdf_preview_screen.dart';
 import 'save_file_screen.dart';
 import 'save_image_screen.dart';
 import 'save_link_screen.dart';
@@ -709,6 +710,23 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     }
   }
 
+  void _openFilePreview(AttachmentFileDto file) {
+    if (!_isPdfFile(file.fileName, file.attachmentsExtension)) {
+      _showSnack('PDF 파일만 미리보기를 지원합니다.');
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+          presignedUrl: file.presignedUrl,
+          fileName: file.fileName,
+          attachmentsExtension: file.attachmentsExtension,
+        ),
+      ),
+    );
+  }
+
   Future<void> _downloadFileAttachment({
     required String presignedUrl,
     required String fileName,
@@ -932,6 +950,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             pendingItems: pendingFiles,
             onPendingRetry: (id) =>
                 ref.read(pendingUploadsProvider.notifier).retry(id),
+            onFileTap: _openFilePreview,
             onFileKebabTap: _showFileKebabSheet,
           );
         case FolderTab.images:
@@ -1068,7 +1087,9 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
                     indicatorColor: AppColors.blue500,
                     indicatorWeight: 2,
                     dividerColor: AppColors.neutral50,
-                    tabs: FolderTab.order.map((tab) => Tab(text: tab.label)).toList(),
+                    tabs: FolderTab.order
+                        .map((tab) => Tab(text: tab.label))
+                        .toList(),
                   ),
                   Expanded(
                     child: TabBarView(
@@ -1081,9 +1102,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             ),
           ),
           // +버튼(FAB) 위로 떠오르는 업로드 진행 배너
-          const Positioned.fill(
-            child: UploadProgressBanner(bottomInset: 84),
-          ),
+          const Positioned.fill(child: UploadProgressBanner(bottomInset: 84)),
         ],
       ),
       floatingActionButton: Padding(
@@ -1942,12 +1961,14 @@ class _FileTabContent extends StatelessWidget {
   final List<AttachmentFileDto> files;
   final List<PendingSaveItem> pendingItems;
   final void Function(String id) onPendingRetry;
+  final void Function(AttachmentFileDto file) onFileTap;
   final void Function(AttachmentFileDto file) onFileKebabTap;
 
   const _FileTabContent({
     required this.files,
     required this.pendingItems,
     required this.onPendingRetry,
+    required this.onFileTap,
     required this.onFileKebabTap,
   });
 
@@ -1994,6 +2015,7 @@ class _FileTabContent extends StatelessWidget {
               final file = files[index - pendingItems.length];
               return _FileItemRow(
                 file: file,
+                onTap: () => onFileTap(file),
                 onMoreTap: () => onFileKebabTap(file),
               );
             },
@@ -2013,12 +2035,8 @@ class _PendingFileRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFailed = item.status == PendingSaveStatus.failed;
-    final fileName = item.blobs.isNotEmpty
-        ? item.blobs.first.fileName
-        : '파일';
-    final sizeBytes = item.blobs.isNotEmpty
-        ? item.blobs.first.bytes.length
-        : 0;
+    final fileName = item.blobs.isNotEmpty ? item.blobs.first.fileName : '파일';
+    final sizeBytes = item.blobs.isNotEmpty ? item.blobs.first.bytes.length : 0;
     final fileIconPath = _resolveFileIconAssetPath(
       fileName: fileName,
       attachmentsExtension: _extractExtension(fileName),
@@ -2089,20 +2107,20 @@ Widget _buildFileIconBox(String? fileIconPath) {
   }
   return ClipRRect(
     borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-    child: Image.asset(
-      fileIconPath,
-      width: 44,
-      height: 44,
-      fit: BoxFit.cover,
-    ),
+    child: Image.asset(fileIconPath, width: 44, height: 44, fit: BoxFit.cover),
   );
 }
 
 class _FileItemRow extends StatelessWidget {
   final AttachmentFileDto file;
+  final VoidCallback onTap;
   final VoidCallback onMoreTap;
 
-  const _FileItemRow({required this.file, required this.onMoreTap});
+  const _FileItemRow({
+    required this.file,
+    required this.onTap,
+    required this.onMoreTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2112,7 +2130,7 @@ class _FileItemRow extends StatelessWidget {
       attachmentsExtension: file.attachmentsExtension,
     );
     return _TapScale(
-      onTap: () {},
+      onTap: onTap,
       onLongPress: onMoreTap,
       pressedScale: 0.995,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -2177,6 +2195,11 @@ class _FileItemRow extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isPdfFile(String fileName, String attachmentsExtension) {
+  return _normalizeFileExtension(attachmentsExtension) == 'pdf' ||
+      _normalizeFileExtension(_extractExtension(fileName)) == 'pdf';
 }
 
 String? _resolveFileIconAssetPath({
@@ -2479,17 +2502,13 @@ class _PendingImageCell extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.memory(item.bytes, fit: BoxFit.cover),
-            Container(
-              color: Colors.white.withValues(alpha: 0.55),
-            ),
+            Container(color: Colors.white.withValues(alpha: 0.55)),
             if (isFailed)
               Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: onRetry,
-                  child: const Center(
-                    child: _PendingRetryContent(),
-                  ),
+                  child: const Center(child: _PendingRetryContent()),
                 ),
               )
             else
