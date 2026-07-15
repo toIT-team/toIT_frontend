@@ -18,7 +18,7 @@ final class ShareApiClient {
       return nil
     }
 
-    let token = defaults.string(forKey: "access_token")
+    let token = Self.resolveAccessToken(from: defaults)
     let url = defaults.string(forKey: "api_base_url")
     let uid = defaults.integer(forKey: "user_id")
 
@@ -30,6 +30,27 @@ final class ShareApiClient {
     self.accessToken = token
     self.baseUrl = url
     self.userId = uid
+  }
+
+  private static func resolveAccessToken(
+    from defaults: UserDefaults
+  ) -> String? {
+    if let token = SharedKeychainTokenStore.readAccessToken(),
+       !token.isEmpty {
+      return token
+    }
+
+    guard
+      let legacyToken = defaults.string(forKey: "access_token"),
+      !legacyToken.isEmpty
+    else { return nil }
+
+    if SharedKeychainTokenStore.saveAccessToken(legacyToken) {
+      defaults.removeObject(forKey: "access_token")
+      defaults.synchronize()
+    }
+
+    return legacyToken
   }
 
   // MARK: - Folder List
