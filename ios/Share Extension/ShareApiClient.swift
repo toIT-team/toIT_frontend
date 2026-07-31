@@ -136,6 +136,39 @@ final class ShareApiClient {
     )
   }
 
+  // MARK: - Create Link
+
+  func createLink(
+    linksUrl: String,
+    folderId: Int,
+    textContent: String
+  ) async throws {
+    let url = URL(string: "\(baseUrl)/links")!
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue(
+      "Bearer \(accessToken)",
+      forHTTPHeaderField: "Authorization"
+    )
+    req.setValue(
+      "application/json",
+      forHTTPHeaderField: "Content-Type"
+    )
+    req.timeoutInterval = 15
+
+    var body: [String: Any] = [
+      "foldersIdList": [folderId],
+      "linksUrl": linksUrl,
+    ]
+    if !textContent.isEmpty {
+      body["textContent"] = textContent
+    }
+    req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+    let (_, response) = try await URLSession.shared.data(for: req)
+    try validateResponse(response)
+  }
+
   // MARK: - Private Helpers
 
   private func request(

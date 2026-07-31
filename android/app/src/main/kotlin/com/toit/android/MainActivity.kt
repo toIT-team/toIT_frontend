@@ -32,6 +32,7 @@ class MainActivity : FlutterActivity() {
       action == Intent.ACTION_SEND_MULTIPLE
     if (!isSendAction) return false
 
-    return targetIntent.hasExtra(Intent.EXTRA_STREAM)
+    return targetIntent.hasExtra(Intent.EXTRA_STREAM) ||
+      targetIntent.hasExtra(Intent.EXTRA_TEXT)
   }
 }
