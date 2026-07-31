@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'auth_controller.dart';
-import '../services/auth_service.dart';
+import '../core/constants/api_constants.dart';
 import '../core/constants/app_colors.dart';
 import '../core/constants/event_color_tokens.dart';
+import '../core/network/api_client.dart';
 import '../models/dto/home_response_dto.dart';
 import '../models/home/folder_item.dart';
 import '../models/home/schedule.dart';
@@ -270,12 +271,7 @@ class HomeController extends Notifier<HomeState> {
 
   /// DTO → HomeState 반영 로직. `_loadHomeData` 와 프리페치 주입 경로가 공유한다.
   Future<void> _applyHomeDataDto(HomeResponseDto dto) async {
-    final authService = ref.read(authServiceProvider);
-    final tokenNickname = await authService.getNicknameFromToken();
-    final resolvedUserName =
-        (tokenNickname != null && tokenNickname.trim().isNotEmpty)
-        ? tokenNickname.trim()
-        : '사용자';
+    final resolvedUserName = await _fetchHomeNickname();
 
     final schedules = dto.schedules
         .asMap()
@@ -311,6 +307,14 @@ class HomeController extends Notifier<HomeState> {
       isLoading: false,
       errorMessage: null,
     );
+  }
+
+  Future<String> _fetchHomeNickname() async {
+    final response = await ref
+        .read(apiClientProvider)
+        .get<Map<String, dynamic>>(ApiConstants.authMeEndpoint);
+    final nickname = response.data?['nickname']?.toString().trim() ?? '';
+    return nickname.isNotEmpty ? nickname : '사용자';
   }
 
   /// 데이터 새로고침
@@ -452,9 +456,8 @@ class HomeController extends Notifier<HomeState> {
 
     final nextFolders = state.folders
         .map(
-          (f) => f.foldersId == foldersId
-              ? f.copyWith(isFavorite: isFavorite)
-              : f,
+          (f) =>
+              f.foldersId == foldersId ? f.copyWith(isFavorite: isFavorite) : f,
         )
         .toList();
     state = state.copyWith(folders: nextFolders);
