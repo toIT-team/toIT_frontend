@@ -135,7 +135,6 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
             memo: memo,
           );
         },
-        errorMessageBuilder: _sharedSaveErrorMessage,
       );
     } finally {
       _isShareSheetVisible = false;
@@ -158,19 +157,40 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     required String memo,
   }) async {
     final repository = ref.read(homeRepositoryProvider);
+    int savedCount = 0;
 
     for (final item in items) {
-      await _saveSharedItem(
-        repository: repository,
-        item: item,
-        selectedFolder: selectedFolder,
-        memo: memo,
-      );
+      try {
+        await _saveSharedItem(
+          repository: repository,
+          item: item,
+          selectedFolder: selectedFolder,
+          memo: memo,
+        );
+        savedCount++;
+      } on DioException catch (e) {
+        _showSnackBar(_sharedSaveDioErrorMessage(e));
+        rethrow;
+      } on _SharedSaveException catch (e) {
+        _showSnackBar(e.message);
+        rethrow;
+      } catch (_) {
+        _showSnackBar('공유 항목 저장에 실패했습니다.');
+        rethrow;
+      }
+    }
+
+    if (savedCount <= 0) {
+      throw Exception('Failed to save shared attachments.');
     }
 
     await ref.read(homeProvider.notifier).refresh();
     ref.invalidate(pageItemsProvider(selectedFolder.foldersId));
-    _showSnackBar('공유 항목이 저장되었습니다.');
+    _showSnackBar(
+      savedCount == items.length
+          ? '공유 항목이 저장되었습니다.'
+          : '$savedCount개 저장됨. 일부 저장의 실패했습니다.',
+    );
   }
 
   Future<void> _saveSharedItem({
@@ -253,16 +273,6 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
       throw const _SharedSaveException('공유된 파일을 읽을 수 없습니다.');
     }
     return fileBytes;
-  }
-
-  String _sharedSaveErrorMessage(Object error) {
-    if (error is _SharedSaveException) {
-      return error.message;
-    }
-    if (error is DioException) {
-      return _sharedSaveDioErrorMessage(error);
-    }
-    return '공유 항목 저장에 실패했습니다.';
   }
 
   String _sharedSaveDioErrorMessage(DioException error) {

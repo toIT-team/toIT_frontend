@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 // TODO(FCM-비활성화): 테스트 중 임시 주석
 // import 'package:firebase_core/firebase_core.dart';
@@ -55,6 +56,7 @@ class MyApp extends ConsumerStatefulWidget {
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const _launchInfoChannel = MethodChannel('com.toit/launch_info');
+  static const _androidShareInitialRoute = '/android-share';
   final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
   /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
@@ -68,6 +70,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   /// 스플래시 최소 노출 시간이 지난 뒤에만 true.
   /// `authState`가 먼저 확정되더라도 이 값이 false인 동안에는 스플래시를 유지한다.
   bool _isSplashFinished = false;
+  late bool _isAndroidShareLaunch =
+      ui.PlatformDispatcher.instance.defaultRouteName ==
+      _androidShareInitialRoute;
   bool _showSessionExpiredNotice = false;
   bool _isSessionExpiredDialogShowing = false;
   // TODO(FCM-비활성화): 테스트 중 임시 주석
@@ -231,19 +236,22 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       },
     );
 
-    final skipMinSplashDelay = await _shouldSkipMinSplashDelay();
+    final isAndroidShareLaunch = await _shouldSkipMinSplashDelay();
+    if (mounted && isAndroidShareLaunch != _isAndroidShareLaunch) {
+      setState(() => _isAndroidShareLaunch = isAndroidShareLaunch);
+    }
 
     // 부트스트랩(토큰 확인 + 선제 재발급 + 세션 복원)과 스플래시 최소
     // 노출 시간을 병렬 대기한다. `BootstrapController` 가 실패/재시도 경로를
     // 관리하므로 여기서는 "끝났는가" 여부만 플래그로 남긴다.
     // debugPrint(
     // '[BOOT] splash_start minDurationMs='
-    // '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
+    // '${isAndroidShareLaunch ? 0 : _minSplashDuration.inMilliseconds}',
     // );
     final splashStopwatch = Stopwatch()..start();
     await Future.wait<void>([
       ref.read(bootstrapProvider.notifier).run(),
-      if (!skipMinSplashDelay) Future<void>.delayed(_minSplashDuration),
+      if (!isAndroidShareLaunch) Future<void>.delayed(_minSplashDuration),
     ]);
     splashStopwatch.stop();
     if (!mounted) {
@@ -295,6 +303,17 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   }
 
   Widget _buildHome(BootstrapStatus status, AuthStatus authStatus) {
+    if (_isAndroidShareLaunch && authStatus == AuthStatus.authenticated) {
+      return const NavigationShell(androidShareLaunch: true);
+    }
+
+    if (_isAndroidShareLaunch &&
+        (status == BootstrapStatus.idle ||
+            status == BootstrapStatus.running ||
+            !_isSplashFinished)) {
+      return const AndroidShareLaunchScreen();
+    }
+
     // 최소 노출 시간 또는 아직 부트스트랩 결과가 확정되지 않은 동안은
     // 항상 스플래시를 유지해 화면 깜빡임을 방지한다.
     if (!_isSplashFinished ||
@@ -410,4 +429,18 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   //   _pendingReadNotificationId = null;
   //   unawaited(_patchNotificationRead(notificationId));
   // }
+}
+
+/// Android 외부 공유 진입에서 Flutter 부트스트랩이 끝나기 전 보여주는
+/// 투명 Activity용 대기 화면.
+class AndroidShareLaunchScreen extends StatelessWidget {
+  const AndroidShareLaunchScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0x73000000),
+      body: SizedBox.expand(),
+    );
+  }
 }
