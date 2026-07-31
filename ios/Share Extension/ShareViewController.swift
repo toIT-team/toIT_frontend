@@ -2,6 +2,11 @@ import UIKit
 import UniformTypeIdentifiers
 
 final class ShareViewController: UIViewController {
+  private enum SharedItem {
+    case attachment(url: URL, isImage: Bool)
+    case link(String)
+  }
+
   private enum Constants {
     static let maxMemoLength = 1000
     static let maxImageSaveCount = 3
@@ -19,8 +24,7 @@ final class ShareViewController: UIViewController {
   private var allFolders: [ShareFolder] = []
   private var displayedFolders: [ShareFolder] = []
   private var selectedFolder: ShareFolder?
-  private var sharedItemUrls: [URL] = []
-  private var isImage = true
+  private var sharedItems: [SharedItem] = []
   private var isSaving = false
   private var bottomSpacerHeightConstraint: NSLayoutConstraint?
 
@@ -290,30 +294,115 @@ final class ShareViewController: UIViewController {
       if provider.hasItemConformingToTypeIdentifier(
         UTType.image.identifier
       ) {
-        isImage = true
         group.enter()
         provider.loadItem(
           forTypeIdentifier: UTType.image.identifier
         ) { [weak self] item, _ in
           defer { group.leave() }
           if let url = item as? URL {
-            self?.sharedItemUrls.append(url)
+            self?.appendSharedItem(
+              .attachment(url: url, isImage: true)
+            )
+          }
+        }
+      } else if provider.hasItemConformingToTypeIdentifier(
+        UTType.url.identifier
+      ) {
+        group.enter()
+        provider.loadItem(
+          forTypeIdentifier: UTType.url.identifier
+        ) { [weak self] item, _ in
+          defer { group.leave() }
+          if let link = self?.linkString(from: item) {
+            self?.appendSharedItem(.link(link))
+          }
+        }
+      } else if provider.hasItemConformingToTypeIdentifier(
+        UTType.plainText.identifier
+      ) {
+        group.enter()
+        provider.loadItem(
+          forTypeIdentifier: UTType.plainText.identifier
+        ) { [weak self] item, _ in
+          defer { group.leave() }
+          if let link = self?.linkString(from: item) {
+            self?.appendSharedItem(.link(link))
           }
         }
       } else if provider.hasItemConformingToTypeIdentifier(
         UTType.data.identifier
       ) {
-        isImage = false
         group.enter()
-        provider.loadItem(
+        provider.loadFileRepresentation(
           forTypeIdentifier: UTType.data.identifier
-        ) { [weak self] item, _ in
+        ) { [weak self] url, _ in
           defer { group.leave() }
-          if let url = item as? URL {
-            self?.sharedItemUrls.append(url)
+          guard let self, let url else { return }
+          if let copiedUrl = self.copySharedFileToTemporaryDirectory(url) {
+            self.appendSharedItem(
+              .attachment(url: copiedUrl, isImage: false)
+            )
           }
         }
       }
+    }
+  }
+
+  private func appendSharedItem(_ item: SharedItem) {
+    DispatchQueue.main.async {
+      self.sharedItems.append(item)
+    }
+  }
+
+  private func linkString(from item: Any?) -> String? {
+    if let url = item as? URL {
+      return url.absoluteString
+    }
+    guard let text = item as? String else { return nil }
+    let trimmed = text.trimmingCharacters(
+      in: .whitespacesAndNewlines
+    )
+    if URL(string: trimmed)?.scheme != nil {
+      return trimmed
+    }
+    return firstLink(in: trimmed)
+  }
+
+  private func firstLink(in text: String) -> String? {
+    guard
+      let detector = try? NSDataDetector(
+        types: NSTextCheckingResult.CheckingType.link.rawValue
+      )
+    else { return nil }
+    let range = NSRange(text.startIndex..<text.endIndex, in: text)
+    return detector.firstMatch(
+      in: text,
+      options: [],
+      range: range
+    )?.url?.absoluteString
+  }
+
+  private func copySharedFileToTemporaryDirectory(_ sourceUrl: URL) -> URL? {
+    let fileManager = FileManager.default
+    let fileName = sourceUrl.lastPathComponent.isEmpty
+      ? UUID().uuidString
+      : sourceUrl.lastPathComponent
+    let destination = fileManager.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString)
+      .appendingPathComponent(fileName)
+
+    do {
+      try fileManager.createDirectory(
+        at: destination.deletingLastPathComponent(),
+        withIntermediateDirectories: true
+      )
+      if fileManager.fileExists(atPath: destination.path) {
+        try fileManager.removeItem(at: destination)
+      }
+      try fileManager.copyItem(at: sourceUrl, to: destination)
+      return destination
+    } catch {
+      return nil
     }
   }
 
@@ -568,8 +657,8 @@ final class ShareViewController: UIViewController {
       showError("보관함을 선택해주세요.")
       return
     }
-    guard !sharedItemUrls.isEmpty else {
-      showError("공유된 파일이 없습니다.")
+    guard !sharedItems.isEmpty else {
+      showError("공유된 항목이 없습니다.")
       return
     }
     if uploadValidationFails() {
@@ -582,28 +671,46 @@ final class ShareViewController: UIViewController {
     loadingIndicator.startAnimating()
 
     let memo = memoTextView.text ?? ""
-    let urls = sharedItemUrls
-    let uploadAsImage = isImage
+    let items = sharedItems
 
     Task {
       do {
-        for url in urls {
-          let data = try Data(contentsOf: url)
-          let fileName = url.lastPathComponent
-
-          if uploadAsImage {
-            try await client.uploadImage(
-              data: data,
-              fileName: fileName,
-              folderId: folder.foldersId,
-              textContent: memo
+        for item in items {
+          switch item {
+          case .attachment(let url, let isImage):
+            let data = try Data(contentsOf: url)
+            let fileName = url.lastPathComponent
+            if isImage {
+              try await client.uploadImage(
+                data: data,
+                fileName: fileName,
+                folderId: folder.foldersId,
+                textContent: memo
+              )
+            } else {
+              try await client.uploadFile(
+                data: data,
+                fileName: fileName,
+                folderId: folder.foldersId,
+                textContent: memo
+              )
+            }
+          case .link(let link):
+            let preview = try await client.fetchLinkPreview(
+              linksUrl: link
             )
-          } else {
-            try await client.uploadFile(
-              data: data,
-              fileName: fileName,
+            let trimmedMemo = memo.trimmingCharacters(
+              in: .whitespacesAndNewlines
+            )
+            let textContent = trimmedMemo.isEmpty
+              ? preview.textContent
+              : trimmedMemo
+            try await client.createLink(
+              linksUrl: link,
               folderId: folder.foldersId,
-              textContent: memo
+              linksName: preview.linksName,
+              textContent: textContent,
+              linksThumbnail: preview.linksThumbnail
             )
           }
         }
@@ -660,9 +767,6 @@ final class ShareViewController: UIViewController {
 
   @objc
   private func handleKeyboardWillShow(_ notification: Notification) {
-    guard memoTextView.isFirstResponder else {
-      return
-    }
     guard
       let keyboardFrame = notification.userInfo?[
         UIResponder.keyboardFrameEndUserInfoKey
@@ -675,7 +779,17 @@ final class ShareViewController: UIViewController {
       keyboardFrame.height - view.safeAreaInsets.bottom
     )
     bottomSpacerHeightConstraint?.constant = keyboardHeight
-    UIView.animate(withDuration: Constants.keyboardAnimationDuration) {
+    let duration = notification.userInfo?[
+      UIResponder.keyboardAnimationDurationUserInfoKey
+    ] as? TimeInterval ?? Constants.keyboardAnimationDuration
+    let curveRaw = notification.userInfo?[
+      UIResponder.keyboardAnimationCurveUserInfoKey
+    ] as? UInt ?? UInt(UIView.AnimationCurve.easeInOut.rawValue)
+    UIView.animate(
+      withDuration: duration,
+      delay: 0,
+      options: UIView.AnimationOptions(rawValue: curveRaw << 16)
+    ) {
       self.view.layoutIfNeeded()
     }
   }
@@ -715,14 +829,20 @@ final class ShareViewController: UIViewController {
   // MARK: - Error
 
   private func uploadValidationFails() -> Bool {
-    if isImage && sharedItemUrls.count > Constants.maxImageSaveCount {
+    let imageCount = sharedItems.reduce(0) { count, item in
+      if case .attachment(_, let isImage) = item, isImage {
+        return count + 1
+      }
+      return count
+    }
+    if imageCount > Constants.maxImageSaveCount {
       showAlert(
         "이미지는 3개 이상 저장할 수 없습니다."
       )
       return true
     }
-    if !isImage {
-      for url in sharedItemUrls {
+    for item in sharedItems {
+      if case .attachment(let url, let isImage) = item, !isImage {
         guard let fileSize = fileSizeBytes(
           for: url
         ) else { continue }

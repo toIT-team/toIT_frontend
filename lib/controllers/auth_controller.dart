@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/constants/api_constants.dart';
+import '../core/network/api_client.dart';
 import '../services/auth_service.dart';
 // TODO(FCM-비활성화): 테스트 중 임시 주석
 // import '../services/fcm_registration_service.dart';
@@ -18,13 +19,15 @@ enum AuthStatus {
   /// 로그인 완료 (토큰 보유)
   authenticated,
 
+  /// 로그인 후 닉네임 입력 필요
+  needsNickname,
+
   /// 미로그인 (토큰 없음)
   unauthenticated,
 }
 
 /// 인증 세션 변경(로그인/로그아웃/복구) 시 캐시 갱신 트리거
-final authSessionRefreshTickProvider =
-    StateProvider<int>((ref) => 0);
+final authSessionRefreshTickProvider = StateProvider<int>((ref) => 0);
 
 /// 인증 상태 + 부가 정보
 class AuthState {
@@ -74,10 +77,10 @@ class AuthController extends Notifier<AuthState> {
 
   AuthService get _authService => ref.read(authServiceProvider);
 
+  ApiClient get _apiClient => ref.read(apiClientProvider);
+
   void _bumpSessionRefreshTick() {
-    final notifier = ref.read(
-      authSessionRefreshTickProvider.notifier,
-    );
+    final notifier = ref.read(authSessionRefreshTickProvider.notifier);
     notifier.state = notifier.state + 1;
   }
 
@@ -85,13 +88,17 @@ class AuthController extends Notifier<AuthState> {
   Future<void> checkAuthStatus() async {
     final hasTokens = await _authService.hasTokens();
     if (hasTokens) {
-      final userId = await _authService.getUserIdFromToken();
+      final me = await _fetchAuthMe();
       state = AuthState(
-        status: AuthStatus.authenticated,
-        userId: userId,
+        status: me.needsNickname
+            ? AuthStatus.needsNickname
+            : AuthStatus.authenticated,
+        userId: me.userId,
       );
       await _authService.syncExistingTokenToAppGroup();
-      unawaited(_authService.fetchAndSaveCloudFrontCookies());
+      if (!me.needsNickname) {
+        unawaited(_authService.fetchAndSaveCloudFrontCookies());
+      }
       // TODO(FCM-비활성화): 테스트 중 임시 주석
       // unawaited(
       //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
@@ -99,30 +106,22 @@ class AuthController extends Notifier<AuthState> {
       //       ),
       // );
     } else {
-      state = const AuthState(
-        status: AuthStatus.unauthenticated,
-      );
+      state = const AuthState(status: AuthStatus.unauthenticated);
     }
     // debugPrint(
-      // '[AuthController] 인증 상태: ${state.status}'
-      // ', userId: ${state.userId}',
+    // '[AuthController] 인증 상태: ${state.status}'
+    // ', userId: ${state.userId}',
     // );
   }
 
   /// 카카오 로그인 (백엔드 OAuth → 동일 콜백 규약)
   Future<void> loginWithKakao() async {
-    await _runSocialLogin(
-      SocialLoginKind.kakao,
-      _authService.loginWithKakao,
-    );
+    await _runSocialLogin(SocialLoginKind.kakao, _authService.loginWithKakao);
   }
 
   /// 애플 로그인 (백엔드 OAuth → 동일 콜백 규약)
   Future<void> loginWithApple() async {
-    await _runSocialLogin(
-      SocialLoginKind.apple,
-      _authService.loginWithApple,
-    );
+    await _runSocialLogin(SocialLoginKind.apple, _authService.loginWithApple);
   }
 
   Future<void> _runSocialLogin(
@@ -147,14 +146,17 @@ class AuthController extends Notifier<AuthState> {
               refreshToken: callbackData.refreshToken!,
             );
             await _authService.printStoredUserInfo();
-            final userId =
-                await _authService.getUserIdFromToken();
+            final me = await _fetchAuthMe();
             state = AuthState(
-              status: AuthStatus.authenticated,
-              userId: userId,
+              status: me.needsNickname
+                  ? AuthStatus.needsNickname
+                  : AuthStatus.authenticated,
+              userId: me.userId,
             );
-            _bumpSessionRefreshTick();
-            unawaited(_authService.fetchAndSaveCloudFrontCookies());
+            if (me.needsNickname) {
+              return;
+            }
+            _markAuthenticatedSideEffects();
             // TODO(FCM-비활성화): 테스트 중 임시 주석
             // unawaited(
             //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
@@ -162,7 +164,7 @@ class AuthController extends Notifier<AuthState> {
             //       ),
             // );
             // debugPrint(
-              // '[AuthController] 로그인 성공, userId: $userId',
+            // '[AuthController] 로그인 성공, userId: $userId',
             // );
           } else {
             state = state.copyWith(
@@ -173,14 +175,14 @@ class AuthController extends Notifier<AuthState> {
 
         case AuthCallbackResult.cancelled:
           state = state.copyWith(isLoading: false, errorMessage: null);
-          // debugPrint('[AuthController] 로그인 취소');
+        // debugPrint('[AuthController] 로그인 취소');
 
         case AuthCallbackResult.needsSignup:
           state = state.copyWith(
             isLoading: false,
             errorMessage: '추가 회원가입이 필요합니다.',
           );
-          // debugPrint('[AuthController] 추가 회원가입 필요');
+        // debugPrint('[AuthController] 추가 회원가입 필요');
 
         case AuthCallbackResult.failed:
           final code = callbackData.errorCode ?? 'unknown';
@@ -188,7 +190,7 @@ class AuthController extends Notifier<AuthState> {
             isLoading: false,
             errorMessage: '로그인에 실패했습니다. ($code)',
           );
-          // debugPrint('[AuthController] 로그인 실패: $code');
+        // debugPrint('[AuthController] 로그인 실패: $code');
 
         case AuthCallbackResult.deletedUser:
           final restoreToken = callbackData.restoreToken;
@@ -212,6 +214,33 @@ class AuthController extends Notifier<AuthState> {
         errorMessage: '로그인 중 오류가 발생했습니다.',
       );
     }
+  }
+
+  Future<void> completeNicknameSetup(String nickname) async {
+    final trimmed = nickname.trim();
+    await _apiClient.patch<void>(
+      ApiConstants.usersNameEndpoint,
+      data: {'name': trimmed},
+    );
+    state = AuthState(status: AuthStatus.authenticated, userId: state.userId);
+    _markAuthenticatedSideEffects();
+  }
+
+  Future<({int? userId, bool needsNickname})> _fetchAuthMe() async {
+    final response = await _apiClient.get<Map<String, dynamic>>(
+      ApiConstants.authMeEndpoint,
+    );
+    final data = response.data ?? const <String, dynamic>{};
+    final rawUserId = data['userId'];
+    final userId = rawUserId is int
+        ? rawUserId
+        : int.tryParse(rawUserId?.toString() ?? '');
+    return (userId: userId, needsNickname: data['needsNickname'] == true);
+  }
+
+  void _markAuthenticatedSideEffects() {
+    _bumpSessionRefreshTick();
+    unawaited(_authService.fetchAndSaveCloudFrontCookies());
   }
 
   /// 로그아웃
@@ -247,9 +276,7 @@ class AuthController extends Notifier<AuthState> {
     );
   }
 
-  Future<void> restoreDeletedAccount({
-    required String restoreToken,
-  }) async {
+  Future<void> restoreDeletedAccount({required String restoreToken}) async {
     state = AuthState(
       status: AuthStatus.unauthenticated,
       isLoading: true,
@@ -274,13 +301,18 @@ class AuthController extends Notifier<AuthState> {
       accessToken: restored.accessToken!,
       refreshToken: restored.refreshToken!,
     );
-    final userId = await _authService.getUserIdFromToken();
+    final me = await _fetchAuthMe();
     state = AuthState(
-      status: AuthStatus.authenticated,
+      status: me.needsNickname
+          ? AuthStatus.needsNickname
+          : AuthStatus.authenticated,
       isLoading: false,
-      userId: userId,
+      userId: me.userId,
     );
-    _bumpSessionRefreshTick();
+    if (me.needsNickname) {
+      return;
+    }
+    _markAuthenticatedSideEffects();
     // TODO(FCM-비활성화): 테스트 중 임시 주석
     // unawaited(
     //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
@@ -298,9 +330,7 @@ final authProvider = NotifierProvider<AuthController, AuthState>(
 
 /// 현재 로그인된 사용자 ID (미로그인 시 예외)
 final currentUserIdProvider = Provider<int>((ref) {
-  final userId = ref.watch(
-    authProvider.select((s) => s.userId),
-  );
+  final userId = ref.watch(authProvider.select((s) => s.userId));
   if (userId == null) {
     throw StateError('로그인되지 않은 상태에서 userId 접근');
   }

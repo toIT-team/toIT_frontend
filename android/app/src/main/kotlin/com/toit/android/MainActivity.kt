@@ -5,10 +5,11 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+open class MainActivity : FlutterActivity() {
   private companion object {
     const val LAUNCH_INFO_CHANNEL = "com.toit/launch_info"
     const val IS_SHARE_LAUNCH_METHOD = "isShareLaunch"
+    const val FINISH_SHARE_LAUNCH_METHOD = "finishShareLaunch"
   }
 
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -21,6 +22,12 @@ class MainActivity : FlutterActivity() {
         IS_SHARE_LAUNCH_METHOD -> {
           result.success(isShareIntent(intent))
         }
+        FINISH_SHARE_LAUNCH_METHOD -> {
+          if (this is AndroidShareActivity) {
+            finish()
+          }
+          result.success(null)
+        }
         else -> result.notImplemented()
       }
     }
@@ -32,6 +39,7 @@ class MainActivity : FlutterActivity() {
       action == Intent.ACTION_SEND_MULTIPLE
     if (!isSendAction) return false
 
-    return targetIntent.hasExtra(Intent.EXTRA_STREAM)
+    return targetIntent.hasExtra(Intent.EXTRA_STREAM) ||
+      targetIntent.hasExtra(Intent.EXTRA_TEXT)
   }
 }

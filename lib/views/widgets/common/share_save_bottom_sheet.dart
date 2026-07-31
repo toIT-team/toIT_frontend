@@ -14,6 +14,7 @@ Future<void> showShareSaveBottomSheet(
   FolderItem? initialSelectedFolder,
   String initialMemo = '',
   required Future<void> Function(FolderItem selectedFolder, String memo) onSave,
+  String Function(Object error)? errorMessageBuilder,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -24,6 +25,7 @@ Future<void> showShareSaveBottomSheet(
       initialSelectedFolder: initialSelectedFolder,
       initialMemo: initialMemo,
       onSave: onSave,
+      errorMessageBuilder: errorMessageBuilder,
     ),
   );
 }
@@ -36,12 +38,14 @@ class ShareSaveBottomSheet extends StatefulWidget {
     this.initialSelectedFolder,
     this.initialMemo = '',
     required this.onSave,
+    this.errorMessageBuilder,
   });
 
   final List<FolderItem> folders;
   final FolderItem? initialSelectedFolder;
   final String initialMemo;
   final Future<void> Function(FolderItem selectedFolder, String memo) onSave;
+  final String Function(Object error)? errorMessageBuilder;
 
   @override
   State<ShareSaveBottomSheet> createState() => _ShareSaveBottomSheetState();
@@ -60,6 +64,7 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
   String folderQuery = '';
   int memoLength = 0;
   bool isSaving = false;
+  String? errorMessage;
 
   @override
   void initState() {
@@ -90,11 +95,20 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
       return;
     }
 
-    setState(() => isSaving = true);
+    setState(() {
+      isSaving = true;
+      errorMessage = null;
+    });
     try {
       await widget.onSave(targetFolder, memoController.text.trim());
       if (!mounted) return;
       Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        errorMessage =
+            widget.errorMessageBuilder?.call(error) ?? '공유 항목 저장에 실패했습니다.';
+      });
     } finally {
       if (mounted) setState(() => isSaving = false);
     }
@@ -154,28 +168,48 @@ class _ShareSaveBottomSheetState extends State<ShareSaveBottomSheet> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: handleSaveTap,
+                      onTap: isSaving ? null : handleSaveTap,
                       behavior: HitTestBehavior.opaque,
-                      child: isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              '저장',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: selectedFolder == null
-                                    ? AppColors.neutral100
-                                    : AppColors.blue500,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                '저장',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: selectedFolder == null
+                                      ? AppColors.neutral100
+                                      : AppColors.blue500,
+                                ),
                               ),
-                            ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
+                if (errorMessage != null) ...[
+                  Text(
+                    errorMessage!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.redAccent,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 _buildFolderSearchBar(),
                 const SizedBox(height: 12),
                 _buildFolderChips(),

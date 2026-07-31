@@ -136,6 +136,88 @@ final class ShareApiClient {
     )
   }
 
+  // MARK: - Link
+
+  struct LinkPreview {
+    let linksName: String
+    let textContent: String
+    let linksThumbnail: String
+
+    init(json: [String: Any]) {
+      linksName = json["linksName"] as? String ?? ""
+      textContent = json["textContent"] as? String ?? ""
+      linksThumbnail = json["linksThumbnail"] as? String ?? ""
+    }
+  }
+
+  func fetchLinkPreview(linksUrl: String) async throws -> LinkPreview {
+    let url = URL(string: "\(baseUrl)/links/preview")!
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue(
+      "Bearer \(accessToken)",
+      forHTTPHeaderField: "Authorization"
+    )
+    req.setValue(
+      "application/json",
+      forHTTPHeaderField: "Content-Type"
+    )
+    req.timeoutInterval = 15
+
+    req.httpBody = try JSONSerialization.data(
+      withJSONObject: ["linksUrl": linksUrl]
+    )
+
+    let (data, response) = try await URLSession.shared.data(for: req)
+    try validateResponse(response)
+
+    guard let json = try JSONSerialization.jsonObject(
+      with: data
+    ) as? [String: Any] else {
+      return LinkPreview(json: [:])
+    }
+    return LinkPreview(json: json)
+  }
+
+  func createLink(
+    linksUrl: String,
+    folderId: Int,
+    linksName: String,
+    textContent: String,
+    linksThumbnail: String
+  ) async throws {
+    let url = URL(string: "\(baseUrl)/links")!
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue(
+      "Bearer \(accessToken)",
+      forHTTPHeaderField: "Authorization"
+    )
+    req.setValue(
+      "application/json",
+      forHTTPHeaderField: "Content-Type"
+    )
+    req.timeoutInterval = 15
+
+    var body: [String: Any] = [
+      "foldersIdList": [folderId],
+      "linksUrl": linksUrl,
+    ]
+    if !textContent.isEmpty {
+      body["textContent"] = textContent
+    }
+    if !linksName.isEmpty {
+      body["linksName"] = linksName
+    }
+    if !linksThumbnail.isEmpty {
+      body["linksThumbnail"] = linksThumbnail
+    }
+    req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+    let (_, response) = try await URLSession.shared.data(for: req)
+    try validateResponse(response)
+  }
+
   // MARK: - Private Helpers
 
   private func request(

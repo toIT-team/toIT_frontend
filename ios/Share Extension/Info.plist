@@ -10,8 +10,16 @@
 		<dict>
 			<key>NSExtensionActivationRule</key>
 			<dict>
+				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
+				<integer>10</integer>
 				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
 				<integer>30</integer>
+				<key>NSExtensionActivationSupportsText</key>
+				<true/>
+				<key>NSExtensionActivationSupportsWebPageWithMaxCount</key>
+				<integer>1</integer>
+				<key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+				<integer>1</integer>
 			</dict>
 			<key>PHSupportedMediaTypes</key>
 			<array>

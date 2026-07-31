@@ -69,7 +69,7 @@ class EventFormState with _$EventFormState {
   /// 시작/종료 일시 유효성 검사
   ///
   /// - 시작 날짜는 종료 날짜보다 늦을 수 없다.
-  /// - 시간 설정이 켜져 있고 같은 날짜라면 시작 시간은 종료 시간보다 빨라야 한다.
+  /// - 시간 설정이 켜져 있고 같은 날짜라면 시작 시간은 종료 시간보다 늦을 수 없다.
   bool get isDateTimeRangeValid {
     final start = startDate;
     final end = endDate;
@@ -86,7 +86,7 @@ class EventFormState with _$EventFormState {
     final endMinutes = _toMinutes(endTime);
     if (startMinutes == null || endMinutes == null) return true;
 
-    return startMinutes < endMinutes;
+    return startMinutes <= endMinutes;
   }
 
   /// TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
@@ -145,6 +145,7 @@ class EventFormController extends Notifier<EventFormState> {
   void initWithScheduleDetail(ScheduleDetailResponse detail) {
     final startTime = _toHhMm(detail.startTime);
     final endTime = _toHhMm(detail.endTime);
+    final colorToken = EventColorTokens.tryParseToken(detail.appColor);
     state = EventFormState(
       id: detail.schedulesId.toString(),
       title: detail.title,
@@ -158,7 +159,7 @@ class EventFormController extends Notifier<EventFormState> {
       // alarmMinutes: detail.alarmState ? detail.alarmOffsetMinutes : null,
       folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
       foldersId: detail.foldersId > 0 ? detail.foldersId : null,
-      appColorToken: EventColorToken.blue300,
+      appColorToken: colorToken ?? EventColorToken.blue300,
     );
   }
 
@@ -209,7 +210,7 @@ class EventFormController extends Notifier<EventFormState> {
 
   /// 시작 시간 업데이트
   void updateStartTime(String? value) {
-    state = state.copyWith(startTime: value);
+    state = state.copyWith(startTime: value, endTime: value);
   }
 
   /// 종료 시간 업데이트

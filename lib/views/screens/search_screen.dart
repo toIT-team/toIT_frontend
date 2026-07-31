@@ -37,6 +37,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     ref.read(searchProvider.notifier).onQueryChanged(value);
   }
 
+  void _onSearchSubmitted(String value) {
+    ref.read(searchProvider.notifier).onSearchSubmitted(value);
+  }
+
   void _onRecentKeywordTap(String term) {
     _searchController.text = term;
     _searchController.selection = TextSelection.fromPosition(
@@ -46,6 +50,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _onSearchResultTap(SearchResultItem item) {
+    _onSearchSubmitted(_searchController.text);
+
     switch (item.type) {
       case SearchResultType.folder:
         if (item.foldersId == null || item.foldersId! <= 0) {
@@ -153,6 +159,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             SearchBarWidget(
               controller: _searchController,
               onChanged: _onQueryChanged,
+              onSubmitted: _onSearchSubmitted,
+              onFocusLost: _onSearchSubmitted,
             ),
             SearchFilterSection(
               selectedFilter: searchState.selectedFilter,

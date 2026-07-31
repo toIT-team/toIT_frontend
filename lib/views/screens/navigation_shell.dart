@@ -37,7 +37,9 @@ final pendingDeepLinkUrlProvider = StateProvider<String?>((ref) => null);
 
 /// 네비게이션 쉘 (하단 네비바 + 화면 전환 관리)
 class NavigationShell extends ConsumerStatefulWidget {
-  const NavigationShell({super.key});
+  const NavigationShell({super.key, this.androidShareLaunch = false});
+
+  final bool androidShareLaunch;
 
   @override
   ConsumerState<NavigationShell> createState() => _NavigationShellState();
@@ -45,6 +47,7 @@ class NavigationShell extends ConsumerStatefulWidget {
 
 class _NavigationShellState extends ConsumerState<NavigationShell> {
   static const _deepLinkChannel = MethodChannel('com.toit/deeplink');
+  static const _launchInfoChannel = MethodChannel('com.toit/launch_info');
 
   StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
   bool _isShareSheetVisible = false;
@@ -107,12 +110,12 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   Future<void> _handleSharedMedia(List<SharedMediaFile> mediaFiles) async {
     if (!mounted || _isShareSheetVisible || mediaFiles.isEmpty) return;
 
-    final sharedAttachments = mediaFiles
-        .map((file) => _toSharedAttachment(file.path))
-        .whereType<_SharedAttachment>()
+    final sharedItems = mediaFiles
+        .map(_toSharedItem)
+        .whereType<_SharedItem>()
         .toList();
 
-    if (sharedAttachments.isEmpty) return;
+    if (sharedItems.isEmpty) return;
 
     _isShareSheetVisible = true;
     try {
@@ -120,7 +123,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
       if (!mounted) return;
 
       if (folders.isEmpty) {
-        _showSnackBar('보관함이 없어 공유 이미지를 저장할 수 없습니다.');
+        _showSnackBar('보관함이 없어 공유 항목을 저장할 수 없습니다.');
         return;
       }
 
@@ -129,16 +132,30 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         folders: folders,
         initialSelectedFolder: folders.where((f) => f.isDefault).firstOrNull,
         onSave: (selectedFolder, memo) async {
-          await _saveSharedAttachments(
-            attachments: sharedAttachments,
+          await _saveSharedItems(
+            items: sharedItems,
             selectedFolder: selectedFolder,
             memo: memo,
           );
         },
+        errorMessageBuilder: _sharedSaveErrorMessage,
       );
     } finally {
       _isShareSheetVisible = false;
       ReceiveSharingIntent.instance.reset();
+      if (widget.androidShareLaunch) {
+        await _finishAndroidShareActivity();
+      }
+    }
+  }
+
+  Future<void> _finishAndroidShareActivity() async {
+    try {
+      await _launchInfoChannel.invokeMethod<void>('finishShareLaunch');
+    } on PlatformException {
+      await SystemNavigator.pop();
+    } on MissingPluginException {
+      await SystemNavigator.pop();
     }
   }
 
@@ -151,97 +168,176 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     return state.folders;
   }
 
-  Future<void> _saveSharedAttachments({
-    required List<_SharedAttachment> attachments,
+  Future<void> _saveSharedItems({
+    required List<_SharedItem> items,
     required FolderItem selectedFolder,
     required String memo,
   }) async {
     final repository = ref.read(homeRepositoryProvider);
     int savedCount = 0;
-    String? failReason;
 
-    for (final attachment in attachments) {
-      final file = File(attachment.path);
-      if (!await file.exists()) {
-        failReason = '공유된 파일을 찾을 수 없습니다.';
-        continue;
-      }
-
-      List<int> fileBytes;
+    for (final item in items) {
       try {
-        fileBytes = await file.readAsBytes();
-      } catch (_) {
-        failReason = '공유된 파일을 읽을 수 없습니다.';
-        continue;
-      }
-      if (fileBytes.isEmpty) {
-        failReason = '공유된 파일을 읽을 수 없습니다.';
-        continue;
-      }
-
-      final fileName = _extractFileName(attachment.path);
-      final validateMessage = attachment.isImage
-          ? validateImageSectionUpload(
-              fileName: fileName,
-              fileSizeBytes: fileBytes.length,
-            )
-          : validateFileSectionUpload(
-              fileName: fileName,
-              fileSizeBytes: fileBytes.length,
-            );
-      if (validateMessage != null) {
-        failReason = validateMessage;
-        continue;
-      }
-
-      try {
-        if (attachment.isImage) {
-          await repository.createImage(
-            foldersIdList: [selectedFolder.foldersId],
-            textContent: memo,
-            imageBytes: fileBytes,
-            fileName: fileName,
-          );
-        } else {
-          await repository.createFile(
-            foldersIdList: [selectedFolder.foldersId],
-            textContent: memo,
-            fileBytes: fileBytes,
-            fileName: fileName,
-          );
-        }
+        await _saveSharedItem(
+          repository: repository,
+          item: item,
+          selectedFolder: selectedFolder,
+          memo: memo,
+        );
         savedCount++;
       } on DioException catch (e) {
-        if (e.response?.statusCode == 401) {
-          failReason = '인증이 만료되었습니다. 앱에서 다시 로그인해주세요.';
-        } else {
-          failReason = '공유 항목 저장 중 오류가 발생했습니다.';
-        }
+        _showSnackBar(_sharedSaveDioErrorMessage(e));
+        rethrow;
+      } on _SharedSaveException catch (e) {
+        _showSnackBar(e.message);
+        rethrow;
       } catch (_) {
-        failReason = '공유 항목 저장에 실패했습니다.';
+        _showSnackBar('공유 항목 저장에 실패했습니다.');
+        rethrow;
       }
     }
 
     if (savedCount <= 0) {
-      _showSnackBar(failReason ?? '공유 항목 저장에 실패했습니다.');
       throw Exception('Failed to save shared attachments.');
     }
 
     await ref.read(homeProvider.notifier).refresh();
     ref.invalidate(pageItemsProvider(selectedFolder.foldersId));
     _showSnackBar(
-      savedCount == attachments.length
+      savedCount == items.length
           ? '공유 항목이 저장되었습니다.'
-          : '$savedCount개 저장됨. 일부 실패.',
+          : '$savedCount개 저장됨. 일부 저장의 실패했습니다.',
     );
   }
 
-  _SharedAttachment? _toSharedAttachment(String rawPath) {
-    final normalizedPath = _normalizeFilePath(rawPath);
+  Future<void> _saveSharedItem({
+    required HomeRepository repository,
+    required _SharedItem item,
+    required FolderItem selectedFolder,
+    required String memo,
+  }) async {
+    switch (item.type) {
+      case _SharedItemType.link:
+        final preview = await repository.fetchLinkPreview(linksUrl: item.value);
+        final previewText = preview.textContent.trim();
+        final memoText = memo.trim();
+        await repository.createLink(
+          foldersIdList: [selectedFolder.foldersId],
+          linksUrl: item.value,
+          linksName: preview.linksName,
+          textContent: memoText.isNotEmpty ? memoText : previewText,
+          linksThumbnail: preview.linksThumbnail,
+        );
+      case _SharedItemType.note:
+        await repository.createText(
+          foldersIdList: [selectedFolder.foldersId],
+          textContent: _mergeSharedTextAndMemo(
+            sharedText: item.value,
+            memo: memo,
+          ),
+        );
+      case _SharedItemType.attachment:
+        await _saveSharedAttachment(
+          repository: repository,
+          item: item,
+          selectedFolder: selectedFolder,
+          memo: memo,
+        );
+    }
+  }
+
+  Future<void> _saveSharedAttachment({
+    required HomeRepository repository,
+    required _SharedItem item,
+    required FolderItem selectedFolder,
+    required String memo,
+  }) async {
+    final fileBytes = await _readSharedFileBytes(item.value);
+    final fileName = _extractFileName(item.value);
+    final validateMessage = item.isImage
+        ? validateImageSectionUpload(
+            fileName: fileName,
+            fileSizeBytes: fileBytes.length,
+          )
+        : validateFileSectionUpload(
+            fileName: fileName,
+            fileSizeBytes: fileBytes.length,
+          );
+    if (validateMessage != null) {
+      throw _SharedSaveException(validateMessage);
+    }
+
+    if (item.isImage) {
+      await repository.createImage(
+        foldersIdList: [selectedFolder.foldersId],
+        textContent: memo,
+        imageBytes: fileBytes,
+        fileName: fileName,
+      );
+    } else {
+      await repository.createFile(
+        foldersIdList: [selectedFolder.foldersId],
+        textContent: memo,
+        fileBytes: fileBytes,
+        fileName: fileName,
+      );
+    }
+  }
+
+  Future<List<int>> _readSharedFileBytes(String path) async {
+    final file = File(path);
+    if (!await file.exists()) {
+      throw const _SharedSaveException('공유된 파일을 찾을 수 없습니다.');
+    }
+
+    final fileBytes = await file.readAsBytes();
+    if (fileBytes.isEmpty) {
+      throw const _SharedSaveException('공유된 파일을 읽을 수 없습니다.');
+    }
+    return fileBytes;
+  }
+
+  String _sharedSaveDioErrorMessage(DioException error) {
+    if (error.response?.statusCode == 401) {
+      return '인증이 만료되었습니다. 앱에서 다시 로그인해주세요.';
+    }
+    return '공유 항목 저장 중 오류가 발생했습니다.';
+  }
+
+  String _sharedSaveErrorMessage(Object error) {
+    if (error is _SharedSaveException) {
+      return error.message;
+    }
+    if (error is DioException) {
+      return _sharedSaveDioErrorMessage(error);
+    }
+    return '공유 항목 저장에 실패했습니다.';
+  }
+
+  _SharedItem? _toSharedItem(SharedMediaFile mediaFile) {
+    final rawValue = mediaFile.path.trim();
+    if (rawValue.isEmpty) return null;
+
+    final sharedLink = _extractSharedLink(rawValue);
+    if (mediaFile.type == SharedMediaType.url ||
+        mediaFile.type == SharedMediaType.text) {
+      if (sharedLink != null) {
+        return _SharedItem.link(sharedLink);
+      }
+      return _SharedItem.note(rawValue);
+    }
+
+    if (sharedLink != null && _looksLikeUrlOnly(rawValue)) {
+      return _SharedItem.link(sharedLink);
+    }
+
+    final normalizedPath = _normalizeFilePath(rawValue);
     if (normalizedPath.trim().isEmpty) return null;
-    return _SharedAttachment(
+    return _SharedItem.attachment(
       path: normalizedPath,
-      isImage: _isImagePath(normalizedPath),
+      isImage:
+          mediaFile.type == SharedMediaType.image ||
+          _isImagePath(normalizedPath),
     );
   }
 
@@ -269,6 +365,34 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     return parts.isEmpty ? 'shared_image.jpg' : parts.last;
   }
 
+  String? _extractSharedLink(String text) {
+    final trimmed = text.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+      return trimmed;
+    }
+
+    final match = RegExp(r'https?://[^\s]+').firstMatch(trimmed);
+    return match?.group(0);
+  }
+
+  bool _looksLikeUrlOnly(String text) {
+    final trimmed = text.trim();
+    final link = _extractSharedLink(trimmed);
+    return link != null && link == trimmed;
+  }
+
+  String _mergeSharedTextAndMemo({
+    required String sharedText,
+    required String memo,
+  }) {
+    final trimmedText = sharedText.trim();
+    final trimmedMemo = memo.trim();
+    if (trimmedMemo.isEmpty) return trimmedText;
+    if (trimmedText.isEmpty) return trimmedMemo;
+    return '$trimmedText\n\n$trimmedMemo';
+  }
+
   void _showSnackBar(String message) {
     if (!mounted) return;
     showAppSnackBar(context, message);
@@ -290,9 +414,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   /// 저장 화면을 띄우고, 저장된 보관함이 반환되면 해당 탭으로 이동시킨다.
   void _pushSaveScreen(Widget screen, FolderTab tab) {
     Navigator.of(context)
-        .push(
-          CupertinoPageRoute<FolderItem?>(builder: (_) => screen),
-        )
+        .push(CupertinoPageRoute<FolderItem?>(builder: (_) => screen))
         .then((savedFolder) {
           if (savedFolder == null || !mounted) return;
           _openFolderTab(savedFolder, tab);
@@ -324,9 +446,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
             ),
           ),
           // 업로드 배너는 네비바 위로 떠야 하므로 bottomInset으로 비켜 둔다.
-          const Positioned.fill(
-            child: UploadProgressBanner(bottomInset: 84),
-          ),
+          const Positioned.fill(child: UploadProgressBanner(bottomInset: 84)),
           // Stack에 non-positioned Align만 두면 기본 topStart에 붙어
           // '하단'이 아닌 화면 위쪽에 뜬다. 반드시 bottom 고정.
           Positioned(
@@ -344,28 +464,16 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
               onAddMenuTap: (menuIndex) {
                 switch (menuIndex) {
                   case 0:
-                    _pushSaveScreen(
-                      const SaveLinkScreen(),
-                      FolderTab.links,
-                    );
+                    _pushSaveScreen(const SaveLinkScreen(), FolderTab.links);
                     break;
                   case 1:
-                    _pushSaveScreen(
-                      const SaveNoteScreen(),
-                      FolderTab.notes,
-                    );
+                    _pushSaveScreen(const SaveNoteScreen(), FolderTab.notes);
                     break;
                   case 2:
-                    _pushSaveScreen(
-                      const SaveFileScreen(),
-                      FolderTab.files,
-                    );
+                    _pushSaveScreen(const SaveFileScreen(), FolderTab.files);
                     break;
                   case 3:
-                    _pushSaveScreen(
-                      const SaveImageScreen(),
-                      FolderTab.images,
-                    );
+                    _pushSaveScreen(const SaveImageScreen(), FolderTab.images);
                     break;
                   case 4:
                     Navigator.of(context)
@@ -381,7 +489,8 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
                                   .read(calendarProvider.notifier)
                                   .revealCreatedEvent(result.event);
                             }
-                            ref.read(currentTabIndexProvider.notifier).state = 1;
+                            ref.read(currentTabIndexProvider.notifier).state =
+                                1;
                           }
                         });
                     break;
@@ -395,9 +504,31 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   }
 }
 
-class _SharedAttachment {
-  final String path;
+enum _SharedItemType { attachment, link, note }
+
+class _SharedItem {
+  final _SharedItemType type;
+  final String value;
   final bool isImage;
 
-  const _SharedAttachment({required this.path, required this.isImage});
+  const _SharedItem._({
+    required this.type,
+    required this.value,
+    this.isImage = false,
+  });
+
+  const _SharedItem.attachment({required String path, required bool isImage})
+    : this._(type: _SharedItemType.attachment, value: path, isImage: isImage);
+
+  const _SharedItem.link(String url)
+    : this._(type: _SharedItemType.link, value: url);
+
+  const _SharedItem.note(String text)
+    : this._(type: _SharedItemType.note, value: text);
+}
+
+class _SharedSaveException implements Exception {
+  final String message;
+
+  const _SharedSaveException(this.message);
 }

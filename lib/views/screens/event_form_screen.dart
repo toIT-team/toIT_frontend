@@ -159,7 +159,6 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
     final controller = ref.read(eventFormProvider.notifier);
     if (value && ref.read(eventFormProvider).startTime == null) {
       controller.updateStartTime('09:00');
-      controller.updateEndTime('10:00');
     }
     controller.toggleTimeSetting(value);
   }
@@ -200,7 +199,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
     }
 
     // print(
-      // '>>> [일정 저장] isCreateMode=$isCreateMode, event.id=${widget.event?.id}',
+    // '>>> [일정 저장] isCreateMode=$isCreateMode, event.id=${widget.event?.id}',
     // );
     controller.setSaving(true);
     controller.setError(null);
@@ -237,7 +236,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
         final formState = ref.read(eventFormProvider);
         final schedulesId = int.tryParse(formState.id ?? '');
         // print(
-          // '[일정 수정] schedulesId: $schedulesId, formState.id: ${formState.id}',
+        // '[일정 수정] schedulesId: $schedulesId, formState.id: ${formState.id}',
         // );
         if (schedulesId == null) {
           controller.setError('일정 ID를 찾을 수 없습니다.');
