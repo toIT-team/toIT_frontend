@@ -71,6 +71,16 @@ class EventColorTokens {
 
   static String toToken(EventColorToken token) => _tokenNames[token]!;
 
+  static EventColorToken? tryParseToken(String? token) {
+    if (token == null || token.trim().isEmpty) return null;
+    final key = token.trim();
+    final parsedToken = _nameToToken[key];
+    if (parsedToken != null) return parsedToken;
+
+    final color = _tryParseHex(key);
+    return color != null ? tryParseFromColor(color) : null;
+  }
+
   /// 백엔드 문자열 → Color (camelCase 토큰 사용)
   static Color fromToken(String? tokenOrHex) {
     if (tokenOrHex == null || tokenOrHex.trim().isEmpty) {

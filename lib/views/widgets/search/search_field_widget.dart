@@ -13,6 +13,8 @@ class SearchFieldWidget extends StatefulWidget {
     super.key,
     this.controller,
     this.onChanged,
+    this.onSubmitted,
+    this.onFocusLost,
     this.autofocus = false,
     this.height = 58,
   });
@@ -21,6 +23,8 @@ class SearchFieldWidget extends StatefulWidget {
   final TextEditingController? controller;
 
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onFocusLost;
   final bool autofocus;
 
   /// 필드 전체(배경 포함) 높이
@@ -37,13 +41,22 @@ class SearchFieldWidget extends StatefulWidget {
 }
 
 class _SearchFieldWidgetState extends State<SearchFieldWidget> {
+  final FocusNode _focusNode = FocusNode();
+
   void _onControllerTick() {
     if (mounted) setState(() {});
+  }
+
+  void _onFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      widget.onFocusLost?.call(widget.controller?.text ?? '');
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(_onFocusChanged);
     widget.controller?.addListener(_onControllerTick);
   }
 
@@ -58,6 +71,8 @@ class _SearchFieldWidgetState extends State<SearchFieldWidget> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChanged);
+    _focusNode.dispose();
     widget.controller?.removeListener(_onControllerTick);
     super.dispose();
   }
@@ -83,8 +98,11 @@ class _SearchFieldWidgetState extends State<SearchFieldWidget> {
           Expanded(
             child: TextField(
               controller: widget.controller,
+              focusNode: _focusNode,
               onChanged: widget.onChanged,
+              onSubmitted: widget.onSubmitted,
               autofocus: widget.autofocus,
+              textInputAction: TextInputAction.search,
               // 모바일 네이티브는 기본 onTapOutside가 터치에서 포커스를
               // 풀지 않음(EditableTextTapOutsideIntent). 갤럭시 등에서 바깥
               // 탭 시 키보드 내리기 위해 명시한다.

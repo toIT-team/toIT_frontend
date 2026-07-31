@@ -145,6 +145,7 @@ class EventFormController extends Notifier<EventFormState> {
   void initWithScheduleDetail(ScheduleDetailResponse detail) {
     final startTime = _toHhMm(detail.startTime);
     final endTime = _toHhMm(detail.endTime);
+    final colorToken = EventColorTokens.tryParseToken(detail.appColor);
     state = EventFormState(
       id: detail.schedulesId.toString(),
       title: detail.title,
@@ -158,7 +159,7 @@ class EventFormController extends Notifier<EventFormState> {
       // alarmMinutes: detail.alarmState ? detail.alarmOffsetMinutes : null,
       folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
       foldersId: detail.foldersId > 0 ? detail.foldersId : null,
-      appColorToken: EventColorToken.blue300,
+      appColorToken: colorToken ?? EventColorToken.blue300,
     );
   }
 

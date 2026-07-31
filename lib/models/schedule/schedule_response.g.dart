@@ -105,6 +105,7 @@ _$ScheduleDetailResponseImpl _$$ScheduleDetailResponseImplFromJson(
   endDate: _stringFromJson(json['endDate']),
   startTime: json['startTime'] as String?,
   endTime: json['endTime'] as String?,
+  appColor: json['appColor'] as String?,
   memo: json['memo'] == null ? '' : _stringFromJson(json['memo']),
 );
 
@@ -121,5 +122,6 @@ Map<String, dynamic> _$$ScheduleDetailResponseImplToJson(
   'endDate': instance.endDate,
   'startTime': instance.startTime,
   'endTime': instance.endTime,
+  'appColor': instance.appColor,
   'memo': instance.memo,
 };

@@ -1053,7 +1053,8 @@ mixin _$ScheduleDetailResponse {
   @JsonKey(fromJson: _stringFromJson)
   String get endDate => throw _privateConstructorUsedError;
   String? get startTime => throw _privateConstructorUsedError;
-  String? get endTime =>
+  String? get endTime => throw _privateConstructorUsedError;
+  String? get appColor =>
       throw _privateConstructorUsedError; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
   // @Default(false) bool alarmState,
   // @Default(0) int alarmOffsetMinutes,
@@ -1088,6 +1089,7 @@ abstract class $ScheduleDetailResponseCopyWith<$Res> {
     @JsonKey(fromJson: _stringFromJson) String endDate,
     String? startTime,
     String? endTime,
+    String? appColor,
     @JsonKey(fromJson: _stringFromJson) String memo,
   });
 }
@@ -1120,6 +1122,7 @@ class _$ScheduleDetailResponseCopyWithImpl<
     Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
+    Object? appColor = freezed,
     Object? memo = null,
   }) {
     return _then(
@@ -1164,6 +1167,10 @@ class _$ScheduleDetailResponseCopyWithImpl<
                 ? _value.endTime
                 : endTime // ignore: cast_nullable_to_non_nullable
                       as String?,
+            appColor: freezed == appColor
+                ? _value.appColor
+                : appColor // ignore: cast_nullable_to_non_nullable
+                      as String?,
             memo: null == memo
                 ? _value.memo
                 : memo // ignore: cast_nullable_to_non_nullable
@@ -1194,6 +1201,7 @@ abstract class _$$ScheduleDetailResponseImplCopyWith<$Res>
     @JsonKey(fromJson: _stringFromJson) String endDate,
     String? startTime,
     String? endTime,
+    String? appColor,
     @JsonKey(fromJson: _stringFromJson) String memo,
   });
 }
@@ -1223,6 +1231,7 @@ class __$$ScheduleDetailResponseImplCopyWithImpl<$Res>
     Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
+    Object? appColor = freezed,
     Object? memo = null,
   }) {
     return _then(
@@ -1267,6 +1276,10 @@ class __$$ScheduleDetailResponseImplCopyWithImpl<$Res>
             ? _value.endTime
             : endTime // ignore: cast_nullable_to_non_nullable
                   as String?,
+        appColor: freezed == appColor
+            ? _value.appColor
+            : appColor // ignore: cast_nullable_to_non_nullable
+                  as String?,
         memo: null == memo
             ? _value.memo
             : memo // ignore: cast_nullable_to_non_nullable
@@ -1290,6 +1303,7 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
     @JsonKey(fromJson: _stringFromJson) required this.endDate,
     this.startTime,
     this.endTime,
+    this.appColor,
     @JsonKey(fromJson: _stringFromJson) this.memo = '',
   });
 
@@ -1324,6 +1338,8 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
   final String? startTime;
   @override
   final String? endTime;
+  @override
+  final String? appColor;
   // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
   // @Default(false) bool alarmState,
   // @Default(0) int alarmOffsetMinutes,
@@ -1333,7 +1349,7 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
 
   @override
   String toString() {
-    return 'ScheduleDetailResponse(userId: $userId, schedulesId: $schedulesId, title: $title, foldersId: $foldersId, foldersTitle: $foldersTitle, timeSetting: $timeSetting, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, memo: $memo)';
+    return 'ScheduleDetailResponse(userId: $userId, schedulesId: $schedulesId, title: $title, foldersId: $foldersId, foldersTitle: $foldersTitle, timeSetting: $timeSetting, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, appColor: $appColor, memo: $memo)';
   }
 
   @override
@@ -1357,6 +1373,8 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
             (identical(other.startTime, startTime) ||
                 other.startTime == startTime) &&
             (identical(other.endTime, endTime) || other.endTime == endTime) &&
+            (identical(other.appColor, appColor) ||
+                other.appColor == appColor) &&
             (identical(other.memo, memo) || other.memo == memo));
   }
 
@@ -1374,6 +1392,7 @@ class _$ScheduleDetailResponseImpl implements _ScheduleDetailResponse {
     endDate,
     startTime,
     endTime,
+    appColor,
     memo,
   );
 
@@ -1407,6 +1426,7 @@ abstract class _ScheduleDetailResponse implements ScheduleDetailResponse {
     @JsonKey(fromJson: _stringFromJson) required final String endDate,
     final String? startTime,
     final String? endTime,
+    final String? appColor,
     @JsonKey(fromJson: _stringFromJson) final String memo,
   }) = _$ScheduleDetailResponseImpl;
 
@@ -1438,7 +1458,9 @@ abstract class _ScheduleDetailResponse implements ScheduleDetailResponse {
   @override
   String? get startTime;
   @override
-  String? get endTime; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
+  String? get endTime;
+  @override
+  String? get appColor; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
   // @Default(false) bool alarmState,
   // @Default(0) int alarmOffsetMinutes,
   @override

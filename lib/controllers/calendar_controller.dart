@@ -47,10 +47,10 @@ class CalendarEventIndex {
 
   /// 빈 인덱스
   factory CalendarEventIndex.empty() => CalendarEventIndex(
-        eventsByDay: {},
-        segmentsByWeek: {},
-        // overflowByDay: {},
-      );
+    eventsByDay: {},
+    segmentsByWeek: {},
+    // overflowByDay: {},
+  );
 
   /// 열 인덱스를 연속 구간으로 분리 (일요일=0 … 토요일=6)
   static List<List<int>> splitContiguousDayIndices(List<int> dayIndices) {
@@ -77,8 +77,7 @@ class CalendarEventIndex {
     final startCompare = a.startDate.compareTo(b.startDate);
     if (startCompare != 0) return startCompare;
 
-    final durationCompare =
-        b.durationInDays.compareTo(a.durationInDays);
+    final durationCompare = b.durationInDays.compareTo(a.durationInDays);
     if (durationCompare != 0) return durationCompare;
 
     if (!a.timeSetting && b.timeSetting) return -1;
@@ -192,18 +191,8 @@ class CalendarEventIndex {
 
       final dayEvents = events.where((e) => e.occursOnDay(day)).toList()
         ..sort((a, b) {
-          final slotA = _slotForDay(
-            segmentsByWeek,
-            a.id,
-            weekStart,
-            dayCol,
-          );
-          final slotB = _slotForDay(
-            segmentsByWeek,
-            b.id,
-            weekStart,
-            dayCol,
-          );
+          final slotA = _slotForDay(segmentsByWeek, a.id, weekStart, dayCol);
+          final slotB = _slotForDay(segmentsByWeek, b.id, weekStart, dayCol);
           return slotA.compareTo(slotB);
         });
 
@@ -388,7 +377,6 @@ class _PendingWeekSegment {
   final int endCol;
 }
 
-
 /// 캘린더 상태
 @freezed
 class CalendarState with _$CalendarState {
@@ -428,11 +416,15 @@ class CalendarController extends Notifier<CalendarState> {
         prefetched.month.year == focusedMonth.year &&
         prefetched.month.month == focusedMonth.month) {
       // debugPrint(
-        // '[BOOT] calendar_build source=prefetch_cache '
-        // 'events=${prefetched.events.length}',
+      // '[BOOT] calendar_build source=prefetch_cache '
+      // 'events=${prefetched.events.length}',
       // );
       _primed = true;
-      _putCache(getMonthKey(focusedMonth), prefetched.events);
+      _putCache(
+        getMonthKey(focusedMonth),
+        prefetched.events,
+        notifyListeners: false,
+      );
       // Riverpod 은 build() 도중 다른 Provider 의 state 수정을 금지하므로
       // 캐시 초기화는 한 틱 뒤로 미룬다(홈 프리패치와 동일한 패턴).
       Future<void>.microtask(() {
@@ -486,10 +478,7 @@ class CalendarController extends Notifier<CalendarState> {
           state.focusedMonth.month != targetMonth.month) {
         return;
       }
-      state = state.copyWith(
-        events: events,
-        isLoading: false,
-      );
+      state = state.copyWith(events: events, isLoading: false);
       _prefetchAdjacentMonths(targetMonth);
     } catch (e) {
       // debugPrint('일정 로드 실패: $e');
@@ -525,9 +514,14 @@ class CalendarController extends Notifier<CalendarState> {
   /// 생성된 일정의 시작 월과 날짜를 즉시 보여준다.
   /// 캐시가 없더라도 생성 응답을 먼저 그린 뒤 서버 데이터는 백그라운드로 맞춘다.
   void revealCreatedEvent(CalendarEvent event) {
-    final targetMonth = DateTime(event.startDate.year, event.startDate.month, 1);
+    final targetMonth = DateTime(
+      event.startDate.year,
+      event.startDate.month,
+      1,
+    );
     final cacheKey = getMonthKey(targetMonth);
-    final cachedEvents = _monthCache[cacheKey]?.events ?? const <CalendarEvent>[];
+    final cachedEvents =
+        _monthCache[cacheKey]?.events ?? const <CalendarEvent>[];
     final visibleEvents = _upsertEvent(cachedEvents, event);
     _putCache(cacheKey, visibleEvents);
 
@@ -543,6 +537,11 @@ class CalendarController extends Notifier<CalendarState> {
   /// 날짜 선택
   void selectDate(DateTime date) {
     state = state.copyWith(selectedDate: date);
+  }
+
+  List<CalendarEvent>? getCachedEventsForMonth(DateTime month) {
+    final targetMonth = DateTime(month.year, month.month, 1);
+    return _monthCache[getMonthKey(targetMonth)]?.events;
   }
 
   /// 일정 추가
@@ -561,13 +560,27 @@ class CalendarController extends Notifier<CalendarState> {
     state = state.copyWith(
       events: state.events.where((e) => e.id != eventId).toList(),
     );
+    _removeEventFromCachedMonths(eventId);
   }
 
   /// 일정 업데이트
   void updateEvent(CalendarEvent event) {
-    state = state.copyWith(
-      events: state.events.map((e) => e.id == event.id ? event : e).toList(),
-    );
+    final focusedMonth = state.focusedMonth;
+    final updatedEvents = state.events
+        .where((existing) => existing.id != event.id)
+        .toList();
+    if (_eventIntersectsVisibleMonth(event, focusedMonth)) {
+      updatedEvents.add(event);
+    }
+    state = state.copyWith(events: updatedEvents);
+
+    _removeEventFromCachedMonths(event.id);
+    for (final entry in _monthCache.entries.toList()) {
+      final month = _monthFromKey(entry.key);
+      if (_eventIntersectsVisibleMonth(event, month)) {
+        _putCache(entry.key, _upsertEvent(entry.value.events, event));
+      }
+    }
   }
 
   Future<List<CalendarEvent>> _fetchMonth(DateTime month) {
@@ -587,22 +600,21 @@ class CalendarController extends Notifier<CalendarState> {
     });
   }
 
-  void _refreshMonthInBackground(
-    DateTime month, {
-    CalendarEvent? keepEvent,
-  }) {
-    _fetchMonth(month).then((events) {
-      final refreshedEvents = keepEvent == null
-          ? events
-          : _upsertEvent(events, keepEvent);
-      if (keepEvent != null) {
-        _putCache(getMonthKey(month), refreshedEvents);
-      }
-      if (state.focusedMonth.year == month.year &&
-          state.focusedMonth.month == month.month) {
-        state = state.copyWith(events: refreshedEvents, isLoading: false);
-      }
-    }).catchError((Object _) {});
+  void _refreshMonthInBackground(DateTime month, {CalendarEvent? keepEvent}) {
+    _fetchMonth(month)
+        .then((events) {
+          final refreshedEvents = keepEvent == null
+              ? events
+              : _upsertEvent(events, keepEvent);
+          if (keepEvent != null) {
+            _putCache(getMonthKey(month), refreshedEvents);
+          }
+          if (state.focusedMonth.year == month.year &&
+              state.focusedMonth.month == month.month) {
+            state = state.copyWith(events: refreshedEvents, isLoading: false);
+          }
+        })
+        .catchError((Object _) {});
   }
 
   void _prefetchAdjacentMonths(DateTime month) {
@@ -617,7 +629,11 @@ class CalendarController extends Notifier<CalendarState> {
     }
   }
 
-  void _putCache(String key, List<CalendarEvent> events) {
+  void _putCache(
+    String key,
+    List<CalendarEvent> events, {
+    bool notifyListeners = true,
+  }) {
     _monthCache.remove(key);
     _monthCache[key] = _CalendarCacheEntry(
       events: events,
@@ -625,6 +641,9 @@ class CalendarController extends Notifier<CalendarState> {
     );
     while (_monthCache.length > _maxCachedMonths) {
       _monthCache.remove(_monthCache.keys.first);
+    }
+    if (notifyListeners) {
+      ref.read(calendarMonthCacheVersionProvider.notifier).state++;
     }
   }
 
@@ -636,17 +655,28 @@ class CalendarController extends Notifier<CalendarState> {
   static List<CalendarEvent> _upsertEvent(
     List<CalendarEvent> events,
     CalendarEvent event,
-  ) => [
-    ...events.where((existing) => existing.id != event.id),
-    event,
-  ];
+  ) => [...events.where((existing) => existing.id != event.id), event];
+
+  void _removeEventFromCachedMonths(String eventId) {
+    for (final entry in _monthCache.entries.toList()) {
+      final events = entry.value.events
+          .where((event) => event.id != eventId)
+          .toList();
+      if (events.length != entry.value.events.length) {
+        _putCache(entry.key, events);
+      }
+    }
+  }
 
   static DateTime _monthFromKey(String key) {
     final parts = key.split('-');
     return DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
   }
 
-  static bool _eventIntersectsVisibleMonth(CalendarEvent event, DateTime month) {
+  static bool _eventIntersectsVisibleMonth(
+    CalendarEvent event,
+    DateTime month,
+  ) {
     final days = CalendarUtils.getDaysInMonth(month);
     return !event.endDate.isBefore(days.first) &&
         !event.startDate.isAfter(days.last);
@@ -698,14 +728,24 @@ final eventsProvider = Provider<List<CalendarEvent>>((ref) {
   return ref.watch(calendarProvider.select((s) => s.events));
 });
 
+final calendarMonthCacheVersionProvider = StateProvider<int>((ref) => 0);
+
 /// 월별 이벤트 인덱스 Provider (Family - 월별로 캐시됨)
 final eventIndexFamilyProvider = Provider.family<CalendarEventIndex, String>((
   ref,
   monthKey,
 ) {
-  final events = ref.watch(eventsProvider);
+  ref.watch(calendarMonthCacheVersionProvider);
+  final state = ref.watch(calendarProvider);
   final parts = monthKey.split('-');
   final month = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
+  final cachedEvents = ref
+      .read(calendarProvider.notifier)
+      .getCachedEventsForMonth(month);
+  final focusedMonthKey = getMonthKey(state.focusedMonth);
+  final events =
+      cachedEvents ??
+      (focusedMonthKey == monthKey ? state.events : const <CalendarEvent>[]);
   return CalendarEventIndex.build(month, events);
 });
 
