@@ -473,7 +473,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (value && ref.read(eventFormProvider).startTime == null) {
       // 시간 설정을 켤 때 기본 시간 설정
       controller.updateStartTime('09:00');
-      controller.updateEndTime('10:00');
     }
     controller.toggleTimeSetting(value);
   }

@@ -696,10 +696,21 @@ final class ShareViewController: UIViewController {
               )
             }
           case .link(let link):
+            let preview = try await client.fetchLinkPreview(
+              linksUrl: link
+            )
+            let trimmedMemo = memo.trimmingCharacters(
+              in: .whitespacesAndNewlines
+            )
+            let textContent = trimmedMemo.isEmpty
+              ? preview.textContent
+              : trimmedMemo
             try await client.createLink(
               linksUrl: link,
               folderId: folder.foldersId,
-              textContent: memo
+              linksName: preview.linksName,
+              textContent: textContent,
+              linksThumbnail: preview.linksThumbnail
             )
           }
         }
@@ -756,9 +767,6 @@ final class ShareViewController: UIViewController {
 
   @objc
   private func handleKeyboardWillShow(_ notification: Notification) {
-    guard memoTextView.isFirstResponder else {
-      return
-    }
     guard
       let keyboardFrame = notification.userInfo?[
         UIResponder.keyboardFrameEndUserInfoKey
@@ -771,7 +779,17 @@ final class ShareViewController: UIViewController {
       keyboardFrame.height - view.safeAreaInsets.bottom
     )
     bottomSpacerHeightConstraint?.constant = keyboardHeight
-    UIView.animate(withDuration: Constants.keyboardAnimationDuration) {
+    let duration = notification.userInfo?[
+      UIResponder.keyboardAnimationDurationUserInfoKey
+    ] as? TimeInterval ?? Constants.keyboardAnimationDuration
+    let curveRaw = notification.userInfo?[
+      UIResponder.keyboardAnimationCurveUserInfoKey
+    ] as? UInt ?? UInt(UIView.AnimationCurve.easeInOut.rawValue)
+    UIView.animate(
+      withDuration: duration,
+      delay: 0,
+      options: UIView.AnimationOptions(rawValue: curveRaw << 16)
+    ) {
       self.view.layoutIfNeeded()
     }
   }

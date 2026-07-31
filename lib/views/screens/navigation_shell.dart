@@ -218,10 +218,15 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   }) async {
     switch (item.type) {
       case _SharedItemType.link:
+        final preview = await repository.fetchLinkPreview(linksUrl: item.value);
+        final previewText = preview.textContent.trim();
+        final memoText = memo.trim();
         await repository.createLink(
           foldersIdList: [selectedFolder.foldersId],
           linksUrl: item.value,
-          textContent: memo,
+          linksName: preview.linksName,
+          textContent: memoText.isNotEmpty ? memoText : previewText,
+          linksThumbnail: preview.linksThumbnail,
         );
       case _SharedItemType.note:
         await repository.createText(

@@ -27,5 +27,31 @@ void main() {
         EventColorToken.purple500,
       );
     });
+
+    test('같은 날짜에서 시작 시간과 종료 시간이 같아도 유효하다', () {
+      final state = EventFormState(
+        title: '동시 일정',
+        startDate: DateTime(2026, 7, 31),
+        endDate: DateTime(2026, 7, 31),
+        startTime: '09:00',
+        endTime: '09:00',
+        timeSetting: true,
+      );
+
+      expect(state.isDateTimeRangeValid, isTrue);
+    });
+
+    test('시작 시간을 설정하면 종료 시간도 같은 시간으로 맞춘다', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final controller = container.read(eventFormProvider.notifier);
+      controller.toggleTimeSetting(true);
+      controller.updateStartTime('14:30');
+
+      final state = container.read(eventFormProvider);
+      expect(state.startTime, '14:30');
+      expect(state.endTime, '14:30');
+    });
   });
 }

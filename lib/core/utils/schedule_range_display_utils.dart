@@ -24,11 +24,7 @@ class ScheduleRangeDisplayUtils {
           )
         : null;
     final endDay = parsedEndDate != null
-        ? DateTime(
-            parsedEndDate.year,
-            parsedEndDate.month,
-            parsedEndDate.day,
-          )
+        ? DateTime(parsedEndDate.year, parsedEndDate.month, parsedEndDate.day)
         : null;
     final sameCalendarDay =
         startDay != null && endDay != null && startDay == endDay;
@@ -43,7 +39,7 @@ class ScheduleRangeDisplayUtils {
     final endTimeStr = formatKoreanClock(event.endTime);
     if (hasStartDate && !hasEndDate) {
       if (startTimeStr != null && endTimeStr != null) {
-        return '$startTimeStr~ $endTimeStr';
+        return _timeRangeText(startTimeStr, endTimeStr);
       }
       return '하루 종일';
     }
@@ -54,7 +50,7 @@ class ScheduleRangeDisplayUtils {
     }
 
     if (sameCalendarDay) {
-      return '$startTimeStr~ $endTimeStr';
+      return _timeRangeText(startTimeStr, endTimeStr);
     }
     if (startDay == null || endDay == null) {
       return '$startTimeStr~ $endTimeStr';
@@ -63,6 +59,11 @@ class ScheduleRangeDisplayUtils {
     final left = '${_dateWithWeekday(startDay)} $startTimeStr';
     final right = '${_dateWithWeekday(endDay)} $endTimeStr';
     return '$left~ $right';
+  }
+
+  static String _timeRangeText(String startTimeStr, String endTimeStr) {
+    if (startTimeStr == endTimeStr) return startTimeStr;
+    return '$startTimeStr~ $endTimeStr';
   }
 
   /// `HH:mm` 또는 `HH:mm:ss` → `오전 9:00` / `오후 2:30`
@@ -76,9 +77,7 @@ class ScheduleRangeDisplayUtils {
     final minute = parts[1].padLeft(2, '0');
 
     final period = hour < 12 ? '오전' : '오후';
-    final displayHour = hour == 0
-        ? 12
-        : (hour > 12 ? hour - 12 : hour);
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
 
     return '$period $displayHour:$minute';
   }
