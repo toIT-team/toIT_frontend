@@ -237,6 +237,9 @@ class SearchController extends Notifier<SearchState> {
   @override
   SearchState build() {
     _apiClient = ref.watch(searchApiClientProvider);
+    ref.onDispose(() {
+      _debounceTimer?.cancel();
+    });
     return const SearchState();
   }
 
@@ -257,6 +260,18 @@ class SearchController extends Notifier<SearchState> {
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       _performSearch(query.trim());
     });
+  }
+
+  /// 검색 확정. 키보드 검색/Enter 입력 시 최근 검색어에 저장한다.
+  void onSearchSubmitted(String query) {
+    final trimmed = query.trim();
+    _debounceTimer?.cancel();
+
+    if (trimmed.isEmpty) return;
+
+    state = state.copyWith(query: trimmed);
+    addRecentKeyword(trimmed);
+    _performSearch(trimmed);
   }
 
   Future<void> _performSearch(String query) async {
@@ -284,7 +299,6 @@ class SearchController extends Notifier<SearchState> {
 
       if (state.query.trim() != query) return;
 
-      addRecentKeyword(query);
       state = state.copyWith(
         status: SearchStatus.loaded,
         items: _applyFilter(items, state.selectedFilter),

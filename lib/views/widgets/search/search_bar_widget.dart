@@ -13,11 +13,15 @@ class SearchBarWidget extends StatelessWidget {
     super.key,
     this.controller,
     this.onChanged,
+    this.onSubmitted,
+    this.onFocusLost,
     this.onBackPressed,
   });
 
   final TextEditingController? controller;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onFocusLost;
   final VoidCallback? onBackPressed;
 
   @override
@@ -52,6 +56,8 @@ class SearchBarWidget extends StatelessWidget {
               child: SearchFieldWidget(
                 controller: controller,
                 onChanged: onChanged,
+                onSubmitted: onSubmitted,
+                onFocusLost: onFocusLost,
               ),
             ),
           ],

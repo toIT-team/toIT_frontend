@@ -57,4 +57,23 @@ void main() {
     expect(archived.length, 1);
     expect(archived.single.type, SearchResultType.folder);
   });
+
+  test('입력 변경 검색은 최근 검색어에 저장하지 않고 확정 검색만 저장한다', () async {
+    final container = ProviderContainer(
+      overrides: [searchApiClientProvider.overrideWithValue(_StubSearchApi())],
+    );
+    addTearDown(container.dispose);
+
+    final notifier = container.read(searchProvider.notifier);
+    notifier.onQueryChanged('키워드');
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+
+    expect(container.read(searchProvider).status, SearchStatus.loaded);
+    expect(container.read(searchProvider).recentKeywords, isEmpty);
+
+    notifier.onSearchSubmitted('키워드');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(searchProvider).recentKeywords, ['키워드']);
+  });
 }

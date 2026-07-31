@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/home_repository.dart';
@@ -111,8 +110,8 @@ class BootstrapController extends Notifier<BootstrapState> {
     state = const BootstrapState(status: BootstrapStatus.running);
     final stopwatch = Stopwatch()..start();
     // debugPrint(
-      // '[BOOT] bootstrap_start '
-      // 'timeoutMs=${_bootstrapTimeout.inMilliseconds} gen=$generation',
+    // '[BOOT] bootstrap_start '
+    // 'timeoutMs=${_bootstrapTimeout.inMilliseconds} gen=$generation',
     // );
 
     try {
@@ -123,22 +122,22 @@ class BootstrapController extends Notifier<BootstrapState> {
       // state/prefetch 를 덮어쓰지 못하도록 좀비 전환을 차단한다.
       _runGeneration++;
       // debugPrint(
-        // '[BOOT] bootstrap_end result=retryable reason=timeout '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
-        // 'gen=$generation invalidated_to=$_runGeneration',
+      // '[BOOT] bootstrap_end result=retryable reason=timeout '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+      // 'gen=$generation invalidated_to=$_runGeneration',
       // );
       state = const BootstrapState(
         status: BootstrapStatus.retryable,
         errorMessage: 'bootstrap-timeout',
       );
       return;
-    } catch (e, st) {
+    } catch (e) {
       stopwatch.stop();
       _runGeneration++;
       // debugPrint(
-        // '[BOOT] bootstrap_end result=retryable reason=exception '
-        // 'error=$e elapsedMs=${stopwatch.elapsedMilliseconds} '
-        // 'gen=$generation invalidated_to=$_runGeneration',
+      // '[BOOT] bootstrap_end result=retryable reason=exception '
+      // 'error=$e elapsedMs=${stopwatch.elapsedMilliseconds} '
+      // 'gen=$generation invalidated_to=$_runGeneration',
       // );
       // debugPrint('[BOOT] stackTrace: $st');
       state = BootstrapState(
@@ -152,8 +151,8 @@ class BootstrapController extends Notifier<BootstrapState> {
 
     stopwatch.stop();
     // debugPrint(
-      // '[BOOT] bootstrap_end result=${state.status.name} '
-      // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+    // '[BOOT] bootstrap_end result=${state.status.name} '
+    // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
     // );
   }
 
@@ -190,8 +189,8 @@ class BootstrapController extends Notifier<BootstrapState> {
     final newAccessToken = await _authService.reissueAccessToken();
     reissueStopwatch.stop();
     // debugPrint(
-      // '[BOOT] reissue_end status=${newAccessToken == null ? 'fail' : 'success'} '
-      // 'elapsedMs=${reissueStopwatch.elapsedMilliseconds}',
+    // '[BOOT] reissue_end status=${newAccessToken == null ? 'fail' : 'success'} '
+    // 'elapsedMs=${reissueStopwatch.elapsedMilliseconds}',
     // );
     if (_isStale(generation, stage: 'reissue_end')) return;
 
@@ -212,6 +211,13 @@ class BootstrapController extends Notifier<BootstrapState> {
     await _authController.checkAuthStatus();
     // debugPrint('[BOOT] restoreSession_end');
     if (_isStale(generation, stage: 'restoreSession_end')) return;
+    if (ref.read(authProvider).status == AuthStatus.needsNickname) {
+      _setStateIfActive(
+        generation,
+        const BootstrapState(status: BootstrapStatus.authenticated),
+      );
+      return;
+    }
 
     // 메인 첫 화면(홈 + 캘린더) 데이터 선요청.
     // 두 요청은 독립적이고 서로 블로킹될 이유가 없어 병렬로 발행한다.
@@ -236,8 +242,8 @@ class BootstrapController extends Notifier<BootstrapState> {
   bool _isStale(int generation, {required String stage}) {
     if (generation == _runGeneration) return false;
     // debugPrint(
-      // '[BOOT] stage_aborted stage=$stage '
-      // 'gen=$generation current=$_runGeneration',
+    // '[BOOT] stage_aborted stage=$stage '
+    // 'gen=$generation current=$_runGeneration',
     // );
     return true;
   }
@@ -246,8 +252,8 @@ class BootstrapController extends Notifier<BootstrapState> {
   void _setStateIfActive(int generation, BootstrapState next) {
     if (generation != _runGeneration) {
       // debugPrint(
-        // '[BOOT] state_write_ignored '
-        // 'gen=$generation current=$_runGeneration target=${next.status.name}',
+      // '[BOOT] state_write_ignored '
+      // 'gen=$generation current=$_runGeneration target=${next.status.name}',
       // );
       return;
     }
@@ -276,30 +282,30 @@ class BootstrapController extends Notifier<BootstrapState> {
       if (generation != _runGeneration) {
         stopwatch.stop();
         // debugPrint(
-          // '[BOOT] prefetch_home_end status=stale '
-          // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
-          // 'gen=$generation current=$_runGeneration',
+        // '[BOOT] prefetch_home_end status=stale '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+        // 'gen=$generation current=$_runGeneration',
         // );
         return;
       }
       ref.read(homePrefetchProvider.notifier).state = dto;
       stopwatch.stop();
       // debugPrint(
-        // '[BOOT] prefetch_home_end status=success '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
-        // 'schedules=${dto.schedules.length} folders=${dto.folders.length}',
+      // '[BOOT] prefetch_home_end status=success '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+      // 'schedules=${dto.schedules.length} folders=${dto.folders.length}',
       // );
     } on TimeoutException {
       stopwatch.stop();
       // debugPrint(
-        // '[BOOT] prefetch_home_end status=timeout '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // '[BOOT] prefetch_home_end status=timeout '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
       // );
     } catch (e) {
       stopwatch.stop();
       // debugPrint(
-        // '[BOOT] prefetch_home_end status=fail error=$e '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // '[BOOT] prefetch_home_end status=fail error=$e '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
       // );
     }
   }
@@ -325,9 +331,9 @@ class BootstrapController extends Notifier<BootstrapState> {
       if (generation != _runGeneration) {
         stopwatch.stop();
         // debugPrint(
-          // '[BOOT] prefetch_calendar_end status=stale '
-          // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
-          // 'gen=$generation current=$_runGeneration',
+        // '[BOOT] prefetch_calendar_end status=stale '
+        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+        // 'gen=$generation current=$_runGeneration',
         // );
         return;
       }
@@ -337,21 +343,21 @@ class BootstrapController extends Notifier<BootstrapState> {
       );
       stopwatch.stop();
       // debugPrint(
-        // '[BOOT] prefetch_calendar_end status=success '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
-        // 'events=${events.length}',
+      // '[BOOT] prefetch_calendar_end status=success '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds} '
+      // 'events=${events.length}',
       // );
     } on TimeoutException {
       stopwatch.stop();
       // debugPrint(
-        // '[BOOT] prefetch_calendar_end status=timeout '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // '[BOOT] prefetch_calendar_end status=timeout '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
       // );
     } catch (e) {
       stopwatch.stop();
       // debugPrint(
-        // '[BOOT] prefetch_calendar_end status=fail error=$e '
-        // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
+      // '[BOOT] prefetch_calendar_end status=fail error=$e '
+      // 'elapsedMs=${stopwatch.elapsedMilliseconds}',
       // );
     }
   }

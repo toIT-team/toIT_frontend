@@ -22,6 +22,7 @@ import 'core/theme/app_theme.dart';
 // import 'firebase_options.dart';
 import 'services/auth_service.dart';
 // import 'services/fcm_registration_service.dart';
+import 'views/screens/apple_name_input_screen.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/navigation_shell.dart' show NavigationShell;
 import 'views/screens/splash_retry_screen.dart';
@@ -53,9 +54,7 @@ class MyApp extends ConsumerStatefulWidget {
 }
 
 class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
-  static const _launchInfoChannel = MethodChannel(
-    'com.toit/launch_info',
-  );
+  static const _launchInfoChannel = MethodChannel('com.toit/launch_info');
   final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
   /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
@@ -238,8 +237,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     // 노출 시간을 병렬 대기한다. `BootstrapController` 가 실패/재시도 경로를
     // 관리하므로 여기서는 "끝났는가" 여부만 플래그로 남긴다.
     // debugPrint(
-      // '[BOOT] splash_start minDurationMs='
-      // '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
+    // '[BOOT] splash_start minDurationMs='
+    // '${skipMinSplashDelay ? 0 : _minSplashDuration.inMilliseconds}',
     // );
     final splashStopwatch = Stopwatch()..start();
     await Future.wait<void>([
@@ -252,7 +251,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       return;
     }
     // debugPrint(
-      // '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
+    // '[BOOT] splash_end elapsedMs=${splashStopwatch.elapsedMilliseconds}',
     // );
     setState(() => _isSplashFinished = true);
   }
@@ -329,6 +328,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     switch (authStatus) {
       case AuthStatus.authenticated:
         return const NavigationShell();
+      case AuthStatus.needsNickname:
+        return AppleNameInputScreen(
+          onSubmit: (nickname) =>
+              ref.read(authProvider.notifier).completeNicknameSetup(nickname),
+        );
       case AuthStatus.unauthenticated:
         return const LoginScreen();
       case AuthStatus.unknown:
