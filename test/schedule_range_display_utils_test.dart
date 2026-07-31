@@ -50,6 +50,20 @@ void main() {
       );
     });
 
+    test('same day with same start and end time shows a single time', () {
+      final event = CalendarEvent(
+        id: '1',
+        title: 't',
+        startAt: '2026-12-24',
+        endAt: '2026-12-24',
+        startTime: '09:00',
+        endTime: '09:00',
+        timeSetting: true,
+        color: Colors.blue,
+      );
+      expect(ScheduleRangeDisplayUtils.formatEventRangeLine(event), '오전 9:00');
+    });
+
     test('shows only time when end date is missing', () {
       final event = CalendarEvent(
         id: '1',
