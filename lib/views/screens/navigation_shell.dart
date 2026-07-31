@@ -37,7 +37,9 @@ final pendingDeepLinkUrlProvider = StateProvider<String?>((ref) => null);
 
 /// 네비게이션 쉘 (하단 네비바 + 화면 전환 관리)
 class NavigationShell extends ConsumerStatefulWidget {
-  const NavigationShell({super.key});
+  const NavigationShell({super.key, this.androidShareLaunch = false});
+
+  final bool androidShareLaunch;
 
   @override
   ConsumerState<NavigationShell> createState() => _NavigationShellState();
@@ -45,6 +47,7 @@ class NavigationShell extends ConsumerStatefulWidget {
 
 class _NavigationShellState extends ConsumerState<NavigationShell> {
   static const _deepLinkChannel = MethodChannel('com.toit/deeplink');
+  static const _launchInfoChannel = MethodChannel('com.toit/launch_info');
 
   StreamSubscription<List<SharedMediaFile>>? _shareMediaSubscription;
   bool _isShareSheetVisible = false;
@@ -135,10 +138,24 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
             memo: memo,
           );
         },
+        errorMessageBuilder: _sharedSaveErrorMessage,
       );
     } finally {
       _isShareSheetVisible = false;
       ReceiveSharingIntent.instance.reset();
+      if (widget.androidShareLaunch) {
+        await _finishAndroidShareActivity();
+      }
+    }
+  }
+
+  Future<void> _finishAndroidShareActivity() async {
+    try {
+      await _launchInfoChannel.invokeMethod<void>('finishShareLaunch');
+    } on PlatformException {
+      await SystemNavigator.pop();
+    } on MissingPluginException {
+      await SystemNavigator.pop();
     }
   }
 
@@ -280,6 +297,16 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
       return '인증이 만료되었습니다. 앱에서 다시 로그인해주세요.';
     }
     return '공유 항목 저장 중 오류가 발생했습니다.';
+  }
+
+  String _sharedSaveErrorMessage(Object error) {
+    if (error is _SharedSaveException) {
+      return error.message;
+    }
+    if (error is DioException) {
+      return _sharedSaveDioErrorMessage(error);
+    }
+    return '공유 항목 저장에 실패했습니다.';
   }
 
   _SharedItem? _toSharedItem(SharedMediaFile mediaFile) {
