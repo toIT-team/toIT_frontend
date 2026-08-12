@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Google Play 사진 및 동영상 권한 정책 준수: image_picker(1.x)는 Android Photo Picker를,
          file_picker는 SAF를 사용하므로 미디어 접근 권한이 필요 없습니다.
          일부 플러그인이 병합 시 다시 추가할 수 있어 tools:node="remove"로 명시 제거합니다. -->

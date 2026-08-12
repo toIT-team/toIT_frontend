@@ -103,7 +103,6 @@ class ApiConstants {
 
   static const String appleLoginEndpoint = '/api/auth/apple/login';
   static const String authMeEndpoint = '/api/auth/me';
-  static const String restoreAccountEndpoint = '/api/auth/restore';
 
   /// 액세스 토큰 재발급 (POST, body: { refreshToken })
   /// 응답: { accessToken: string }

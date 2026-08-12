@@ -26,7 +26,7 @@ enum AuthStatus {
   unauthenticated,
 }
 
-/// 인증 세션 변경(로그인/로그아웃/복구) 시 캐시 갱신 트리거
+/// 인증 세션 변경(로그인/로그아웃/토큰 갱신) 시 캐시 갱신 트리거
 final authSessionRefreshTickProvider = StateProvider<int>((ref) => 0);
 
 /// 인증 상태 + 부가 정보
@@ -34,9 +34,8 @@ class AuthState {
   final AuthStatus status;
   final bool isLoading;
   final String? errorMessage;
-  final String? pendingRestoreToken;
 
-  /// 카카오/애플 중 실제로 진행 중인 로그인. 복구 등 그 외 busy는 null.
+  /// 카카오/애플 중 실제로 진행 중인 로그인. 그 외 busy는 null.
   final SocialLoginKind? activeSocialLogin;
 
   /// JWT에서 추출한 실제 사용자 ID
@@ -46,7 +45,6 @@ class AuthState {
     this.status = AuthStatus.unknown,
     this.isLoading = false,
     this.errorMessage,
-    this.pendingRestoreToken,
     this.activeSocialLogin,
     this.userId,
   });
@@ -55,7 +53,6 @@ class AuthState {
     AuthStatus? status,
     bool? isLoading,
     String? errorMessage,
-    String? pendingRestoreToken,
     SocialLoginKind? activeSocialLogin,
     int? userId,
   }) {
@@ -63,7 +60,6 @@ class AuthState {
       status: status ?? this.status,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
-      pendingRestoreToken: pendingRestoreToken,
       activeSocialLogin: activeSocialLogin,
       userId: userId ?? this.userId,
     );
@@ -95,7 +91,7 @@ class AuthController extends Notifier<AuthState> {
             : AuthStatus.authenticated,
         userId: me.userId,
       );
-      await _authService.syncExistingTokenToAppGroup();
+      await _authService.syncExistingTokenToNativeBridge();
       if (!me.needsNickname) {
         unawaited(_authService.fetchAndSaveCloudFrontCookies());
       }
@@ -193,18 +189,9 @@ class AuthController extends Notifier<AuthState> {
         // debugPrint('[AuthController] 로그인 실패: $code');
 
         case AuthCallbackResult.deletedUser:
-          final restoreToken = callbackData.restoreToken;
-          if (restoreToken == null || restoreToken.isEmpty) {
-            state = state.copyWith(
-              isLoading: false,
-              errorMessage: '복구 토큰이 없어 로그인할 수 없습니다.',
-            );
-            return;
-          }
-          state = AuthState(
-            status: AuthStatus.unauthenticated,
+          state = state.copyWith(
             isLoading: false,
-            pendingRestoreToken: restoreToken,
+            errorMessage: '탈퇴한 계정은 로그인할 수 없습니다.',
           );
       }
     } catch (e) {
@@ -263,63 +250,6 @@ class AuthController extends Notifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
     _bumpSessionRefreshTick();
     // debugPrint('[AuthController] 토큰 만료 → 강제 로그아웃');
-  }
-
-  void clearPendingRestoreToken() {
-    state = AuthState(
-      status: state.status,
-      isLoading: state.isLoading,
-      errorMessage: state.errorMessage,
-      userId: state.userId,
-      pendingRestoreToken: null,
-      activeSocialLogin: state.activeSocialLogin,
-    );
-  }
-
-  Future<void> restoreDeletedAccount({required String restoreToken}) async {
-    state = AuthState(
-      status: AuthStatus.unauthenticated,
-      isLoading: true,
-      errorMessage: null,
-      pendingRestoreToken: restoreToken,
-    );
-    final restored = await _authService.restoreDeletedAccount(
-      restoreToken: restoreToken,
-    );
-    if (restored == null ||
-        restored.accessToken == null ||
-        restored.refreshToken == null) {
-      state = const AuthState(
-        status: AuthStatus.unauthenticated,
-        isLoading: false,
-        errorMessage: '계정 복구에 실패했습니다.',
-      );
-      return;
-    }
-
-    await _authService.saveTokens(
-      accessToken: restored.accessToken!,
-      refreshToken: restored.refreshToken!,
-    );
-    final me = await _fetchAuthMe();
-    state = AuthState(
-      status: me.needsNickname
-          ? AuthStatus.needsNickname
-          : AuthStatus.authenticated,
-      isLoading: false,
-      userId: me.userId,
-    );
-    if (me.needsNickname) {
-      return;
-    }
-    _markAuthenticatedSideEffects();
-    // TODO(FCM-비활성화): 테스트 중 임시 주석
-    // unawaited(
-    //   ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-    //         promptForPermission: true,
-    //       ),
-    // );
-    // debugPrint('[AuthController] 계정 복구 및 로그인 성공, userId: $userId');
   }
 }
 

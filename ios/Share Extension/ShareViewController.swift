@@ -716,6 +716,7 @@ final class ShareViewController: UIViewController {
         }
 
         await MainActor.run {
+          ExternalSaveDirtyStore.markFolderDirty(folder.foldersId)
           self.showSaveSuccessAndComplete(
             folderName: folder.title
           )
