@@ -899,6 +899,11 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
     if (confirmed) await openAppSettings();
   }
 
+  Future<void> _refreshPageItems() async {
+    ref.invalidate(pageItemsProvider(widget.foldersId));
+    final _ = await ref.read(pageItemsProvider(widget.foldersId).future);
+  }
+
   List<Widget> _buildTabViewChildren(PageItemsResponseDto data) {
     return FolderTab.order.map((tab) {
       switch (tab) {
@@ -916,6 +921,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             pendingItems: pendingLinks,
             onPendingRetry: (id) =>
                 ref.read(pendingUploadsProvider.notifier).retry(id),
+            onRefresh: _refreshPageItems,
             onLinkTap: _openLink,
             onLinkKebabTap: _showLinkKebabSheet,
           );
@@ -933,6 +939,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             pendingItems: pendingNotes,
             onPendingRetry: (id) =>
                 ref.read(pendingUploadsProvider.notifier).retry(id),
+            onRefresh: _refreshPageItems,
             onNoteTap: _openNoteDetail,
             onNoteKebabTap: _showNoteKebabSheet,
           );
@@ -950,6 +957,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
             pendingItems: pendingFiles,
             onPendingRetry: (id) =>
                 ref.read(pendingUploadsProvider.notifier).retry(id),
+            onRefresh: _refreshPageItems,
             onFileTap: _openFilePreview,
             onFileKebabTap: _showFileKebabSheet,
           );
@@ -965,6 +973,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen>
           return _ImageTabContent(
             images: data.images,
             pendingUploads: pending,
+            onRefresh: _refreshPageItems,
             onImageLongPress: _showImageKebabSheet,
             onImageTap: _openImageDetail,
           );
@@ -1239,6 +1248,38 @@ Widget _buildSectionToolbar(int count, {bool removeBottomPadding = false}) {
   );
 }
 
+const ScrollPhysics _refreshScrollPhysics = AlwaysScrollableScrollPhysics(
+  parent: BouncingScrollPhysics(),
+);
+
+Widget _buildRefreshableEmptyState({
+  required BuildContext context,
+  required String message,
+  required Future<void> Function() onRefresh,
+  bool removeBottomPadding = false,
+}) {
+  return RefreshIndicator(
+    color: AppColors.blue500,
+    onRefresh: onRefresh,
+    child: ListView(
+      physics: _refreshScrollPhysics,
+      padding: EdgeInsets.zero,
+      children: [
+        _buildSectionToolbar(0, removeBottomPadding: removeBottomPadding),
+        SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.45,
+          child: Center(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 16, color: AppColors.gray600),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 String _formatCreatedAt(String? createdAt) {
   if (createdAt == null || createdAt.isEmpty) return '';
   final date = DateTime.tryParse(createdAt);
@@ -1345,6 +1386,7 @@ class _LinkTabContent extends StatelessWidget {
   final List<LinkDto> links;
   final List<PendingSaveItem> pendingItems;
   final void Function(String id) onPendingRetry;
+  final Future<void> Function() onRefresh;
   final void Function(LinkDto link) onLinkTap;
   final void Function(LinkDto link) onLinkKebabTap;
 
@@ -1352,6 +1394,7 @@ class _LinkTabContent extends StatelessWidget {
     required this.links,
     required this.pendingItems,
     required this.onPendingRetry,
+    required this.onRefresh,
     required this.onLinkTap,
     required this.onLinkKebabTap,
   });
@@ -1360,19 +1403,11 @@ class _LinkTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalCount = links.length + pendingItems.length;
     if (totalCount == 0) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSectionToolbar(0, removeBottomPadding: true),
-          const Expanded(
-            child: Center(
-              child: Text(
-                '저장된 링크가 없습니다.',
-                style: TextStyle(fontSize: 16, color: AppColors.gray600),
-              ),
-            ),
-          ),
-        ],
+      return _buildRefreshableEmptyState(
+        context: context,
+        message: '저장된 링크가 없습니다.',
+        onRefresh: onRefresh,
+        removeBottomPadding: true,
       );
     }
     return Column(
@@ -1380,29 +1415,34 @@ class _LinkTabContent extends StatelessWidget {
       children: [
         _buildSectionToolbar(totalCount, removeBottomPadding: true),
         Expanded(
-          child: ListView.separated(
-            padding: EdgeInsets.zero,
-            itemCount: totalCount,
-            separatorBuilder: (_, __) => const Divider(
-              height: 1,
-              thickness: 1,
-              color: AppColors.neutral50,
-            ),
-            itemBuilder: (context, index) {
-              if (index < pendingItems.length) {
-                final item = pendingItems[index];
-                return _PendingLinkRow(
-                  item: item,
-                  onRetry: () => onPendingRetry(item.id),
+          child: RefreshIndicator(
+            color: AppColors.blue500,
+            onRefresh: onRefresh,
+            child: ListView.separated(
+              physics: _refreshScrollPhysics,
+              padding: EdgeInsets.zero,
+              itemCount: totalCount,
+              separatorBuilder: (_, __) => const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              itemBuilder: (context, index) {
+                if (index < pendingItems.length) {
+                  final item = pendingItems[index];
+                  return _PendingLinkRow(
+                    item: item,
+                    onRetry: () => onPendingRetry(item.id),
+                  );
+                }
+                final link = links[index - pendingItems.length];
+                return _LinkItemRow(
+                  link: link,
+                  onTap: () => onLinkTap(link),
+                  onMoreTap: () => onLinkKebabTap(link),
                 );
-              }
-              final link = links[index - pendingItems.length];
-              return _LinkItemRow(
-                link: link,
-                onTap: () => onLinkTap(link),
-                onMoreTap: () => onLinkKebabTap(link),
-              );
-            },
+              },
+            ),
           ),
         ),
       ],
@@ -1658,6 +1698,7 @@ class _NoteTabContent extends StatelessWidget {
   final List<TextDto> texts;
   final List<PendingSaveItem> pendingItems;
   final void Function(String id) onPendingRetry;
+  final Future<void> Function() onRefresh;
   final void Function(TextDto note) onNoteTap;
   final void Function(TextDto note) onNoteKebabTap;
 
@@ -1665,6 +1706,7 @@ class _NoteTabContent extends StatelessWidget {
     required this.texts,
     required this.pendingItems,
     required this.onPendingRetry,
+    required this.onRefresh,
     required this.onNoteTap,
     required this.onNoteKebabTap,
   });
@@ -1679,19 +1721,11 @@ class _NoteTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalCount = texts.length + pendingItems.length;
     if (totalCount == 0) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSectionToolbar(0, removeBottomPadding: true),
-          const Expanded(
-            child: Center(
-              child: Text(
-                '저장된 노트가 없습니다.',
-                style: TextStyle(fontSize: 16, color: AppColors.gray600),
-              ),
-            ),
-          ),
-        ],
+      return _buildRefreshableEmptyState(
+        context: context,
+        message: '저장된 노트가 없습니다.',
+        onRefresh: onRefresh,
+        removeBottomPadding: true,
       );
     }
     return Column(
@@ -1699,46 +1733,53 @@ class _NoteTabContent extends StatelessWidget {
       children: [
         _buildSectionToolbar(totalCount),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: GridView.builder(
-              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: _gridSpacing,
-                crossAxisSpacing: _gridSpacing,
-                childAspectRatio: _cardWidth / _cardTotalHeight,
-              ),
-              itemCount: totalCount,
-              itemBuilder: (context, index) {
-                if (index < pendingItems.length) {
-                  final item = pendingItems[index];
+          child: RefreshIndicator(
+            color: AppColors.blue500,
+            onRefresh: onRefresh,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: GridView.builder(
+                physics: _refreshScrollPhysics,
+                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: _gridSpacing,
+                  crossAxisSpacing: _gridSpacing,
+                  childAspectRatio: _cardWidth / _cardTotalHeight,
+                ),
+                itemCount: totalCount,
+                itemBuilder: (context, index) {
+                  if (index < pendingItems.length) {
+                    final item = pendingItems[index];
+                    return LayoutBuilder(
+                      builder: (context, cellConstraints) {
+                        final cellW = cellConstraints.maxWidth;
+                        final displayW = cellW < _cardWidth
+                            ? cellW
+                            : _cardWidth;
+                        return _PendingNoteCard(
+                          item: item,
+                          displayWidth: displayW,
+                          onRetry: () => onPendingRetry(item.id),
+                        );
+                      },
+                    );
+                  }
+                  final note = texts[index - pendingItems.length];
                   return LayoutBuilder(
                     builder: (context, cellConstraints) {
                       final cellW = cellConstraints.maxWidth;
                       final displayW = cellW < _cardWidth ? cellW : _cardWidth;
-                      return _PendingNoteCard(
-                        item: item,
+                      return _NoteCard(
+                        note: note,
                         displayWidth: displayW,
-                        onRetry: () => onPendingRetry(item.id),
+                        onTap: () => onNoteTap(note),
+                        onKebabTap: () => onNoteKebabTap(note),
                       );
                     },
                   );
-                }
-                final note = texts[index - pendingItems.length];
-                return LayoutBuilder(
-                  builder: (context, cellConstraints) {
-                    final cellW = cellConstraints.maxWidth;
-                    final displayW = cellW < _cardWidth ? cellW : _cardWidth;
-                    return _NoteCard(
-                      note: note,
-                      displayWidth: displayW,
-                      onTap: () => onNoteTap(note),
-                      onKebabTap: () => onNoteKebabTap(note),
-                    );
-                  },
-                );
-              },
+                },
+              ),
             ),
           ),
         ),
@@ -1961,6 +2002,7 @@ class _FileTabContent extends StatelessWidget {
   final List<AttachmentFileDto> files;
   final List<PendingSaveItem> pendingItems;
   final void Function(String id) onPendingRetry;
+  final Future<void> Function() onRefresh;
   final void Function(AttachmentFileDto file) onFileTap;
   final void Function(AttachmentFileDto file) onFileKebabTap;
 
@@ -1968,6 +2010,7 @@ class _FileTabContent extends StatelessWidget {
     required this.files,
     required this.pendingItems,
     required this.onPendingRetry,
+    required this.onRefresh,
     required this.onFileTap,
     required this.onFileKebabTap,
   });
@@ -1976,19 +2019,10 @@ class _FileTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalCount = files.length + pendingItems.length;
     if (totalCount == 0) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSectionToolbar(0),
-          const Expanded(
-            child: Center(
-              child: Text(
-                '저장된 파일이 없습니다.',
-                style: TextStyle(fontSize: 16, color: AppColors.gray600),
-              ),
-            ),
-          ),
-        ],
+      return _buildRefreshableEmptyState(
+        context: context,
+        message: '저장된 파일이 없습니다.',
+        onRefresh: onRefresh,
       );
     }
     return Column(
@@ -1996,29 +2030,34 @@ class _FileTabContent extends StatelessWidget {
       children: [
         _buildSectionToolbar(totalCount, removeBottomPadding: true),
         Expanded(
-          child: ListView.separated(
-            padding: EdgeInsets.zero,
-            itemCount: totalCount,
-            separatorBuilder: (_, __) => const Divider(
-              height: 1,
-              thickness: 1,
-              color: AppColors.neutral50,
-            ),
-            itemBuilder: (context, index) {
-              if (index < pendingItems.length) {
-                final item = pendingItems[index];
-                return _PendingFileRow(
-                  item: item,
-                  onRetry: () => onPendingRetry(item.id),
+          child: RefreshIndicator(
+            color: AppColors.blue500,
+            onRefresh: onRefresh,
+            child: ListView.separated(
+              physics: _refreshScrollPhysics,
+              padding: EdgeInsets.zero,
+              itemCount: totalCount,
+              separatorBuilder: (_, __) => const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.neutral50,
+              ),
+              itemBuilder: (context, index) {
+                if (index < pendingItems.length) {
+                  final item = pendingItems[index];
+                  return _PendingFileRow(
+                    item: item,
+                    onRetry: () => onPendingRetry(item.id),
+                  );
+                }
+                final file = files[index - pendingItems.length];
+                return _FileItemRow(
+                  file: file,
+                  onTap: () => onFileTap(file),
+                  onMoreTap: () => onFileKebabTap(file),
                 );
-              }
-              final file = files[index - pendingItems.length];
-              return _FileItemRow(
-                file: file,
-                onTap: () => onFileTap(file),
-                onMoreTap: () => onFileKebabTap(file),
-              );
-            },
+              },
+            ),
           ),
         ),
       ],
@@ -2326,12 +2365,14 @@ String _formatAttachmentSize(double sizeInBytes) {
 class _ImageTabContent extends ConsumerWidget {
   final List<AttachmentImageDto> images;
   final List<PendingImageUpload> pendingUploads;
+  final Future<void> Function() onRefresh;
   final void Function(AttachmentImageDto image) onImageLongPress;
   final void Function(AttachmentImageDto image) onImageTap;
 
   const _ImageTabContent({
     required this.images,
     required this.pendingUploads,
+    required this.onRefresh,
     required this.onImageLongPress,
     required this.onImageTap,
   });
@@ -2356,19 +2397,10 @@ class _ImageTabContent extends ConsumerWidget {
     final totalCount = pendingItems.length + images.length;
 
     if (totalCount == 0) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildSectionToolbar(0),
-          const Expanded(
-            child: Center(
-              child: Text(
-                '저장된 이미지가 없습니다.',
-                style: TextStyle(fontSize: 16, color: AppColors.gray600),
-              ),
-            ),
-          ),
-        ],
+      return _buildRefreshableEmptyState(
+        context: context,
+        message: '저장된 이미지가 없습니다.',
+        onRefresh: onRefresh,
       );
     }
     const gap = AppSpacing.sm + 1;
@@ -2377,51 +2409,58 @@ class _ImageTabContent extends ConsumerWidget {
       children: [
         _buildSectionToolbar(totalCount),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final maxW = constraints.maxWidth;
-                final count = _columnCountForWidth(maxW, gap);
-                final tileW = (maxW - gap * (count - 1)) / count;
-                final tileH = tileW / _tileAspect;
-                return GridView.builder(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: count,
-                    crossAxisSpacing: gap,
-                    mainAxisSpacing: AppSpacing.md,
-                    childAspectRatio: _tileAspect,
-                  ),
-                  itemCount: totalCount,
-                  itemBuilder: (context, index) {
-                    if (index < pendingItems.length) {
-                      final (:item, :upload) = pendingItems[index];
-                      return _PendingImageCell(
-                        width: tileW,
-                        height: tileH,
-                        item: item,
-                        upload: upload,
-                        onRetry: () => ref
-                            .read(pendingUploadsProvider.notifier)
-                            .retry(upload.id),
+          child: RefreshIndicator(
+            color: AppColors.blue500,
+            onRefresh: onRefresh,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxW = constraints.maxWidth;
+                  final count = _columnCountForWidth(maxW, gap);
+                  final tileW = (maxW - gap * (count - 1)) / count;
+                  final tileH = tileW / _tileAspect;
+                  return GridView.builder(
+                    physics: _refreshScrollPhysics,
+                    padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: count,
+                      crossAxisSpacing: gap,
+                      mainAxisSpacing: AppSpacing.md,
+                      childAspectRatio: _tileAspect,
+                    ),
+                    itemCount: totalCount,
+                    itemBuilder: (context, index) {
+                      if (index < pendingItems.length) {
+                        final (:item, :upload) = pendingItems[index];
+                        return _PendingImageCell(
+                          width: tileW,
+                          height: tileH,
+                          item: item,
+                          upload: upload,
+                          onRetry: () => ref
+                              .read(pendingUploadsProvider.notifier)
+                              .retry(upload.id),
+                        );
+                      }
+                      final img = images[index - pendingItems.length];
+                      return _TapScale(
+                        onTap: () => onImageTap(img),
+                        onLongPress: () => onImageLongPress(img),
+                        pressedScale: 0.94,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusSm,
+                        ),
+                        child: _FolderImageCell(
+                          width: tileW,
+                          height: tileH,
+                          image: img,
+                        ),
                       );
-                    }
-                    final img = images[index - pendingItems.length];
-                    return _TapScale(
-                      onTap: () => onImageTap(img),
-                      onLongPress: () => onImageLongPress(img),
-                      pressedScale: 0.94,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                      child: _FolderImageCell(
-                        width: tileW,
-                        height: tileH,
-                        image: img,
-                      ),
-                    );
-                  },
-                );
-              },
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ),

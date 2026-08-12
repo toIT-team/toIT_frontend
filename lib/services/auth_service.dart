@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -25,14 +24,12 @@ class AuthCallbackData {
   final String? accessToken;
   final String? refreshToken;
   final String? errorCode;
-  final String? restoreToken;
 
   const AuthCallbackData({
     required this.result,
     this.accessToken,
     this.refreshToken,
     this.errorCode,
-    this.restoreToken,
   });
 }
 
@@ -44,9 +41,7 @@ class AuthService {
   final FlutterSecureStorage _storage;
   final Dio _dio;
 
-  static const _tokenChannel = MethodChannel(
-    'com.toit/token',
-  );
+  static const _tokenChannel = MethodChannel('com.toit/token');
 
   AuthService({FlutterSecureStorage? storage, Dio? dio})
     : _storage = storage ?? const FlutterSecureStorage(),
@@ -63,14 +58,14 @@ class AuthService {
               ),
             ),
           ));
-          // ..interceptors.add(
-          //   LogInterceptor(
-          //     requestHeader: true,
-          //     requestBody: true,
-          //     responseHeader: false,
-          //     responseBody: true,
-          //   ),
-          // );
+  // ..interceptors.add(
+  //   LogInterceptor(
+  //     requestHeader: true,
+  //     requestBody: true,
+  //     responseHeader: false,
+  //     responseBody: true,
+  //   ),
+  // );
 
   // ─── 토큰 저장소 ───
 
@@ -82,7 +77,10 @@ class AuthService {
       _storage.write(key: _kAccessToken, value: accessToken),
       _storage.write(key: _kRefreshToken, value: refreshToken),
     ]);
-    await _syncTokenToAppGroup(accessToken);
+    await _syncTokenToNativeBridge(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
   }
 
   Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
@@ -100,7 +98,7 @@ class AuthService {
     // 앱 시작 시 authenticated로 오판되어 401 루프를 만들 수 있다.
     if (hasAccessToken != hasRefreshToken) {
       // debugPrint(
-        // '[AuthService] 토큰 쌍 불일치 감지(access=$hasAccessToken, refresh=$hasRefreshToken) → 토큰 정리',
+      // '[AuthService] 토큰 쌍 불일치 감지(access=$hasAccessToken, refresh=$hasRefreshToken) → 토큰 정리',
       // );
       await clearTokens();
       return false;
@@ -109,11 +107,18 @@ class AuthService {
     return hasAccessToken && hasRefreshToken;
   }
 
-  /// 앱 시작 시 기존 토큰을 App Group에 1회 동기화
-  Future<void> syncExistingTokenToAppGroup() async {
-    final token = await getAccessToken();
-    if (token != null && token.isNotEmpty) {
-      await _syncTokenToAppGroup(token);
+  /// 앱 시작 시 기존 토큰을 플랫폼 공유 저장소에 1회 동기화
+  Future<void> syncExistingTokenToNativeBridge() async {
+    final accessToken = await getAccessToken();
+    final refreshToken = await getRefreshToken();
+    if (accessToken != null &&
+        accessToken.isNotEmpty &&
+        refreshToken != null &&
+        refreshToken.isNotEmpty) {
+      await _syncTokenToNativeBridge(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      );
     }
   }
 
@@ -122,46 +127,47 @@ class AuthService {
       _storage.delete(key: _kAccessToken),
       _storage.delete(key: _kRefreshToken),
     ]);
-    await _clearTokenFromAppGroup();
+    await _clearTokenFromNativeBridge();
   }
 
-  // ─── iOS App Group 토큰 동기화 (Share Extension용) ───
+  // ─── 플랫폼 토큰 브릿지 동기화 (iOS Share Extension / Android Native Share용) ───
 
-  Future<void> _syncTokenToAppGroup(String accessToken) async {
-    if (!Platform.isIOS) return;
+  Future<void> _syncTokenToNativeBridge({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    if (!Platform.isIOS && !Platform.isAndroid) return;
     try {
       final userId = await getUserIdFromToken();
       // debugPrint(
-        // '[AuthService] App Group 동기화 시도 - '
-        // 'token: ${accessToken.substring(0, 10)}..., '
-        // 'userId: $userId, '
-        // 'baseUrl: ${ApiConstants.baseUrl}',
+      // '[AuthService] App Group 동기화 시도 - '
+      // 'token: ${accessToken.substring(0, 10)}..., '
+      // 'userId: $userId, '
+      // 'baseUrl: ${ApiConstants.baseUrl}',
       // );
-      final result = await _tokenChannel.invokeMethod(
-        'syncToken',
-        {
-          'accessToken': accessToken,
-          'userId': userId ?? 0,
-          'baseUrl': ApiConstants.baseUrl,
-        },
-      );
+      await _tokenChannel.invokeMethod('syncToken', {
+        'accessToken': accessToken,
+        'refreshToken': refreshToken,
+        'userId': userId ?? 0,
+        'baseUrl': ApiConstants.baseUrl,
+      });
       // debugPrint(
-        // '[AuthService] App Group 동기화 결과: $result',
+      // '[AuthService] App Group 동기화 결과: $result',
       // );
     } catch (e) {
       // debugPrint(
-        // '[AuthService] App Group 토큰 동기화 실패: $e',
+      // '[AuthService] App Group 토큰 동기화 실패: $e',
       // );
     }
   }
 
-  Future<void> _clearTokenFromAppGroup() async {
-    if (!Platform.isIOS) return;
+  Future<void> _clearTokenFromNativeBridge() async {
+    if (!Platform.isIOS && !Platform.isAndroid) return;
     try {
       await _tokenChannel.invokeMethod('clearToken');
     } catch (e) {
       // debugPrint(
-        // '[AuthService] App Group 토큰 삭제 실패: $e',
+      // '[AuthService] App Group 토큰 삭제 실패: $e',
       // );
     }
   }
@@ -202,20 +208,16 @@ class AuthService {
     final accessToken = uri.queryParameters['accessToken'];
     final refreshToken = uri.queryParameters['refreshToken'];
     final errorCode = uri.queryParameters['errorCode'];
-    final restoreToken = uri.queryParameters['restoreToken'];
 
     // debugPrint('[AuthService] 콜백 파싱 결과:');
     // debugPrint('  result: $resultStr');
     // debugPrint(
-      // '  accessToken: ${accessToken != null ? '${accessToken.substring(0, 20)}...' : 'null'}',
+    // '  accessToken: ${accessToken != null ? '${accessToken.substring(0, 20)}...' : 'null'}',
     // );
     // debugPrint(
-      // '  refreshToken: ${refreshToken != null ? '${refreshToken.substring(0, 20)}...' : 'null'}',
+    // '  refreshToken: ${refreshToken != null ? '${refreshToken.substring(0, 20)}...' : 'null'}',
     // );
     // debugPrint('  errorCode: $errorCode');
-    // debugPrint(
-      // '  restoreToken: ${restoreToken != null ? '${restoreToken.substring(0, restoreToken.length > 12 ? 12 : restoreToken.length)}...' : 'null'}',
-    // );
     // debugPrint('  전체 쿼리: ${uri.queryParameters}');
     if (accessToken != null && accessToken.isNotEmpty) {
       // _debugPrintJwtPayload(token: accessToken, label: 'callback accessToken');
@@ -234,7 +236,6 @@ class AuthService {
       accessToken: accessToken,
       refreshToken: refreshToken,
       errorCode: errorCode,
-      restoreToken: restoreToken,
     );
   }
 
@@ -295,23 +296,6 @@ class AuthService {
     }
   }
 
-  void _debugPrintJwtPayload({required String token, required String label}) {
-    final payload = _tryDecodeJwtPayload(token);
-    if (payload == null) {
-      // debugPrint('[AuthService] $label payload decode 실패');
-      return;
-    }
-
-    // debugPrint('[AuthService] $label payload: $payload');
-    // debugPrint(
-      // '[AuthService] $label claims'
-      // ' sub=${payload['sub']}'
-      // ' nickname=${payload['nickname']}'
-      // ' name=${payload['name']}'
-      // ' email=${payload['email']}',
-    // );
-  }
-
   // ─── 토큰 재발급 ───
 
   /// refreshToken으로 새 accessToken을 받아 저장한다.
@@ -328,29 +312,22 @@ class AuthService {
       return null;
     }
 
-    final reissueUrl = '${ApiConstants.baseUrl}${ApiConstants.reissueEndpoint}';
-    final maskedRt = _maskToken(refreshToken);
-    // debugPrint('[AuthService][REISSUE] ▶ POST $reissueUrl');
-    // debugPrint('[AuthService][REISSUE]   body: {"refreshToken": "$maskedRt"}');
-
     try {
       final response = await _dio.post(
         ApiConstants.reissueEndpoint,
         data: {'refreshToken': refreshToken},
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       // debugPrint(
-        // '[AuthService][REISSUE] ◀ status=${response.statusCode}'
-        // ' body=${response.data}',
+      // '[AuthService][REISSUE] ◀ status=${response.statusCode}'
+      // ' body=${response.data}',
       // );
 
       final data = response.data;
       if (data is! Map) {
         // debugPrint(
-          // '[AuthService][REISSUE] ❌ 응답이 Map 형식이 아님 → 백엔드 명세 확인 필요',
+        // '[AuthService][REISSUE] ❌ 응답이 Map 형식이 아님 → 백엔드 명세 확인 필요',
         // );
         return null;
       }
@@ -358,7 +335,7 @@ class AuthService {
       final newAccessToken = data['accessToken'] as String?;
       if (newAccessToken == null || newAccessToken.isEmpty) {
         // debugPrint(
-          // '[AuthService][REISSUE] ❌ 응답에 accessToken 키 없음/비어있음 → 키명: ${data.keys.toList()}',
+        // '[AuthService][REISSUE] ❌ 응답에 accessToken 키 없음/비어있음 → 키명: ${data.keys.toList()}',
         // );
         return null;
       }
@@ -371,35 +348,43 @@ class AuthService {
         // debugPrint('[AuthService][REISSUE] ✓ refreshToken rotation 적용');
       }
 
-      await _syncTokenToAppGroup(newAccessToken);
+      await _syncTokenToNativeBridge(
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken != null && newRefreshToken.isNotEmpty
+            ? newRefreshToken
+            : refreshToken,
+      );
       // debugPrint('[AuthService][REISSUE] ✓ accessToken 재발급 성공');
       return newAccessToken;
-    } on DioException catch (e) {
+    } on DioException {
       // debugPrint('[AuthService][REISSUE] ❌ DioException');
       // debugPrint('[AuthService][REISSUE]   type: ${e.type}');
       // debugPrint('[AuthService][REISSUE]   status: ${e.response?.statusCode}');
       // debugPrint('[AuthService][REISSUE]   responseBody: ${e.response?.data}');
       // debugPrint('[AuthService][REISSUE]   message: ${e.message}');
       return null;
-    } catch (e, st) {
+    } catch (_) {
       // debugPrint('[AuthService][REISSUE] ❌ 예외: $e\n$st');
       return null;
     }
-  }
-
-  /// 토큰을 로그에 안전하게 출력하기 위한 마스킹 (앞 8자만 표시)
-  String _maskToken(String token) {
-    if (token.length <= 8) return '${token.substring(0, token.length)}...';
-    return '${token.substring(0, 8)}...(len=${token.length})';
   }
 
   // ─── CloudFront Signed Cookie ───
 
   Future<void> saveCloudFrontCookies(Map<String, dynamic> cookies) async {
     await Future.wait([
-      _storage.write(key: _kCfPolicy, value: cookies['CloudFront-Policy'] as String?),
-      _storage.write(key: _kCfSignature, value: cookies['CloudFront-Signature'] as String?),
-      _storage.write(key: _kCfKeyPairId, value: cookies['CloudFront-Key-Pair-Id'] as String?),
+      _storage.write(
+        key: _kCfPolicy,
+        value: cookies['CloudFront-Policy'] as String?,
+      ),
+      _storage.write(
+        key: _kCfSignature,
+        value: cookies['CloudFront-Signature'] as String?,
+      ),
+      _storage.write(
+        key: _kCfKeyPairId,
+        value: cookies['CloudFront-Key-Pair-Id'] as String?,
+      ),
     ]);
   }
 
@@ -444,37 +429,6 @@ class AuthService {
       return true;
     } on DioException {
       return false;
-    }
-  }
-
-  /// 탈퇴 사용자 계정 복구
-  /// restoreToken으로 복구 후 access/refresh 토큰을 반환
-  Future<AuthCallbackData?> restoreDeletedAccount({
-    required String restoreToken,
-  }) async {
-    try {
-      final response = await _dio.post(
-        ApiConstants.restoreAccountEndpoint,
-        queryParameters: {'restoreToken': restoreToken},
-      );
-
-      final accessToken = response.data['accessToken'] as String?;
-      final refreshToken = response.data['refreshToken'] as String?;
-      if (accessToken == null ||
-          accessToken.isEmpty ||
-          refreshToken == null ||
-          refreshToken.isEmpty) {
-        return null;
-      }
-
-      return AuthCallbackData(
-        result: AuthCallbackResult.success,
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
-    } on DioException catch (e) {
-      // debugPrint('[AuthService] 계정 복구 실패: ${e.message}');
-      return null;
     }
   }
 }

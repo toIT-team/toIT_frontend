@@ -3,7 +3,8 @@ import Foundation
 /// Share Extension 전용 경량 API 클라이언트.
 /// App Group `UserDefaults`에서 인증 정보를 읽는다.
 final class ShareApiClient {
-  private let accessToken: String
+  private var accessToken: String
+  private var refreshToken: String?
   private let baseUrl: String
   let userId: Int
 
@@ -19,6 +20,7 @@ final class ShareApiClient {
     }
 
     let token = Self.resolveAccessToken(from: defaults)
+    let refreshToken = Self.resolveRefreshToken(from: defaults)
     let url = defaults.string(forKey: "api_base_url")
     let uid = defaults.integer(forKey: "user_id")
 
@@ -28,6 +30,7 @@ final class ShareApiClient {
     else { return nil }
 
     self.accessToken = token
+    self.refreshToken = refreshToken
     self.baseUrl = url
     self.userId = uid
   }
@@ -47,6 +50,27 @@ final class ShareApiClient {
 
     if SharedKeychainTokenStore.saveAccessToken(legacyToken) {
       defaults.removeObject(forKey: "access_token")
+      defaults.synchronize()
+    }
+
+    return legacyToken
+  }
+
+  private static func resolveRefreshToken(
+    from defaults: UserDefaults
+  ) -> String? {
+    if let token = SharedKeychainTokenStore.readRefreshToken(),
+       !token.isEmpty {
+      return token
+    }
+
+    guard
+      let legacyToken = defaults.string(forKey: "refresh_token"),
+      !legacyToken.isEmpty
+    else { return nil }
+
+    if SharedKeychainTokenStore.saveRefreshToken(legacyToken) {
+      defaults.removeObject(forKey: "refresh_token")
       defaults.synchronize()
     }
 
@@ -155,10 +179,6 @@ final class ShareApiClient {
     var req = URLRequest(url: url)
     req.httpMethod = "POST"
     req.setValue(
-      "Bearer \(accessToken)",
-      forHTTPHeaderField: "Authorization"
-    )
-    req.setValue(
       "application/json",
       forHTTPHeaderField: "Content-Type"
     )
@@ -168,7 +188,9 @@ final class ShareApiClient {
       withJSONObject: ["linksUrl": linksUrl]
     )
 
-    let (data, response) = try await URLSession.shared.data(for: req)
+    let (data, response) = try await dataForAuthorizedRequest {
+      req
+    }
     try validateResponse(response)
 
     guard let json = try JSONSerialization.jsonObject(
@@ -190,10 +212,6 @@ final class ShareApiClient {
     var req = URLRequest(url: url)
     req.httpMethod = "POST"
     req.setValue(
-      "Bearer \(accessToken)",
-      forHTTPHeaderField: "Authorization"
-    )
-    req.setValue(
       "application/json",
       forHTTPHeaderField: "Content-Type"
     )
@@ -214,7 +232,9 @@ final class ShareApiClient {
     }
     req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-    let (_, response) = try await URLSession.shared.data(for: req)
+    let (_, response) = try await dataForAuthorizedRequest {
+      req
+    }
     try validateResponse(response)
   }
 
@@ -226,12 +246,37 @@ final class ShareApiClient {
   ) async throws -> (Data, URLResponse) {
     var req = URLRequest(url: url)
     req.httpMethod = method
+    req.timeoutInterval = 15
+    return try await dataForAuthorizedRequest {
+      req
+    }
+  }
+
+  private func dataForAuthorizedRequest(
+    _ makeRequest: () throws -> URLRequest
+  ) async throws -> (Data, URLResponse) {
+    var req = try makeRequest()
+    applyAuthorization(to: &req)
+
+    let (data, response) = try await URLSession.shared.data(for: req)
+    guard isUnauthorized(response) else {
+      return (data, response)
+    }
+
+    guard try await reissueAccessToken() else {
+      return (data, response)
+    }
+
+    var retryReq = try makeRequest()
+    applyAuthorization(to: &retryReq)
+    return try await URLSession.shared.data(for: retryReq)
+  }
+
+  private func applyAuthorization(to req: inout URLRequest) {
     req.setValue(
       "Bearer \(accessToken)",
       forHTTPHeaderField: "Authorization"
     )
-    req.timeoutInterval = 15
-    return try await URLSession.shared.data(for: req)
   }
 
   private func uploadMultipart(
@@ -245,10 +290,6 @@ final class ShareApiClient {
 
     var req = URLRequest(url: url)
     req.httpMethod = "POST"
-    req.setValue(
-      "Bearer \(accessToken)",
-      forHTTPHeaderField: "Authorization"
-    )
     req.setValue(
       "multipart/form-data; boundary=\(boundary)",
       forHTTPHeaderField: "Content-Type"
@@ -278,10 +319,57 @@ final class ShareApiClient {
     )
     req.httpBody = body
 
-    let (_, response) = try await URLSession.shared.data(
-      for: req
-    )
+    let (_, response) = try await dataForAuthorizedRequest {
+      req
+    }
     try validateResponse(response)
+  }
+
+  private func reissueAccessToken() async throws -> Bool {
+    guard let refreshToken, !refreshToken.isEmpty else {
+      return false
+    }
+
+    let url = URL(string: "\(baseUrl)/api/auth/reissue")!
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.setValue(
+      "application/json",
+      forHTTPHeaderField: "Content-Type"
+    )
+    req.timeoutInterval = 15
+    req.httpBody = try JSONSerialization.data(
+      withJSONObject: ["refreshToken": refreshToken]
+    )
+
+    let (data, response) = try await URLSession.shared.data(for: req)
+    guard let http = response as? HTTPURLResponse else {
+      throw ShareApiError.invalidResponse
+    }
+    guard (200...299).contains(http.statusCode) else {
+      if http.statusCode == 401 {
+        throw ShareApiError.unauthorized
+      }
+      throw ShareApiError.serverError(http.statusCode)
+    }
+
+    guard
+      let json = try JSONSerialization.jsonObject(with: data)
+        as? [String: Any],
+      let newAccessToken = json["accessToken"] as? String,
+      !newAccessToken.isEmpty
+    else {
+      throw ShareApiError.invalidResponse
+    }
+
+    let newRefreshToken = json["refreshToken"] as? String
+    self.accessToken = newAccessToken
+    if let newRefreshToken, !newRefreshToken.isEmpty {
+      self.refreshToken = newRefreshToken
+      _ = SharedKeychainTokenStore.saveRefreshToken(newRefreshToken)
+    }
+    _ = SharedKeychainTokenStore.saveAccessToken(newAccessToken)
+    return true
   }
 
   private func validateResponse(
@@ -298,6 +386,13 @@ final class ShareApiClient {
     default:
       throw ShareApiError.serverError(http.statusCode)
     }
+  }
+
+  private func isUnauthorized(_ response: URLResponse) -> Bool {
+    guard let http = response as? HTTPURLResponse else {
+      return false
+    }
+    return http.statusCode == 401
   }
 
   private static func todayString() -> String {
