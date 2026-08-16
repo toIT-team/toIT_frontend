@@ -65,6 +65,20 @@ final class TokenBridge {
         clear()
         result(true)
 
+      case "getAccessToken":
+        result(SharedKeychainTokenStore.readAccessToken())
+
+      case "getRefreshToken":
+        result(SharedKeychainTokenStore.readRefreshToken())
+
+      case "hasTokens":
+        let accessToken = SharedKeychainTokenStore.readAccessToken()
+        let refreshToken = SharedKeychainTokenStore.readRefreshToken()
+        result(
+          accessToken?.isEmpty == false &&
+            refreshToken?.isEmpty == false
+        )
+
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -102,9 +116,9 @@ final class TokenBridge {
   }
 
   private static func clear() {
+    SharedKeychainTokenStore.deleteTokens()
     guard let defaults = AppGroupConfig.sharedUserDefaults
     else { return }
-    SharedKeychainTokenStore.deleteTokens()
     defaults.removeObject(forKey: keyAccessToken)
     defaults.removeObject(forKey: keyRefreshToken)
     defaults.removeObject(forKey: keyUserId)

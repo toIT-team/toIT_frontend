@@ -91,7 +91,7 @@ class AuthController extends Notifier<AuthState> {
             : AuthStatus.authenticated,
         userId: me.userId,
       );
-      await _authService.syncExistingTokenToNativeBridge();
+      await _authService.ensurePlatformTokenStoreReady();
       if (!me.needsNickname) {
         unawaited(_authService.fetchAndSaveCloudFrontCookies());
       }

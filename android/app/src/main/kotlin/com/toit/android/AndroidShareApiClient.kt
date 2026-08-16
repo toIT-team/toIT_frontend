@@ -1,9 +1,15 @@
 package com.toit.android
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -131,28 +137,118 @@ class AndroidShareApiClient(private val context: Context) {
     } ?: throw IOException("공유 파일을 읽을 수 없습니다.")
     if (fileBytes.isEmpty()) throw IOException("공유 파일을 읽을 수 없습니다.")
 
-    val contentType = resolveContentType(fileName, mimeType)
+    val uploadPayload = if (attachmentsType == "IMAGE") {
+      normalizeImageForUpload(
+        fileBytes = fileBytes,
+        fileName = fileName,
+        mimeType = mimeType,
+      )
+    } else {
+      AndroidAttachmentUploadPayload(
+        bytes = fileBytes,
+        fileName = fileName,
+        contentType = resolveContentType(fileName, mimeType),
+        width = null,
+        height = null,
+      )
+    }
     val presignResponse = presignAttachment(
       attachmentsType = attachmentsType,
       folderId = folderId,
       memo = memo,
-      fileName = fileName,
-      fileSize = fileBytes.size,
-      contentType = contentType,
+      fileName = uploadPayload.fileName,
+      fileSize = uploadPayload.bytes.size,
+      contentType = uploadPayload.contentType,
+      width = uploadPayload.width,
+      height = uploadPayload.height,
     )
     uploadToS3(
       uploadUrl = presignResponse.uploadUrl,
-      fileBytes = fileBytes,
-      contentType = contentType,
+      fileBytes = uploadPayload.bytes,
+      contentType = uploadPayload.contentType,
     )
     confirmAttachment(
       attachmentsType = attachmentsType,
       folderId = folderId,
       memo = memo,
       objectKey = presignResponse.objectKey,
+      fileName = uploadPayload.fileName,
+      fileSize = uploadPayload.bytes.size,
+      contentType = uploadPayload.contentType,
+      width = uploadPayload.width,
+      height = uploadPayload.height,
+    )
+  }
+
+  private fun normalizeImageForUpload(
+    fileBytes: ByteArray,
+    fileName: String,
+    mimeType: String?,
+  ): AndroidAttachmentUploadPayload {
+    val contentType = resolveContentType(fileName, mimeType)
+    val fallback = AndroidAttachmentUploadPayload(
+      bytes = fileBytes,
       fileName = fileName,
-      fileSize = fileBytes.size,
       contentType = contentType,
+      width = null,
+      height = null,
+    )
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(fileBytes, 0, fileBytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return fallback
+
+    val orientation = runCatching {
+      ExifInterface(ByteArrayInputStream(fileBytes)).getAttributeInt(
+        ExifInterface.TAG_ORIENTATION,
+        ExifInterface.ORIENTATION_NORMAL,
+      )
+    }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
+    if (orientation == ExifInterface.ORIENTATION_NORMAL ||
+      orientation == ExifInterface.ORIENTATION_UNDEFINED
+    ) {
+      return fallback.copy(width = bounds.outWidth, height = bounds.outHeight)
+    }
+
+    val source = BitmapFactory.decodeByteArray(fileBytes, 0, fileBytes.size) ?: return fallback
+    val matrix = Matrix().apply {
+      when (orientation) {
+        ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> preScale(-1f, 1f)
+        ExifInterface.ORIENTATION_ROTATE_180 -> postRotate(180f)
+        ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+          postRotate(180f)
+          preScale(-1f, 1f)
+        }
+        ExifInterface.ORIENTATION_TRANSPOSE -> {
+          postRotate(90f)
+          preScale(-1f, 1f)
+        }
+        ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(90f)
+        ExifInterface.ORIENTATION_TRANSVERSE -> {
+          postRotate(-90f)
+          preScale(-1f, 1f)
+        }
+        ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(-90f)
+      }
+    }
+
+    val rotated = Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    val normalizedBytes = ByteArrayOutputStream().use { output ->
+      rotated.compress(Bitmap.CompressFormat.JPEG, 95, output)
+      output.toByteArray()
+    }
+    val width = rotated.width
+    val height = rotated.height
+    if (rotated !== source) source.recycle()
+    rotated.recycle()
+
+    return AndroidAttachmentUploadPayload(
+      bytes = normalizedBytes,
+      fileName = replaceExtension(fileName, "jpg"),
+      contentType = "image/jpeg",
+      width = width,
+      height = height,
     )
   }
 
@@ -163,11 +259,15 @@ class AndroidShareApiClient(private val context: Context) {
     fileName: String,
     fileSize: Int,
     contentType: String,
+    width: Int?,
+    height: Int?,
   ): AndroidPresignResponse {
     val file = JSONObject()
       .put("contentType", contentType)
       .put("fileName", fileName)
       .put("fileSize", fileSize)
+    if (width != null) file.put("width", width)
+    if (height != null) file.put("height", height)
     val body = JSONObject()
       .put("foldersIdList", JSONArray().put(folderId))
       .put("attachmentsType", attachmentsType)
@@ -219,12 +319,16 @@ class AndroidShareApiClient(private val context: Context) {
     fileName: String,
     fileSize: Int,
     contentType: String,
+    width: Int?,
+    height: Int?,
   ) {
     val file = JSONObject()
       .put("objectKey", objectKey)
       .put("fileName", fileName)
       .put("fileSize", fileSize)
       .put("contentType", contentType)
+    if (width != null) file.put("width", width)
+    if (height != null) file.put("height", height)
     val body = JSONObject()
       .put("foldersIdList", JSONArray().put(folderId))
       .put("attachmentsType", attachmentsType)
@@ -403,10 +507,24 @@ private data class AndroidPresignResponse(
   val uploadUrl: String,
 )
 
+private data class AndroidAttachmentUploadPayload(
+  val bytes: ByteArray,
+  val fileName: String,
+  val contentType: String,
+  val width: Int?,
+  val height: Int?,
+)
+
 sealed class AndroidShareApiError(message: String) : Exception(message) {
   object Unauthorized : AndroidShareApiError("인증이 만료되었습니다. 앱에서 다시 로그인해주세요.")
   object InvalidResponse : AndroidShareApiError("서버 응답을 처리할 수 없습니다.")
   class ServerError(code: Int) : AndroidShareApiError("서버 오류가 발생했습니다. ($code)")
+}
+
+private fun replaceExtension(fileName: String, extension: String): String {
+  val index = fileName.lastIndexOf('.')
+  if (index <= 0) return "$fileName.$extension"
+  return fileName.substring(0, index) + ".$extension"
 }
 
 private fun resolveContentType(fileName: String, mimeType: String?): String {

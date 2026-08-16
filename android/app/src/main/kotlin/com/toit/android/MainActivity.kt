@@ -47,6 +47,19 @@ open class MainActivity : FlutterActivity() {
           AndroidTokenStore(this).clear()
           result.success(true)
         }
+        "getAccessToken" -> {
+          result.success(AndroidTokenStore(this).readAccessToken())
+        }
+        "getRefreshToken" -> {
+          result.success(AndroidTokenStore(this).readRefreshToken())
+        }
+        "hasTokens" -> {
+          val tokenStore = AndroidTokenStore(this)
+          result.success(
+            !tokenStore.readAccessToken().isNullOrEmpty() &&
+              !tokenStore.readRefreshToken().isNullOrEmpty(),
+          )
+        }
         else -> result.notImplemented()
       }
     }
