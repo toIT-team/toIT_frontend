@@ -1,16 +1,15 @@
 import 'package:dio/dio.dart';
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
 import '../core/constants/api_constants.dart';
+import 'platform_token_store.dart';
 
 /// 보안 저장소 키
-const _kAccessToken = 'access_token';
-const _kRefreshToken = 'refresh_token';
+const _kLegacyAccessToken = 'access_token';
+const _kLegacyRefreshToken = 'refresh_token';
 const _kCfPolicy = 'cf_policy';
 const _kCfSignature = 'cf_signature';
 const _kCfKeyPairId = 'cf_key_pair_id';
@@ -39,12 +38,16 @@ class AuthCallbackData {
 /// - 액세스 토큰 재발급
 class AuthService {
   final FlutterSecureStorage _storage;
+  final PlatformTokenStore _tokenStore;
   final Dio _dio;
 
-  static const _tokenChannel = MethodChannel('com.toit/token');
-
-  AuthService({FlutterSecureStorage? storage, Dio? dio})
+  AuthService({
+    FlutterSecureStorage? storage,
+    PlatformTokenStore? tokenStore,
+    Dio? dio,
+  })
     : _storage = storage ?? const FlutterSecureStorage(),
+      _tokenStore = tokenStore ?? const PlatformTokenStore(),
       _dio =
           dio ??
           (Dio(
@@ -73,21 +76,20 @@ class AuthService {
     required String accessToken,
     required String refreshToken,
   }) async {
-    await Future.wait([
-      _storage.write(key: _kAccessToken, value: accessToken),
-      _storage.write(key: _kRefreshToken, value: refreshToken),
-    ]);
-    await _syncTokenToNativeBridge(
+    await _tokenStore.saveTokens(
       accessToken: accessToken,
       refreshToken: refreshToken,
+      userId: _userIdFromToken(accessToken) ?? 0,
     );
+    await _purgeLegacySecureStorageTokens();
   }
 
-  Future<String?> getAccessToken() => _storage.read(key: _kAccessToken);
+  Future<String?> getAccessToken() => _tokenStore.getAccessToken();
 
-  Future<String?> getRefreshToken() => _storage.read(key: _kRefreshToken);
+  Future<String?> getRefreshToken() => _tokenStore.getRefreshToken();
 
   Future<bool> hasTokens() async {
+    await _purgeLegacySecureStorageTokens();
     final accessToken = await getAccessToken();
     final refreshToken = await getRefreshToken();
 
@@ -107,69 +109,21 @@ class AuthService {
     return hasAccessToken && hasRefreshToken;
   }
 
-  /// 앱 시작 시 기존 토큰을 플랫폼 공유 저장소에 1회 동기화
-  Future<void> syncExistingTokenToNativeBridge() async {
-    final accessToken = await getAccessToken();
-    final refreshToken = await getRefreshToken();
-    if (accessToken != null &&
-        accessToken.isNotEmpty &&
-        refreshToken != null &&
-        refreshToken.isNotEmpty) {
-      await _syncTokenToNativeBridge(
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-      );
-    }
-  }
+  /// native secure store가 토큰의 source of truth이므로 별도 동기화는 하지 않는다.
+  Future<void> ensurePlatformTokenStoreReady() async {}
 
   Future<void> clearTokens() async {
     await Future.wait([
-      _storage.delete(key: _kAccessToken),
-      _storage.delete(key: _kRefreshToken),
+      _tokenStore.clearTokens(),
+      _purgeLegacySecureStorageTokens(),
     ]);
-    await _clearTokenFromNativeBridge();
   }
 
-  // ─── 플랫폼 토큰 브릿지 동기화 (iOS Share Extension / Android Native Share용) ───
-
-  Future<void> _syncTokenToNativeBridge({
-    required String accessToken,
-    required String refreshToken,
-  }) async {
-    if (!Platform.isIOS && !Platform.isAndroid) return;
-    try {
-      final userId = await getUserIdFromToken();
-      // debugPrint(
-      // '[AuthService] App Group 동기화 시도 - '
-      // 'token: ${accessToken.substring(0, 10)}..., '
-      // 'userId: $userId, '
-      // 'baseUrl: ${ApiConstants.baseUrl}',
-      // );
-      await _tokenChannel.invokeMethod('syncToken', {
-        'accessToken': accessToken,
-        'refreshToken': refreshToken,
-        'userId': userId ?? 0,
-        'baseUrl': ApiConstants.baseUrl,
-      });
-      // debugPrint(
-      // '[AuthService] App Group 동기화 결과: $result',
-      // );
-    } catch (e) {
-      // debugPrint(
-      // '[AuthService] App Group 토큰 동기화 실패: $e',
-      // );
-    }
-  }
-
-  Future<void> _clearTokenFromNativeBridge() async {
-    if (!Platform.isIOS && !Platform.isAndroid) return;
-    try {
-      await _tokenChannel.invokeMethod('clearToken');
-    } catch (e) {
-      // debugPrint(
-      // '[AuthService] App Group 토큰 삭제 실패: $e',
-      // );
-    }
+  Future<void> _purgeLegacySecureStorageTokens() async {
+    await Future.wait([
+      _storage.delete(key: _kLegacyAccessToken),
+      _storage.delete(key: _kLegacyRefreshToken),
+    ]);
   }
 
   // ─── 소셜 로그인 (백엔드 OAuth, 콜백 규약 동일) ───
@@ -253,6 +207,10 @@ class AuthService {
   Future<int?> getUserIdFromToken() async {
     final accessToken = await getAccessToken();
     if (accessToken == null || accessToken.isEmpty) return null;
+    return _userIdFromToken(accessToken);
+  }
+
+  int? _userIdFromToken(String accessToken) {
     final payload = _tryDecodeJwtPayload(accessToken);
     if (payload == null) return null;
     final sub = payload['sub'];
@@ -342,17 +300,12 @@ class AuthService {
 
       final newRefreshToken = data['refreshToken'] as String?;
 
-      await _storage.write(key: _kAccessToken, value: newAccessToken);
-      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
-        await _storage.write(key: _kRefreshToken, value: newRefreshToken);
-        // debugPrint('[AuthService][REISSUE] ✓ refreshToken rotation 적용');
-      }
-
-      await _syncTokenToNativeBridge(
+      await _tokenStore.saveTokens(
         accessToken: newAccessToken,
         refreshToken: newRefreshToken != null && newRefreshToken.isNotEmpty
             ? newRefreshToken
             : refreshToken,
+        userId: _userIdFromToken(newAccessToken) ?? 0,
       );
       // debugPrint('[AuthService][REISSUE] ✓ accessToken 재발급 성공');
       return newAccessToken;

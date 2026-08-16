@@ -227,7 +227,7 @@ class _AuthInterceptor extends Interceptor {
         final newToken = await authService.reissueAccessToken();
         completer.complete(newToken);
       }
-    } catch (e, st) {
+    } catch (_) {
       // debugPrint('[_AuthInterceptor] reissue 예외: $e\n$st');
       completer.complete(null);
     } finally {
