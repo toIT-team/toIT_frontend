@@ -1,9 +1,8 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
+import '../core/utils/image_upload_normalizer.dart';
 import '../core/utils/attachment_upload_utils.dart';
 import '../datasources/remote/home_remote_datasource.dart';
 import '../models/dto/attachment_confirm_dto.dart';
@@ -186,7 +185,7 @@ class HomeRepository {
   }) async {
     final contentType = resolveContentType(fileName);
     final bytes = fileBytes is Uint8List
-        ? fileBytes as Uint8List
+        ? fileBytes
         : Uint8List.fromList(fileBytes);
 
     final presignedList = await _remoteDatasource.presignAttachment(
@@ -236,17 +235,12 @@ class HomeRepository {
   }) async {
     final totalSw = Stopwatch()..start();
 
-    final compressed = <Uint8List>[];
-    final fileNames = <String>[];
-    final contentTypes = <String>[];
+    final uploadImages = <ImageUploadPayload>[];
 
     for (final img in images) {
-      final bytes = img.bytes is Uint8List
-          ? img.bytes as Uint8List
-          : Uint8List.fromList(img.bytes);
-      compressed.add(bytes);
-      fileNames.add(img.fileName);
-      contentTypes.add(resolveContentType(img.fileName));
+      uploadImages.add(
+        normalizeImageForUpload(bytes: img.bytes, fileName: img.fileName),
+      );
     }
 
     final presignSw = Stopwatch()..start();
@@ -258,9 +252,11 @@ class HomeRepository {
         files: [
           for (int i = 0; i < images.length; i++)
             PresignFileDto(
-              contentType: contentTypes[i],
-              fileName: fileNames[i],
-              fileSize: compressed[i].length,
+              contentType: uploadImages[i].contentType,
+              fileName: uploadImages[i].fileName,
+              fileSize: uploadImages[i].fileSize,
+              width: uploadImages[i].width,
+              height: uploadImages[i].height,
             ),
         ],
       ),
@@ -268,7 +264,9 @@ class HomeRepository {
     final presignMs = presignSw.elapsedMilliseconds;
 
     if (presignedList.length != images.length) {
-      throw Exception('presign 응답 수 불일치: ${presignedList.length}/${images.length}');
+      throw Exception(
+        'presign 응답 수 불일치: ${presignedList.length}/${images.length}',
+      );
     }
 
     final s3Sw = Stopwatch()..start();
@@ -276,8 +274,8 @@ class HomeRepository {
       for (int i = 0; i < images.length; i++)
         _remoteDatasource.uploadToS3(
           uploadUrl: presignedList[i].uploadUrl,
-          bytes: compressed[i],
-          contentType: contentTypes[i],
+          bytes: uploadImages[i].bytes,
+          contentType: uploadImages[i].contentType,
         ),
     ]);
     final s3Ms = s3Sw.elapsedMilliseconds;
@@ -292,9 +290,11 @@ class HomeRepository {
           for (int i = 0; i < images.length; i++)
             ConfirmFileDto(
               objectKey: presignedList[i].objectKey,
-              fileName: fileNames[i],
-              fileSize: compressed[i].length,
-              contentType: contentTypes[i],
+              fileName: uploadImages[i].fileName,
+              fileSize: uploadImages[i].fileSize,
+              contentType: uploadImages[i].contentType,
+              width: uploadImages[i].width,
+              height: uploadImages[i].height,
             ),
         ],
       ),
@@ -307,7 +307,12 @@ class HomeRepository {
       'presign=${presignMs}ms  s3=${s3Ms}ms  confirm=${confirmMs}ms  '
       'total=${totalMs}ms',
     );
-    return (presignMs: presignMs, s3Ms: s3Ms, confirmMs: confirmMs, totalMs: totalMs);
+    return (
+      presignMs: presignMs,
+      s3Ms: s3Ms,
+      confirmMs: confirmMs,
+      totalMs: totalMs,
+    );
   }
 
   /// 자료 파일/이미지 보관함 이동 (PATCH /attachments)

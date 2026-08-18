@@ -32,17 +32,65 @@ enum AppGroupConfig {
   }
 }
 
+enum ExternalSaveDirtyStore {
+  private static let keyDirtyFolderIds = "external_save_dirty_folder_ids"
+
+  static func markFolderDirty(_ folderId: Int) {
+    guard folderId > 0,
+          let defaults = AppGroupConfig.sharedUserDefaults
+    else { return }
+
+    var ids = readDirtyFolderIds(from: defaults)
+    if !ids.contains(folderId) {
+      ids.append(folderId)
+    }
+    defaults.set(ids, forKey: keyDirtyFolderIds)
+    defaults.synchronize()
+  }
+
+  static func consumeDirtyFolderIds() -> [Int] {
+    guard let defaults = AppGroupConfig.sharedUserDefaults
+    else { return [] }
+
+    let ids = readDirtyFolderIds(from: defaults)
+    defaults.removeObject(forKey: keyDirtyFolderIds)
+    defaults.synchronize()
+    return Array(Set(ids.filter { $0 > 0 }))
+  }
+
+  private static func readDirtyFolderIds(
+    from defaults: UserDefaults
+  ) -> [Int] {
+    let rawIds = defaults.array(forKey: keyDirtyFolderIds) ?? []
+    return rawIds.compactMap { value in
+      if let id = value as? Int { return id }
+      if let id = value as? NSNumber { return id.intValue }
+      if let id = value as? String { return Int(id) }
+      return nil
+    }
+  }
+}
+
 /// Runner와 Share Extension이 함께 읽는 Keychain 저장소.
 /// access token은 App Group UserDefaults 대신 이 access group에만 저장한다.
 enum SharedKeychainTokenStore {
   private static let accessGroup = "86MPU972PJ.com.toit.ios.shared"
   private static let service = "com.toit.ios.auth"
   private static let accessTokenAccount = "access_token"
+  private static let refreshTokenAccount = "refresh_token"
 
   static func saveAccessToken(_ token: String) -> Bool {
+    saveToken(token, account: accessTokenAccount)
+  }
+
+  static func saveRefreshToken(_ token: String) -> Bool {
+    saveToken(token, account: refreshTokenAccount)
+  }
+
+  private static func saveToken(_ token: String, account: String) -> Bool {
     guard let data = token.data(using: .utf8) else { return false }
 
-    var query = baseQuery(account: accessTokenAccount)
+    var query = baseQuery(account: account)
     query[kSecValueData as String] = data
     query[kSecAttrAccessible as String] =
       kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -58,14 +106,22 @@ enum SharedKeychainTokenStore {
     ] as [String: Any]
 
     let updateStatus = SecItemUpdate(
-      baseQuery(account: accessTokenAccount) as CFDictionary,
+      baseQuery(account: account) as CFDictionary,
       attributes as CFDictionary
     )
     return updateStatus == errSecSuccess
   }
 
   static func readAccessToken() -> String? {
-    var query = baseQuery(account: accessTokenAccount)
+    readToken(account: accessTokenAccount)
+  }
+
+  static func readRefreshToken() -> String? {
+    readToken(account: refreshTokenAccount)
+  }
+
+  private static func readToken(account: String) -> String? {
+    var query = baseQuery(account: account)
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     query[kSecReturnData as String] = true
 
@@ -83,6 +139,15 @@ enum SharedKeychainTokenStore {
 
   static func deleteAccessToken() {
     SecItemDelete(baseQuery(account: accessTokenAccount) as CFDictionary)
+  }
+
+  static func deleteRefreshToken() {
+    SecItemDelete(baseQuery(account: refreshTokenAccount) as CFDictionary)
+  }
+
+  static func deleteTokens() {
+    deleteAccessToken()
+    deleteRefreshToken()
   }
 
   private static func baseQuery(account: String) -> [String: Any] {

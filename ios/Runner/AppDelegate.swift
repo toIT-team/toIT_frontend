@@ -30,5 +30,8 @@ import UIKit
     TokenBridge.register(
       with: engineBridge.applicationRegistrar.messenger()
     )
+    ExternalSaveDirtyBridge.register(
+      with: engineBridge.applicationRegistrar.messenger()
+    )
   }
 }

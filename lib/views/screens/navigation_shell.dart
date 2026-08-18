@@ -16,6 +16,7 @@ import '../../core/utils/upload_validation_utils.dart';
 import '../../providers/pending_uploads_provider.dart';
 import '../../models/home/folder_item.dart';
 import '../../repositories/home_repository.dart';
+import '../../services/external_save_dirty_service.dart';
 import '../widgets/common/app_snack_bar.dart';
 import '../widgets/common/custom_bottom_nav_bar.dart';
 import '../widgets/common/share_save_bottom_sheet.dart';
@@ -45,7 +46,8 @@ class NavigationShell extends ConsumerStatefulWidget {
   ConsumerState<NavigationShell> createState() => _NavigationShellState();
 }
 
-class _NavigationShellState extends ConsumerState<NavigationShell> {
+class _NavigationShellState extends ConsumerState<NavigationShell>
+    with WidgetsBindingObserver {
   static const _deepLinkChannel = MethodChannel('com.toit/deeplink');
   static const _launchInfoChannel = MethodChannel('com.toit/launch_info');
 
@@ -56,9 +58,11 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _deepLinkChannel.setMethodCallHandler(_handleDeepLink);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _consumePendingDeepLinkIfAny();
+      unawaited(_consumeExternalSaveDirtyFolders());
       _bindShareReceiver();
       ref.read(pendingUploadsProvider.notifier).restoreFromDb();
     });
@@ -66,9 +70,18 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _deepLinkChannel.setMethodCallHandler(null);
     _shareMediaSubscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_consumeExternalSaveDirtyFolders());
+    }
   }
 
   Future<dynamic> _handleDeepLink(MethodCall call) async {
@@ -168,6 +181,18 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     return state.folders;
   }
 
+  Future<void> _consumeExternalSaveDirtyFolders() async {
+    final folderIds = await ref
+        .read(externalSaveDirtyServiceProvider)
+        .consumeDirtyFolderIds();
+    if (!mounted || folderIds.isEmpty) return;
+
+    for (final folderId in folderIds) {
+      ref.invalidate(pageItemsProvider(folderId));
+    }
+    unawaited(ref.read(homeProvider.notifier).refresh(silent: true));
+  }
+
   Future<void> _saveSharedItems({
     required List<_SharedItem> items,
     required FolderItem selectedFolder,
@@ -203,6 +228,9 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
 
     await ref.read(homeProvider.notifier).refresh();
     ref.invalidate(pageItemsProvider(selectedFolder.foldersId));
+    await ref
+        .read(externalSaveDirtyServiceProvider)
+        .markFolderDirty(selectedFolder.foldersId);
     _showSnackBar(
       savedCount == items.length
           ? '공유 항목이 저장되었습니다.'
