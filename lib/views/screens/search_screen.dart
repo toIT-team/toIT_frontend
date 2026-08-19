@@ -28,6 +28,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+
+    final initialQuery = ref.read(searchProvider).query;
+    if (initialQuery.isNotEmpty) {
+      _searchController.text = initialQuery;
+      _searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: initialQuery.length),
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
