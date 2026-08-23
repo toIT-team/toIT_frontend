@@ -56,9 +56,6 @@ class FcmRegistrationService {
     bool promptForPermission = true,
     String? fcmToken,
   }) async {
-    // TODO(FCM-비활성화): 테스트 중 임시 주석
-    return;
-    /*
     try {
       final NotificationSettings settings;
       if (promptForPermission) {
@@ -74,7 +71,6 @@ class FcmRegistrationService {
     } catch (e, st) {
       // debugPrint('[FcmRegistration] 서버 FCM 등록 실패: $e\n$st');
     }
-    */
   }
 
   static bool _isPushAllowed(AuthorizationStatus status) {
