@@ -686,10 +686,9 @@ mixin _$SearchScheduleItemDto {
   String get startDate => throw _privateConstructorUsedError;
   String get endDate => throw _privateConstructorUsedError;
   String? get startTime => throw _privateConstructorUsedError;
-  String? get endTime =>
-      throw _privateConstructorUsedError; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
-  // @Default(false) bool alarmState,
-  // @Default(0) int alarmOffsetMinutes,
+  String? get endTime => throw _privateConstructorUsedError;
+  bool get alarmState => throw _privateConstructorUsedError;
+  int get alarmOffsetMinutes => throw _privateConstructorUsedError;
   String get memo => throw _privateConstructorUsedError;
 
   /// Serializes this SearchScheduleItemDto to a JSON map.
@@ -720,6 +719,8 @@ abstract class $SearchScheduleItemDtoCopyWith<$Res> {
     String endDate,
     String? startTime,
     String? endTime,
+    bool alarmState,
+    int alarmOffsetMinutes,
     String memo,
   });
 }
@@ -752,6 +753,8 @@ class _$SearchScheduleItemDtoCopyWithImpl<
     Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
+    Object? alarmState = null,
+    Object? alarmOffsetMinutes = null,
     Object? memo = null,
   }) {
     return _then(
@@ -796,6 +799,14 @@ class _$SearchScheduleItemDtoCopyWithImpl<
                 ? _value.endTime
                 : endTime // ignore: cast_nullable_to_non_nullable
                       as String?,
+            alarmState: null == alarmState
+                ? _value.alarmState
+                : alarmState // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            alarmOffsetMinutes: null == alarmOffsetMinutes
+                ? _value.alarmOffsetMinutes
+                : alarmOffsetMinutes // ignore: cast_nullable_to_non_nullable
+                      as int,
             memo: null == memo
                 ? _value.memo
                 : memo // ignore: cast_nullable_to_non_nullable
@@ -826,6 +837,8 @@ abstract class _$$SearchScheduleItemDtoImplCopyWith<$Res>
     String endDate,
     String? startTime,
     String? endTime,
+    bool alarmState,
+    int alarmOffsetMinutes,
     String memo,
   });
 }
@@ -855,6 +868,8 @@ class __$$SearchScheduleItemDtoImplCopyWithImpl<$Res>
     Object? endDate = null,
     Object? startTime = freezed,
     Object? endTime = freezed,
+    Object? alarmState = null,
+    Object? alarmOffsetMinutes = null,
     Object? memo = null,
   }) {
     return _then(
@@ -899,6 +914,14 @@ class __$$SearchScheduleItemDtoImplCopyWithImpl<$Res>
             ? _value.endTime
             : endTime // ignore: cast_nullable_to_non_nullable
                   as String?,
+        alarmState: null == alarmState
+            ? _value.alarmState
+            : alarmState // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        alarmOffsetMinutes: null == alarmOffsetMinutes
+            ? _value.alarmOffsetMinutes
+            : alarmOffsetMinutes // ignore: cast_nullable_to_non_nullable
+                  as int,
         memo: null == memo
             ? _value.memo
             : memo // ignore: cast_nullable_to_non_nullable
@@ -922,6 +945,8 @@ class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
     this.endDate = '',
     this.startTime,
     this.endTime,
+    this.alarmState = false,
+    this.alarmOffsetMinutes = 0,
     this.memo = '',
   });
 
@@ -956,16 +981,19 @@ class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
   final String? startTime;
   @override
   final String? endTime;
-  // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
-  // @Default(false) bool alarmState,
-  // @Default(0) int alarmOffsetMinutes,
+  @override
+  @JsonKey()
+  final bool alarmState;
+  @override
+  @JsonKey()
+  final int alarmOffsetMinutes;
   @override
   @JsonKey()
   final String memo;
 
   @override
   String toString() {
-    return 'SearchScheduleItemDto(usersId: $usersId, schedulesId: $schedulesId, title: $title, foldersId: $foldersId, foldersTitle: $foldersTitle, timeSetting: $timeSetting, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, memo: $memo)';
+    return 'SearchScheduleItemDto(usersId: $usersId, schedulesId: $schedulesId, title: $title, foldersId: $foldersId, foldersTitle: $foldersTitle, timeSetting: $timeSetting, startDate: $startDate, endDate: $endDate, startTime: $startTime, endTime: $endTime, alarmState: $alarmState, alarmOffsetMinutes: $alarmOffsetMinutes, memo: $memo)';
   }
 
   @override
@@ -989,6 +1017,10 @@ class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
             (identical(other.startTime, startTime) ||
                 other.startTime == startTime) &&
             (identical(other.endTime, endTime) || other.endTime == endTime) &&
+            (identical(other.alarmState, alarmState) ||
+                other.alarmState == alarmState) &&
+            (identical(other.alarmOffsetMinutes, alarmOffsetMinutes) ||
+                other.alarmOffsetMinutes == alarmOffsetMinutes) &&
             (identical(other.memo, memo) || other.memo == memo));
   }
 
@@ -1006,6 +1038,8 @@ class _$SearchScheduleItemDtoImpl implements _SearchScheduleItemDto {
     endDate,
     startTime,
     endTime,
+    alarmState,
+    alarmOffsetMinutes,
     memo,
   );
 
@@ -1039,6 +1073,8 @@ abstract class _SearchScheduleItemDto implements SearchScheduleItemDto {
     final String endDate,
     final String? startTime,
     final String? endTime,
+    final bool alarmState,
+    final int alarmOffsetMinutes,
     final String memo,
   }) = _$SearchScheduleItemDtoImpl;
 
@@ -1066,9 +1102,11 @@ abstract class _SearchScheduleItemDto implements SearchScheduleItemDto {
   @override
   String? get startTime;
   @override
-  String? get endTime; // TODO(알림-비활성화): 테스트 중 임시 주석 — 백엔드 미지원
-  // @Default(false) bool alarmState,
-  // @Default(0) int alarmOffsetMinutes,
+  String? get endTime;
+  @override
+  bool get alarmState;
+  @override
+  int get alarmOffsetMinutes;
   @override
   String get memo;
 

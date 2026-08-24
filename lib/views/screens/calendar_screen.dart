@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import 'search_screen.dart';
 import 'my_screen.dart';
-// TODO(FCM-비활성화): 테스트 중 임시 주석
-// import 'notification_screen.dart';
+import 'notification_screen.dart';
 import '../widgets/calendar/calendar_widget.dart';
 import '../widgets/home/home_app_bar.dart';
 
@@ -25,14 +24,13 @@ class CalendarScreen extends ConsumerWidget {
     );
   }
 
-  // TODO(FCM-비활성화): 테스트 중 임시 주석
-  // void _openNotifications(BuildContext context) {
-  //   Navigator.of(context).push(
-  //     MaterialPageRoute<void>(
-  //       builder: (_) => const NotificationScreen(),
-  //     ),
-  //   );
-  // }
+  void _openNotifications(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const NotificationScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,8 +42,7 @@ class CalendarScreen extends ConsumerWidget {
           title: '캘린더',
           onMenuPressed: () => _openMy(context),
           onSearchPressed: () => _openSearch(context),
-          // TODO(FCM-비활성화): 테스트 중 임시 주석
-          // onNotificationPressed: () => _openNotifications(context),
+          onNotificationPressed: () => _openNotifications(context),
         ),
       ),
       body: const CalendarWidget(),
