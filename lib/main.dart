@@ -115,20 +115,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     _markNotificationsPageDirtyIfAuthenticated();
   }
 
-  /// 로그인 중일 때만 FCM 토큰 갱신을 서버에 반영
   void _bindFcmTokenRefresh() {
-    _fcmTokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((
-      String newToken,
-    ) {
+    _fcmTokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((_) {
       final auth = ref.read(authProvider);
       if (auth.status != AuthStatus.authenticated) return;
       unawaited(
         ref
             .read(fcmRegistrationServiceProvider)
-            .syncServerRegistration(
-              promptForPermission: false,
-              fcmToken: newToken,
-            ),
+            .syncServerRegistration(promptForPermission: false),
       );
     });
   }

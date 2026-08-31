@@ -1,5 +1,5 @@
-import 'dart:developer' show log;
-
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,101 +7,67 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
 
-// TODO(FCM-콘솔정리): 릴리스 전 삭제 — 아래 logFcm*·_logFcm* 및 호출부·dart:developer log
-void logFcmTokenSnapshot(String context, String? token) {
-  final text = (token == null || token.isEmpty)
-      ? '[FCM] 토큰 수신 ($context): 없음'
-      : '[FCM] 토큰 수신 ($context): $token';
-  // debugPrint(text);
-  // log(text, name: 'FCM');
-}
-
-void _logFcmPostStart(String path, String token) {
-  final text = '[FCM] POST 요청 시작 $path fcmToken=$token';
-  // debugPrint(text);
-  // log(text, name: 'FCM');
-}
-
-void _logFcmPostSuccess(String path) {
-  const text = '[FCM] POST 요청 완료';
-  // debugPrint('$text $path');
-  // log('$text $path', name: 'FCM');
-}
-
-void _logFcmPostFailure(String path, Object e, StackTrace st) {
-  final text = '[FCM] POST 요청 실패 $path: $e';
-  // debugPrint('$text\n$st');
-  // log(text, name: 'FCM', error: e, stackTrace: st);
-}
-
 /// 로그인된 세션에서만 호출한다. 사용자 식별은 [ApiClient]의
 /// `Authorization: Bearer`로 처리된다.
 ///
 /// [promptForPermission]이 true이면 OS 알림 권한 요청을 시도할 수 있다.
-/// 로그인 직후·세션 복구에는 true, 토큰 갱신·앱 포그라운드 복귀에는 false가
-/// 일반적이다.
+/// 권한이 거부되어도 FCM 기기 등록은 계속 시도한다.
 class FcmRegistrationService {
   FcmRegistrationService(this._apiClient);
 
   final ApiClient _apiClient;
 
-  static const String _fcmTokenKey = 'fcmToken';
   static const int _apnsTokenRetryCount = 8;
   static const Duration _apnsTokenRetryDelay = Duration(milliseconds: 300);
 
-  /// 알림이 허용된 경우에만 [POST /fcm]으로 토큰을 등록한다.
-  ///
-  /// [fcmToken]이 있으면 `getToken()`을 생략한다 (`onTokenRefresh` 등).
-  Future<void> syncServerRegistration({
-    bool promptForPermission = true,
-    String? fcmToken,
-  }) async {
+  Future<void> syncServerRegistration({bool promptForPermission = true}) async {
     try {
-      final NotificationSettings settings;
       if (promptForPermission) {
-        settings = await FirebaseMessaging.instance.requestPermission();
-      } else {
-        settings =
-            await FirebaseMessaging.instance.getNotificationSettings();
+        await _requestNotificationPermission();
       }
-      if (!_isPushAllowed(settings.authorizationStatus)) {
-        return;
-      }
-      await _postFcmToken(fcmToken);
-    } catch (e, st) {
-      // debugPrint('[FcmRegistration] 서버 FCM 등록 실패: $e\n$st');
-    }
+      await _postFcmDeviceRegistration();
+    } catch (_) {}
   }
 
-  static bool _isPushAllowed(AuthorizationStatus status) {
-    return status == AuthorizationStatus.authorized ||
-        status == AuthorizationStatus.provisional;
-  }
-
-  Future<void> _postFcmToken(String? fcmToken) async {
-    final token = fcmToken ?? await _resolveFcmToken();
-    logFcmTokenSnapshot(
-      fcmToken != null ? 'onTokenRefresh·전달' : 'getToken()',
-      token,
-    );
-    if (token == null || token.isEmpty) {
-      const msg = '[FCM] 토큰 없음 — POST 생략';
-      // TODO(FCM-콘솔정리): 릴리스 전 삭제
-      // debugPrint(msg);
-      // log(msg, name: 'FCM');
+  Future<void> _requestNotificationPermission() async {
+    try {
+      await FirebaseMessaging.instance.requestPermission();
+    } catch (_) {
       return;
     }
-    final path = ApiConstants.fcmEndpoint;
-    _logFcmPostStart(path, token);
+  }
+
+  Future<void> _postFcmDeviceRegistration() async {
+    final registration = await _resolveFcmDeviceRegistration();
+    if (registration == null) return;
+
     try {
       await _apiClient.post<void>(
-        path,
-        data: <String, dynamic>{_fcmTokenKey: token},
+        ApiConstants.fcmEndpoint,
+        data: registration.toJson(),
       );
-      _logFcmPostSuccess(path);
-    } catch (e, st) {
-      _logFcmPostFailure(path, e, st);
-    }
+    } catch (_) {}
+  }
+
+  Future<FcmDeviceRegistration?> _resolveFcmDeviceRegistration() async {
+    final platform = _resolveFcmPlatform();
+    if (platform == null) return null;
+
+    final token = await _resolveFcmToken();
+    if (token == null || token.isEmpty) return null;
+
+    final installationId = await FirebaseInstallations.instance.getId();
+    if (installationId.isEmpty) return null;
+
+    final osVersion = await _resolveOsVersion(platform);
+    if (osVersion.isEmpty) return null;
+
+    return FcmDeviceRegistration(
+      installationId: installationId,
+      fcmToken: token,
+      platform: platform,
+      osVersion: osVersion,
+    );
   }
 
   Future<String?> _resolveFcmToken() async {
@@ -111,10 +77,30 @@ class FcmRegistrationService {
     return FirebaseMessaging.instance.getToken();
   }
 
+  FcmPlatform? _resolveFcmPlatform() {
+    if (kIsWeb) return null;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => FcmPlatform.android,
+      TargetPlatform.iOS => FcmPlatform.ios,
+      _ => null,
+    };
+  }
+
+  Future<String> _resolveOsVersion(FcmPlatform platform) async {
+    final deviceInfo = DeviceInfoPlugin();
+    switch (platform) {
+      case FcmPlatform.android:
+        final android = await deviceInfo.androidInfo;
+        return android.version.release.trim();
+      case FcmPlatform.ios:
+        final ios = await deviceInfo.iosInfo;
+        return ios.systemVersion.trim();
+    }
+  }
+
   bool get _isApplePlatform {
     if (kIsWeb) return false;
-    return defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
+    return defaultTargetPlatform == TargetPlatform.iOS;
   }
 
   Future<void> _waitUntilApnsTokenReady() async {
@@ -133,7 +119,37 @@ class FcmRegistrationService {
 }
 
 /// [FcmRegistrationService] Provider
-final fcmRegistrationServiceProvider =
-    Provider<FcmRegistrationService>((ref) {
+final fcmRegistrationServiceProvider = Provider<FcmRegistrationService>((ref) {
   return FcmRegistrationService(ref.watch(apiClientProvider));
 });
+
+class FcmDeviceRegistration {
+  const FcmDeviceRegistration({
+    required this.installationId,
+    required this.fcmToken,
+    required this.platform,
+    required this.osVersion,
+  });
+
+  final String installationId;
+  final String fcmToken;
+  final FcmPlatform platform;
+  final String osVersion;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'installationId': installationId,
+    'fcmToken': fcmToken,
+    'platform': platform.apiValue,
+    'osVersion': osVersion,
+  };
+}
+
+enum FcmPlatform {
+  android,
+  ios;
+
+  String get apiValue => switch (this) {
+    FcmPlatform.android => 'ANDROID',
+    FcmPlatform.ios => 'IOS',
+  };
+}
