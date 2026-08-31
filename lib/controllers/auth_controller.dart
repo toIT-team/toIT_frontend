@@ -96,9 +96,9 @@ class AuthController extends Notifier<AuthState> {
         unawaited(_authService.fetchAndSaveCloudFrontCookies());
       }
       unawaited(
-        ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-              promptForPermission: true,
-            ),
+        ref
+            .read(fcmRegistrationServiceProvider)
+            .syncServerRegistration(promptForPermission: true),
       );
     } else {
       state = const AuthState(status: AuthStatus.unauthenticated);
@@ -153,9 +153,9 @@ class AuthController extends Notifier<AuthState> {
             }
             _markAuthenticatedSideEffects();
             unawaited(
-              ref.read(fcmRegistrationServiceProvider).syncServerRegistration(
-                    promptForPermission: true,
-                  ),
+              ref
+                  .read(fcmRegistrationServiceProvider)
+                  .syncServerRegistration(promptForPermission: true),
             );
             debugPrint('[AuthController] 로그인 성공, userId: ${me.userId}');
           } else {
@@ -228,6 +228,7 @@ class AuthController extends Notifier<AuthState> {
 
   /// 로그아웃
   Future<void> logout() async {
+    await ref.read(fcmRegistrationServiceProvider).deleteServerRegistration();
     await Future.wait([
       _authService.clearTokens(),
       _authService.clearCloudFrontCookies(),

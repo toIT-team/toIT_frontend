@@ -29,6 +29,17 @@ class FcmRegistrationService {
     } catch (_) {}
   }
 
+  Future<void> deleteServerRegistration() async {
+    try {
+      final installationId = await _resolveInstallationId();
+      if (installationId == null) return;
+
+      await _apiClient.delete<void>(
+        ApiConstants.fcmInstallationPath(installationId),
+      );
+    } catch (_) {}
+  }
+
   Future<void> _requestNotificationPermission() async {
     try {
       await FirebaseMessaging.instance.requestPermission();
@@ -56,8 +67,8 @@ class FcmRegistrationService {
     final token = await _resolveFcmToken();
     if (token == null || token.isEmpty) return null;
 
-    final installationId = await FirebaseInstallations.instance.getId();
-    if (installationId.isEmpty) return null;
+    final installationId = await _resolveInstallationId();
+    if (installationId == null) return null;
 
     final osVersion = await _resolveOsVersion(platform);
     if (osVersion.isEmpty) return null;
@@ -75,6 +86,12 @@ class FcmRegistrationService {
       await _waitUntilApnsTokenReady();
     }
     return FirebaseMessaging.instance.getToken();
+  }
+
+  Future<String?> _resolveInstallationId() async {
+    final installationId = await FirebaseInstallations.instance.getId();
+    final trimmed = installationId.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   FcmPlatform? _resolveFcmPlatform() {
