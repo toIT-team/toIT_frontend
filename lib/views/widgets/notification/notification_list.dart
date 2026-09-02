@@ -13,20 +13,18 @@ class NotificationList extends ConsumerWidget {
   const NotificationList({
     super.key,
     required this.cacheKey,
-    required this.page,
+    required this.items,
+    required this.emptyMessage,
   });
 
   final (int, int) cacheKey;
-  final NotificationsPageResponseDto page;
+  final List<NotificationItemDto> items;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unread = page.notifications
-        .where((e) => !e.isRead)
-        .toList(growable: false);
-    final read = page.notifications
-        .where((e) => e.isRead)
-        .toList(growable: false);
+    final unread = items.where((e) => !e.isRead).toList(growable: false);
+    final read = items.where((e) => e.isRead).toList(growable: false);
 
     if (unread.isEmpty && read.isEmpty) {
       return RefreshIndicator(
@@ -34,12 +32,12 @@ class NotificationList extends ConsumerWidget {
         onRefresh: () => _onRefresh(ref),
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 120),
+          children: [
+            const SizedBox(height: 120),
             Center(
               child: Text(
-                '알림이 없습니다.',
-                style: TextStyle(
+                emptyMessage,
+                style: const TextStyle(
                   color: AppColors.gray600,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -115,9 +113,7 @@ class _SectionDivider extends StatelessWidget {
         width: double.infinity,
         height: _height,
         child: const DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.neutral300,
-          ),
+          decoration: BoxDecoration(color: AppColors.neutral300),
         ),
       ),
     );
