@@ -498,10 +498,11 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
       if (!mounted) return;
       showAppSnackBar(context, '삭제에 실패했습니다: $e');
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isDeleting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
     }
   }
 
@@ -539,6 +540,9 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
             final hasAnswer = (item.answer ?? '').trim().isNotEmpty;
             final isExpanded = _expandedId == item.id;
             final title = item.title.trim().isEmpty ? '문의' : item.title.trim();
+            final contentText = item.content.trim().isEmpty
+                ? '문의 내용이 없습니다.'
+                : item.content.trim();
             final dateText = item.createdAt == null || item.createdAt!.isEmpty
                 ? ''
                 : _formatDisplayDateTime(item.createdAt!).split(' ').first;
@@ -622,7 +626,7 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                     ),
                   ),
                 ),
-                if (hasAnswer && isExpanded)
+                if (isExpanded)
                   Container(
                     key: _expandedAnswerKeys.putIfAbsent(
                       item.id,
@@ -633,101 +637,80 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       border: Border(
-                        bottom: BorderSide(color: AppColors.neutral50, width: 1),
-                      ),
-                    ),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(13, 13, 13, 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.neutral300,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.answer!.trim(),
-                            style: const TextStyle(
-                              color: AppColors.gray900,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.025 * 16,
-                              height: 1.5,
-                            ),
-                          ),
-                          if (repliedAtText.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                repliedAtText,
-                                style: const TextStyle(
-                                  color: AppColors.gray600,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: -0.025 * 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                if (!hasAnswer && isExpanded)
-                  Container(
-                    key: _expandedAnswerKeys.putIfAbsent(
-                      item.id,
-                      () => GlobalKey(),
-                    ),
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                        bottom: BorderSide(color: AppColors.neutral50, width: 1),
-                      ),
-                    ),
-                    child: SizedBox(
-                      height: 44,
-                      child: OutlinedButton(
-                        onPressed: _isDeleting
-                            ? null
-                            : () async {
-                                final shouldDelete =
-                                    await _confirmDeleteFeedback();
-                                if (!shouldDelete) return;
-                                await _deleteFeedback(item);
-                              },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: AppColors.neutral50,
-                            width: 1,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          backgroundColor: Colors.white,
+                        bottom: BorderSide(
+                          color: AppColors.neutral50,
+                          width: 1,
                         ),
-                        child: _isDeleting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Text(
-                                '삭제',
-                                style: TextStyle(
-                                  color: AppColors.red500,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: -0.025 * 16,
-                                  height: 1.4,
-                                ),
-                              ),
                       ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _FeedbackSectionLabel(text: '문의 내용'),
+                        const SizedBox(height: 8),
+                        _FeedbackContentBox(
+                          text: contentText,
+                          backgroundColor: Colors.white,
+                          borderColor: AppColors.neutral50,
+                        ),
+                        if (hasAnswer) ...[
+                          const SizedBox(height: 16),
+                          const _FeedbackSectionLabel(text: '답변'),
+                          const SizedBox(height: 8),
+                          _FeedbackContentBox(
+                            text: item.answer!.trim(),
+                            backgroundColor: AppColors.neutral300,
+                            footerText: repliedAtText.isEmpty
+                                ? null
+                                : repliedAtText,
+                          ),
+                        ],
+                        if (!hasAnswer) ...[
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 44,
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: _isDeleting
+                                  ? null
+                                  : () async {
+                                      final shouldDelete =
+                                          await _confirmDeleteFeedback();
+                                      if (!shouldDelete) return;
+                                      await _deleteFeedback(item);
+                                    },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: AppColors.neutral50,
+                                  width: 1,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                backgroundColor: Colors.white,
+                              ),
+                              child: _isDeleting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      '삭제',
+                                      style: TextStyle(
+                                        color: AppColors.red500,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: -0.025 * 16,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
               ],
@@ -753,12 +736,97 @@ class _FeedbackHistoryTabState extends State<_FeedbackHistoryTab> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextButton(onPressed: widget.onRetry, child: const Text('다시 시도')),
+                TextButton(
+                  onPressed: widget.onRetry,
+                  child: const Text('다시 시도'),
+                ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _FeedbackSectionLabel extends StatelessWidget {
+  const _FeedbackSectionLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.gray600,
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.025 * 14,
+        height: 1.4,
+      ),
+    );
+  }
+}
+
+class _FeedbackContentBox extends StatelessWidget {
+  const _FeedbackContentBox({
+    required this.text,
+    required this.backgroundColor,
+    this.borderColor,
+    this.footerText,
+  });
+
+  final String text;
+  final Color backgroundColor;
+  final Color? borderColor;
+  final String? footerText;
+
+  @override
+  Widget build(BuildContext context) {
+    final footer = footerText;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(13, 13, 13, 8),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: borderColor == null
+            ? null
+            : Border.all(color: borderColor!, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: const TextStyle(
+              color: AppColors.gray900,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.025 * 16,
+              height: 1.5,
+            ),
+          ),
+          if (footer != null && footer.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                footer,
+                style: const TextStyle(
+                  color: AppColors.gray600,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: -0.025 * 14,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
