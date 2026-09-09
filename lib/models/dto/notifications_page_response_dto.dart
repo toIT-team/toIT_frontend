@@ -1,6 +1,7 @@
 // GET /page/notifications 응답 및 알림 항목 DTO
 //
-// 루트: `{ notifications: [...] }` 또는 `{ data: { notifications: [...] } }`
+// 루트: `{ schedules: [...], feedbacks: [...], notices: [...] }`
+//       또는 `{ data: { schedules: [...], feedbacks: [...], notices: [...] } }`
 // 항목: notificationId, title, type, deeplink,
 // sentAt 또는 sent_at(ISO 8601·필수), isRead 또는 is_read(bool|0|1)
 
@@ -157,21 +158,42 @@ class NotificationItemDto {
 
 /// 알림 페이지 전체 응답
 class NotificationsPageResponseDto {
-  const NotificationsPageResponseDto({required this.notifications});
+  const NotificationsPageResponseDto({
+    required this.notices,
+    required this.feedbacks,
+    required this.schedules,
+  });
 
-  final List<NotificationItemDto> notifications;
+  final List<NotificationItemDto> notices;
+  final List<NotificationItemDto> feedbacks;
+  final List<NotificationItemDto> schedules;
+
+  List<NotificationItemDto> get notifications => [
+    ...schedules,
+    ...feedbacks,
+    ...notices,
+  ];
 
   NotificationsPageResponseDto copyWith({
-    List<NotificationItemDto>? notifications,
+    List<NotificationItemDto>? notices,
+    List<NotificationItemDto>? feedbacks,
+    List<NotificationItemDto>? schedules,
   }) {
     return NotificationsPageResponseDto(
-      notifications: notifications ?? this.notifications,
+      notices: notices ?? this.notices,
+      feedbacks: feedbacks ?? this.feedbacks,
+      schedules: schedules ?? this.schedules,
     );
   }
 
-  /// 최상단 또는 `data` 안의 `notifications` 배열을 사용
+  /// 최상단 또는 `data` 안의 알림 배열을 사용
   static Map<String, dynamic> _notificationsRoot(Map<String, dynamic> json) {
-    if (json.containsKey('notifications')) return json;
+    if (json.containsKey('schedules') ||
+        json.containsKey('feedbacks') ||
+        json.containsKey('notices') ||
+        json.containsKey('notifications')) {
+      return json;
+    }
     final data = json['data'];
     if (data is Map<String, dynamic>) return data;
     if (data is Map) return Map<String, dynamic>.from(data);
@@ -184,11 +206,9 @@ class NotificationsPageResponseDto {
     return null;
   }
 
-  factory NotificationsPageResponseDto.fromJson(Map<String, dynamic> json) {
-    final root = _notificationsRoot(json);
-    final raw = root['notifications'];
+  static List<NotificationItemDto> _parseItems(dynamic raw) {
     if (raw is! List<dynamic>) {
-      return const NotificationsPageResponseDto(notifications: []);
+      return const [];
     }
     final items = <NotificationItemDto>[];
     for (final e in raw) {
@@ -200,6 +220,45 @@ class NotificationsPageResponseDto {
         continue;
       }
     }
-    return NotificationsPageResponseDto(notifications: items);
+    return items;
+  }
+
+  factory NotificationsPageResponseDto.empty() {
+    return const NotificationsPageResponseDto(
+      notices: [],
+      feedbacks: [],
+      schedules: [],
+    );
+  }
+
+  factory NotificationsPageResponseDto.fromJson(Map<String, dynamic> json) {
+    final root = _notificationsRoot(json);
+    final hasCategorizedKeys =
+        root.containsKey('schedules') ||
+        root.containsKey('feedbacks') ||
+        root.containsKey('notices');
+
+    if (hasCategorizedKeys) {
+      return NotificationsPageResponseDto(
+        notices: _parseItems(root['notices']),
+        feedbacks: _parseItems(root['feedbacks']),
+        schedules: _parseItems(root['schedules']),
+      );
+    }
+
+    final legacyItems = _parseItems(root['notifications']);
+    if (legacyItems.isEmpty) return NotificationsPageResponseDto.empty();
+
+    return NotificationsPageResponseDto(
+      notices: legacyItems
+          .where((e) => e.type == NotificationType.notice)
+          .toList(growable: false),
+      feedbacks: legacyItems
+          .where((e) => e.type == NotificationType.feedbackReply)
+          .toList(growable: false),
+      schedules: legacyItems
+          .where((e) => e.type == NotificationType.schedule)
+          .toList(growable: false),
+    );
   }
 }

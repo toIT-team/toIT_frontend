@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../controllers/auth_controller.dart';
-// TODO(FCM-비활성화): 테스트 중 임시 주석
-// import '../../controllers/notifications_unread_count_controller.dart';
+import '../../controllers/notifications_unread_count_controller.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/constants/app_assets.dart';
 import '../../providers/app_version_provider.dart';
@@ -101,15 +100,14 @@ class MyScreen extends ConsumerWidget {
                         builder: (_) => const SupportScreen(),
                       ),
                     );
-                    // TODO(FCM-비활성화): 테스트 중 임시 주석
-                    // await ref
-                    //     .read(
-                    //       notificationsUnreadCountProvider((
-                    //         userId,
-                    //         refreshTick,
-                    //       )).notifier,
-                    //     )
-                    //     .refresh();
+                    await ref
+                        .read(
+                          notificationsUnreadCountProvider((
+                            userId,
+                            refreshTick,
+                          )).notifier,
+                        )
+                        .refresh();
                     if (!context.mounted) return;
                     if (result != null && result.isNotEmpty) {
                       showAppSnackBar(context, result);

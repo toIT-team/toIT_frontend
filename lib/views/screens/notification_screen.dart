@@ -7,6 +7,7 @@ import '../../controllers/notifications_page_controller.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/system_safe_area.dart';
+import '../../models/dto/notifications_page_response_dto.dart';
 import '../widgets/notification/notification_list.dart';
 import 'notification_settings_screen.dart';
 
@@ -18,16 +19,29 @@ class NotificationScreen extends ConsumerStatefulWidget {
   ConsumerState<NotificationScreen> createState() => _NotificationScreenState();
 }
 
-class _NotificationScreenState extends ConsumerState<NotificationScreen> {
+class _NotificationScreenState extends ConsumerState<NotificationScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: NotificationTab.order.length,
+      vsync: this,
+    );
     // 첫 빌드 직후, dirty 또는 TTL 초과인 경우에만 서버에서 재조회한다.
     // 매 진입마다 강제 fetch하지 않으므로 짧은 간격의 진출입에는 비용이 없다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _maybeRefreshIfNeeded();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _maybeRefreshIfNeeded() {
@@ -88,8 +102,57 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             ),
             Expanded(
               child: pageAsync.when(
-                data: (page) =>
-                    NotificationList(cacheKey: cacheKey, page: page),
+                data: (page) => Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: AppColors.neutral50,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        indicatorColor: AppColors.blue500,
+                        indicatorWeight: 2,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: Colors.transparent,
+                        labelColor: AppColors.gray900,
+                        unselectedLabelColor: AppColors.gray600,
+                        labelStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        tabs: NotificationTab.order
+                            .map((tab) => Tab(text: tab.label))
+                            .toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: NotificationTab.order
+                            .map(
+                              (tab) => NotificationList(
+                                cacheKey: cacheKey,
+                                items: tab.itemsOf(page),
+                                emptyMessage: '${tab.label} 알림이 없습니다.',
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _ErrorView(
                   message: '알림을 불러오지 못했습니다.\n$error',
@@ -102,6 +165,26 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
         ),
       ),
     );
+  }
+}
+
+enum NotificationTab {
+  schedule('알림'),
+  feedback('피드백'),
+  notice('공지');
+
+  const NotificationTab(this.label);
+
+  final String label;
+
+  static const order = [schedule, feedback, notice];
+
+  List<NotificationItemDto> itemsOf(NotificationsPageResponseDto page) {
+    return switch (this) {
+      NotificationTab.schedule => page.schedules,
+      NotificationTab.feedback => page.feedbacks,
+      NotificationTab.notice => page.notices,
+    };
   }
 }
 

@@ -3,6 +3,46 @@ import 'package:toit/models/dto/notifications_page_response_dto.dart';
 
 void main() {
   group('NotificationsPageResponseDto', () {
+    test('카테고리별 notices, feedbacks, schedules 배열을 파싱한다', () {
+      final dto = NotificationsPageResponseDto.fromJson(<String, dynamic>{
+        'notices': <dynamic>[
+          <String, dynamic>{
+            'notificationId': 512,
+            'title': '9월 정기 점검 안내',
+            'type': 'NOTICE',
+            'deeplink': 'toit://notice?id=7',
+            'sentAt': '2026-08-31T09:00:12.482',
+            'isRead': false,
+          },
+        ],
+        'feedbacks': <dynamic>[
+          <String, dynamic>{
+            'notificationId': 498,
+            'title': '알림이 안 와요',
+            'type': 'FEEDBACK_REPLY',
+            'deeplink': 'toit://feedback?id=42',
+            'sentAt': '2026-08-30T16:22:51.903',
+            'isRead': false,
+          },
+        ],
+        'schedules': <dynamic>[
+          <String, dynamic>{
+            'notificationId': 507,
+            'title': '팀 회의',
+            'type': 'SCHEDULE',
+            'deeplink': 'toit://schedule?id=1284',
+            'sentAt': '2026-08-31T13:55:00.318',
+            'isRead': false,
+          },
+        ],
+      });
+
+      expect(dto.notices.single.notificationId, 512);
+      expect(dto.feedbacks.single.type, NotificationType.feedbackReply);
+      expect(dto.schedules.single.title, '팀 회의');
+      expect(dto.notifications.map((e) => e.notificationId), [507, 498, 512]);
+    });
+
     test('notifications 배열에서 유효 항목만 순서대로 파싱한다', () {
       final dto = NotificationsPageResponseDto.fromJson(<String, dynamic>{
         'notifications': <dynamic>[

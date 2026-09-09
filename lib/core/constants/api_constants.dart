@@ -111,8 +111,12 @@ class ApiConstants {
   /// CloudFront Signed Cookie 발급 및 재발급 (GET, JWT 인증 필요)
   static const String cloudFrontCookieEndpoint = '/api/auth/cloudfront/cookie';
 
-  /// FCM 기기 토큰 등록 (POST, body: { fcmToken })
+  /// FCM 기기 토큰 등록 (POST)
   static const String fcmEndpoint = '/fcm';
+
+  /// FCM 기기 토큰 해제 (DELETE /fcm/{installationId})
+  static String fcmInstallationPath(String installationId) =>
+      '$fcmEndpoint/${Uri.encodeComponent(installationId)}';
 
   /// 앱 복귀 딥링크 스킴
   static const String authCallbackScheme = 'toit';

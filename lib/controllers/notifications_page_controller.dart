@@ -29,8 +29,9 @@ Future<NotificationsPageResponseDto> _fetchNotificationsPage(Ref ref) async {
 /// 포그라운드 FCM 수신·앱 resume 등 "리스트가 변했을 가능성"이 있는 시점에
 /// `true`로 올려둔다. 알림 페이지가 떠 있으면 즉시 동기화되고, 떠 있지 않으면
 /// 다음 진입 시 [NotificationsPageNotifier.maybeRefresh]가 소비한다.
-final notificationsPageDirtyProvider =
-    StateProvider.family<bool, (int, int)>((ref, _) => false);
+final notificationsPageDirtyProvider = StateProvider.family<bool, (int, int)>(
+  (ref, _) => false,
+);
 
 /// 알림 목록 (GET) + 탭 시 읽음 PATCH, 로컬 먼저 반영
 class NotificationsPageNotifier
@@ -93,8 +94,9 @@ class NotificationsPageNotifier
   }
 
   void _clearDirtyFlag() {
-    final notifier =
-        _ref.read(notificationsPageDirtyProvider(_cacheKey).notifier);
+    final notifier = _ref.read(
+      notificationsPageDirtyProvider(_cacheKey).notifier,
+    );
     if (notifier.state) notifier.state = false;
   }
 
@@ -114,13 +116,9 @@ class NotificationsPageNotifier
 
     final previous = data;
     final updated = previous.copyWith(
-      notifications: [
-        for (final n in previous.notifications)
-          if (n.notificationId == notificationId)
-            n.copyWith(isRead: true)
-          else
-            n,
-      ],
+      notices: _markRead(previous.notices, notificationId),
+      feedbacks: _markRead(previous.feedbacks, notificationId),
+      schedules: _markRead(previous.schedules, notificationId),
     );
     state = AsyncValue.data(updated);
     _ref
@@ -143,6 +141,16 @@ class NotificationsPageNotifier
         }
       }
     });
+  }
+
+  List<NotificationItemDto> _markRead(
+    List<NotificationItemDto> items,
+    int notificationId,
+  ) {
+    return [
+      for (final n in items)
+        if (n.notificationId == notificationId) n.copyWith(isRead: true) else n,
+    ];
   }
 }
 
