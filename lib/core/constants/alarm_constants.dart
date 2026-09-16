@@ -24,6 +24,8 @@ class AlarmOptionItem {
 class AlarmUtils {
   AlarmUtils._();
 
+  static const int maxOffsetMinutes = 10080;
+
   /// 값과 단위를 분 단위로 변환
   static int toMinutes(int value, AlarmUnit unit) {
     switch (unit) {
@@ -36,17 +38,33 @@ class AlarmUtils {
     }
   }
 
+  static int clampOffsetMinutes(int minutes) {
+    return minutes.clamp(0, maxOffsetMinutes);
+  }
+
+  static int maxValueForUnit(AlarmUnit unit) {
+    switch (unit) {
+      case AlarmUnit.minutes:
+        return 99;
+      case AlarmUnit.hours:
+        return 99;
+      case AlarmUnit.days:
+        return maxOffsetMinutes ~/ 1440;
+    }
+  }
+
   /// 분 단위를 (값, 단위)로 변환 (직접 설정 피커 초기값용)
   static (int, AlarmUnit) fromMinutes(int minutes) {
-    if (minutes >= 60 && minutes % 60 == 0) {
-      final hours = minutes ~/ 60;
+    final clampedMinutes = clampOffsetMinutes(minutes);
+    if (clampedMinutes >= 60 && clampedMinutes % 60 == 0) {
+      final hours = clampedMinutes ~/ 60;
       if (hours <= 99) return (hours, AlarmUnit.hours);
     }
-    if (minutes >= 1440 && minutes % 1440 == 0) {
-      final days = minutes ~/ 1440;
+    if (clampedMinutes >= 1440 && clampedMinutes % 1440 == 0) {
+      final days = clampedMinutes ~/ 1440;
       if (days <= 99) return (days, AlarmUnit.days);
     }
-    return (minutes.clamp(0, 99), AlarmUnit.minutes);
+    return (clampedMinutes.clamp(0, 99), AlarmUnit.minutes);
   }
 
   /// 사전 정의된 알림 옵션 (분, 라벨)
