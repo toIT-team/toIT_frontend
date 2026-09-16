@@ -175,11 +175,12 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
   @override
   void initState() {
     super.initState();
-    _value = widget.initialValue;
-    _unit = widget.initialUnit;
-    _valueController = FixedExtentScrollController(
-      initialItem: _value.clamp(0, 99),
+    _value = widget.initialValue.clamp(
+      0,
+      AlarmUtils.maxValueForUnit(widget.initialUnit),
     );
+    _unit = widget.initialUnit;
+    _valueController = FixedExtentScrollController(initialItem: _value);
     _unitController = FixedExtentScrollController(initialItem: _unit.index);
   }
 
@@ -204,10 +205,13 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
               children: [
                 _buildWheelPicker(
                   controller: _valueController,
-                  itemCount: 100,
+                  itemCount: AlarmUtils.maxValueForUnit(_unit) + 1,
                   selectedIndex: _value,
                   builder: (_, i) => Text('$i'),
-                  onSelected: (i) => setState(() => _value = i.clamp(0, 99)),
+                  onSelected: (i) => setState(
+                    () =>
+                        _value = i.clamp(0, AlarmUtils.maxValueForUnit(_unit)),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 _buildWheelPicker(
@@ -215,8 +219,18 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
                   itemCount: AlarmUnit.values.length,
                   selectedIndex: _unit.index,
                   builder: (_, i) => Text(AlarmUnit.values[i].label),
-                  onSelected: (i) =>
-                      setState(() => _unit = AlarmUnit.values[i]),
+                  onSelected: (i) {
+                    final nextUnit = AlarmUnit.values[i];
+                    final nextValue = _value.clamp(
+                      0,
+                      AlarmUtils.maxValueForUnit(nextUnit),
+                    );
+                    setState(() {
+                      _unit = nextUnit;
+                      _value = nextValue;
+                    });
+                    _valueController.jumpToItem(nextValue);
+                  },
                 ),
               ],
             ),
@@ -233,7 +247,9 @@ class _AlarmCustomPickerSheetState extends State<AlarmCustomPickerSheet> {
                   ),
                 ),
                 onPressed: () {
-                  final minutes = AlarmUtils.toMinutes(_value, _unit);
+                  final minutes = AlarmUtils.clampOffsetMinutes(
+                    AlarmUtils.toMinutes(_value, _unit),
+                  );
                   widget.onConfirm(minutes);
                   Navigator.pop(context);
                 },

@@ -20,6 +20,7 @@ import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/fcm_registration_service.dart';
+import 'services/foreground_notification_service.dart';
 import 'views/screens/apple_name_input_screen.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/navigation_shell.dart'
@@ -42,6 +43,17 @@ Future<void> main() async {
     if (e.code != 'duplicate-app') rethrow;
   }
 
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS)) {
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+  }
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -56,6 +68,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   static const _launchInfoChannel = MethodChannel('com.toit/launch_info');
   static const _androidShareInitialRoute = '/android-share';
   final _rootNavigatorKey = GlobalKey<NavigatorState>();
+  final _foregroundNotificationService = ForegroundNotificationService();
 
   /// 스플래시가 최소한 이 시간만큼은 노출되도록 보장한다.
   /// 부트스트랩이 너무 빨라 화면이 깜빡이는 인상을 주지 않기 위함.
@@ -87,6 +100,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     _bindFcmDeepLinks();
     _bindFcmTokenRefresh();
     _bindFcmForegroundIncoming();
+    unawaited(_initForegroundNotifications());
   }
 
   @override
@@ -137,19 +151,25 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   }
 
   void _onFcmMessageOpened(RemoteMessage message) {
-    final didScheduleRead = _markNotificationAsReadFromFcm(message);
+    _handleFcmOpenedData(message.data);
+  }
+
+  void _onForegroundNotificationOpened(Map<String, dynamic> data) {
+    _handleFcmOpenedData(data);
+  }
+
+  void _handleFcmOpenedData(Map<String, dynamic> data) {
+    final didScheduleRead = _markNotificationAsReadFromFcmData(data);
     if (!didScheduleRead) {
       _refreshUnreadCountIfAuthenticated();
     }
-    final url = ToitDeepLink.extractUrlFromFcmData(message.data);
+    final url = ToitDeepLink.extractUrlFromFcmData(data);
     if (url == null) return;
     ref.read(pendingDeepLinkUrlProvider.notifier).state = url;
   }
 
-  bool _markNotificationAsReadFromFcm(RemoteMessage message) {
-    final notificationId = ToitDeepLink.extractNotificationIdFromFcmData(
-      message.data,
-    );
+  bool _markNotificationAsReadFromFcmData(Map<String, dynamic> data) {
+    final notificationId = ToitDeepLink.extractNotificationIdFromFcmData(data);
     if (notificationId == null) return false;
     final authState = ref.read(authProvider);
     if (authState.status != AuthStatus.authenticated) {
@@ -176,10 +196,21 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   /// 포그라운드 알림 수신 시 배지(count)는 즉시 갱신하고,
   /// 리스트 캐시는 dirty 표시만 남겨 진입 시점에 동기화되도록 한다.
   void _bindFcmForegroundIncoming() {
-    _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((_) {
+    _fcmOnMessageSub = FirebaseMessaging.onMessage.listen((message) {
       _refreshUnreadCountIfAuthenticated();
       _markNotificationsPageDirtyIfAuthenticated();
+      unawaited(_foregroundNotificationService.show(message));
     });
+  }
+
+  Future<void> _initForegroundNotifications() async {
+    await _foregroundNotificationService.initialize(
+      onTap: _onForegroundNotificationOpened,
+    );
+    final launchData = await _foregroundNotificationService
+        .consumeLaunchPayload();
+    if (!mounted || launchData == null) return;
+    _handleFcmOpenedData(launchData);
   }
 
   void _refreshUnreadCountIfAuthenticated() {
