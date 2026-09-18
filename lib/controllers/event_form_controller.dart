@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../core/constants/alarm_constants.dart';
 import '../core/constants/event_color_tokens.dart';
 import '../models/calendar/calendar_event.dart';
 import '../models/schedule/schedule_response.dart';
@@ -153,7 +154,9 @@ class EventFormController extends Notifier<EventFormState> {
       endTime: endTime,
       timeSetting: detail.timeSetting,
       memo: detail.memo.isEmpty ? null : detail.memo,
-      alarmMinutes: detail.alarmState ? detail.alarmOffsetMinutes : null,
+      alarmMinutes: detail.alarmState
+          ? AlarmUtils.clampOffsetMinutes(detail.alarmOffsetMinutes)
+          : null,
       folderName: detail.foldersTitle.isEmpty ? null : detail.foldersTitle,
       foldersId: detail.foldersId > 0 ? detail.foldersId : null,
       appColorToken: colorToken ?? EventColorToken.blue300,
@@ -231,7 +234,11 @@ class EventFormController extends Notifier<EventFormState> {
 
   /// 알림 설정 업데이트
   void updateAlarm(int? minutes) {
-    state = state.copyWith(alarmMinutes: minutes);
+    state = state.copyWith(
+      alarmMinutes: minutes == null
+          ? null
+          : AlarmUtils.clampOffsetMinutes(minutes),
+    );
   }
 
   /// 폴더 업데이트

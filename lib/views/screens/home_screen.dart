@@ -27,7 +27,7 @@ class HomeScreen extends ConsumerWidget {
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: HomeAppBar(
-            useLightStatusBar: true,
+            useLightStatusBar: false,
             onMenuPressed: () {
               Navigator.of(
                 context,
